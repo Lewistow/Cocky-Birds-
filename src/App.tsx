@@ -97,6 +97,8 @@ export default function App() {
   const [isFlashing, setIsFlashing] = useState(false);
 
   // Game state refs
+  const chaosRef = useRef(0);
+  const isThunderReadyRef = useRef(false);
   const birds = useRef<Bird[]>([]);
   const bullets = useRef<Bullet[]>([]);
   const particles = useRef<Particle[]>([]);
@@ -129,7 +131,9 @@ export default function App() {
     setScore(0);
     setIntegrity(MAX_INTEGRITY);
     setChaos(0);
+    chaosRef.current = 0;
     setIsThunderReady(false);
+    isThunderReadyRef.current = false;
     setLightningBolt(null);
   }, []);
 
@@ -227,10 +231,10 @@ export default function App() {
 
     frameCount.current++;
 
-    // Thunder Ready logic
-    if (chaos >= CHAOS_LIMIT && !isThunderReady) {
+    // Thunder Ready logic - Use Ref for logic, State for UI
+    if (chaosRef.current >= CHAOS_LIMIT && !isThunderReadyRef.current) {
+      isThunderReadyRef.current = true;
       setIsThunderReady(true);
-      setChaos(CHAOS_LIMIT);
     }
 
     // Gap logic
@@ -247,9 +251,11 @@ export default function App() {
         setIsFlashing(true);
         setTimeout(() => setIsFlashing(false), 50);
 
-        // Thunder Strike Trigger
-        if (isThunderReady) {
+        // Thunder Strike Trigger - Check Ref
+        if (isThunderReadyRef.current) {
+          isThunderReadyRef.current = false;
           setIsThunderReady(false);
+          chaosRef.current = 0;
           setChaos(0);
           
           // Generate Lightning Bolt visual - More Jagged and Intense
@@ -301,7 +307,9 @@ export default function App() {
                 if (bird.health <= 0) {
                   bird.state = 'CRUSHED';
                   setScore(s => s + 1);
-                  setChaos(c => Math.min(CHAOS_LIMIT, c + 15));
+                  
+                  chaosRef.current = Math.min(CHAOS_LIMIT, chaosRef.current + 15);
+                  setChaos(chaosRef.current);
                   
                   // Graphic Effects
                   createParticles(bird.x, bird.y, COLORS.YELLOW, 25, 'FEATHER');
@@ -602,7 +610,7 @@ export default function App() {
       draw(ctx);
     }
     animationFrameId.current = requestAnimationFrame(loop);
-  }, [gameState, isThunderReady, lightningBolt]);
+  }, [gameState]); // Only depend on gameState to avoid frequent loop restarts
 
   useEffect(() => {
     animationFrameId.current = requestAnimationFrame(loop);
