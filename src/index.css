@@ -1,0 +1,75 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;900&display=swap');
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bangers", system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #FF3E00; /* Bold Brutalist Orange */
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+canvas {
+  display: block;
+}
+
+/* Halftone Pattern Overlay */
+.halftone {
+  background-image: radial-gradient(circle, #000 1px, transparent 1px);
+  background-size: 4px 4px;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+@keyframes impact-flash {
+  0% { background-color: white; opacity: 1; }
+  100% { background-color: transparent; opacity: 0; }
+}
+
+.impact-flash {
+  animation: impact-flash 0.1s ease-out forwards;
+}
+
+@keyframes pipe-vibrate {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px) rotate(-0.5deg); }
+  75% { transform: translateX(2px) rotate(0.5deg); }
+}
+
+.vibrate {
+  animation: pipe-vibrate 0.1s linear infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.float {
+  animation: float 2s ease-in-out infinite;
+}
+
+/* Brutalist Button Style */
+.brutalist-btn {
+  background: #00FF41;
+  border: 4px solid #000;
+  box-shadow: 8px 8px 0px #000;
+  transition: all 0.1s;
+}
+
+.brutalist-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 4px 4px 0px #000;
+}
+
+.brutalist-card {
+  background: white;
+  border: 6px solid #000;
+  box-shadow: 12px 12px 0px #000;
+}
