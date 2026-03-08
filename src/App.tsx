@@ -13,6 +13,7 @@ const DEFAULT_GAP_SIZE = 150;
 const SLAM_SPEED = 45;
 const OPEN_SPEED = 15;
 const BIRD_BASE_SPEED = 3.5;
+const WARMUP_FRAMES = 600; // ~10 seconds at 60fps
 const MAX_INTEGRITY = 100;
 const CHAOS_LIMIT = 100;
 
@@ -92,9 +93,15 @@ export default function App() {
   const [integrity, setIntegrity] = useState(MAX_INTEGRITY);
   const [chaos, setChaos] = useState(0);
   const [isThunderReady, setIsThunderReady] = useState(false);
+  const [lastDamageTime, setLastDamageTime] = useState(0);
+  const [lastKillTime, setLastKillTime] = useState(0);
   const [lightningBolt, setLightningBolt] = useState<{ x1: number, y1: number, x2: number, y2: number }[] | null>(null);
   const [isShaking, setIsShaking] = useState(false);
   const [isFlashing, setIsFlashing] = useState(false);
+  const [isWarmup, setIsWarmup] = useState(false);
+  const [isFirstTime, setIsFirstTime] = useState(() => {
+    return localStorage.getItem('cocky-birds-tutorial-done') !== 'true';
+  });
 
   // Audio Refs
   const bgMusic = useRef<HTMLAudioElement | null>(null);
@@ -114,6 +121,7 @@ export default function App() {
   const dimensions = useRef({ width: 0, height: 0 });
   const mousePos = useRef({ x: 0, y: 0 });
   const birdIdCounter = useRef(0);
+  const isWarmupActiveRef = useRef(false);
 
   const initGame = useCallback(() => {
     const canvas = canvasRef.current;
@@ -129,6 +137,7 @@ export default function App() {
     bullets.current = [];
     particles.current = [];
     gapY.current = height / 2;
+    mousePos.current = { x: width / 2, y: height / 2 };
     currentGapSize.current = DEFAULT_GAP_SIZE;
     isSlamming.current = false;
     frameCount.current = 0;
@@ -139,14 +148,28 @@ export default function App() {
     setIsThunderReady(false);
     isThunderReadyRef.current = false;
     setLightningBolt(null);
+    
+    const tutorialDone = localStorage.getItem('cocky-birds-tutorial-done') === 'true';
+    if (!tutorialDone) {
+      setIsWarmup(true);
+      isWarmupActiveRef.current = true;
+    } else {
+      isWarmupActiveRef.current = false;
+    }
   }, []);
 
   // Initialize Audio
   useEffect(() => {
-    const audio = new Audio('https://files.catbox.moe/exbulh.mp3');
+    // Using a very reliable, high-compatibility arcade loop
+    const audio = new Audio('https://www.soundjay.com/free-music/sounds/arcade-music-loop-01.mp3');
     audio.loop = true;
     audio.volume = 0;
+    audio.preload = 'auto';
+    audio.crossOrigin = 'anonymous';
     bgMusic.current = audio;
+
+    // Force load
+    audio.load();
 
     return () => {
       audio.pause();
@@ -158,7 +181,8 @@ export default function App() {
   useEffect(() => {
     if (!bgMusic.current) return;
 
-    const targetVolume = gameState === 'PLAYING' ? 0.2 : (gameState === 'GAME_OVER' ? 0.05 : 0.1);
+    // Slightly higher volumes to ensure it's audible
+    const targetVolume = gameState === 'PLAYING' ? 0.4 : (gameState === 'GAME_OVER' ? 0.1 : 0.2);
     
     const fadeInterval = setInterval(() => {
       if (!bgMusic.current) return;
@@ -176,12 +200,43 @@ export default function App() {
     return () => clearInterval(fadeInterval);
   }, [gameState]);
 
-  const startAudio = () => {
-    if (bgMusic.current && !audioStarted.current) {
-      bgMusic.current.play().catch(e => console.log("Audio blocked", e));
-      audioStarted.current = true;
+  const startAudio = useCallback(() => {
+    if (bgMusic.current) {
+      // If it's already playing, don't restart, but ensure volume is up
+      if (bgMusic.current.paused) {
+        bgMusic.current.play()
+          .then(() => {
+            audioStarted.current = true;
+            console.log("Audio started successfully");
+          })
+          .catch(e => {
+            console.warn("Audio play failed:", e);
+          });
+      }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const handleInteraction = () => {
+      startAudio();
+      // Once we've successfully started, we can remove these listeners
+      if (audioStarted.current) {
+        window.removeEventListener('click', handleInteraction);
+        window.removeEventListener('touchstart', handleInteraction);
+        window.removeEventListener('keydown', handleInteraction);
+      }
+    };
+    
+    window.addEventListener('click', handleInteraction);
+    window.addEventListener('touchstart', handleInteraction);
+    window.addEventListener('keydown', handleInteraction);
+    
+    return () => {
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+    };
+  }, [startAudio]);
 
   useEffect(() => {
     initGame();
@@ -208,7 +263,10 @@ export default function App() {
     const rand = Math.random();
     let type: BirdType = 'NORMAL';
     let health = 1;
-    let vx = -(BIRD_BASE_SPEED + Math.random() * 2);
+    const warmupFactor = isWarmupActiveRef.current ? Math.min(1, frameCount.current / WARMUP_FRAMES) : 1;
+    const speedMultiplier = 0.5 + 0.5 * warmupFactor;
+
+    let vx = -(BIRD_BASE_SPEED + Math.random() * 2) * speedMultiplier;
     let size = 25;
     let oscSpeed = 0.1 + Math.random() * 0.05;
     let oscAmp = 15 + Math.random() * 15;
@@ -356,6 +414,7 @@ export default function App() {
                   
                   chaosRef.current = Math.min(CHAOS_LIMIT, chaosRef.current + 15);
                   setChaos(chaosRef.current);
+                  setLastKillTime(Date.now());
                   
                   // Graphic Effects
                   createParticles(bird.x, bird.y, COLORS.YELLOW, 25, 'FEATHER');
@@ -407,8 +466,11 @@ export default function App() {
         // Calculate vy for squash/stretch
         bird.vy = Math.cos(oscTime) * bird.oscAmp * bird.oscSpeed;
 
+        const warmupFactor = isWarmupActiveRef.current ? Math.min(1, frameCount.current / WARMUP_FRAMES) : 1;
         const shootRate = bird.type === 'SNIPER' ? 50 : 100;
-        if (frameCount.current - bird.lastShot > shootRate && bird.x > dimensions.current.width / 2) {
+        const canShoot = isWarmupActiveRef.current ? (frameCount.current > WARMUP_FRAMES / 3) : true;
+
+        if (canShoot && frameCount.current - bird.lastShot > shootRate && bird.x > dimensions.current.width / 2) {
           bird.lastShot = frameCount.current;
           bullets.current.push({
             x: bird.x - bird.size/2,
@@ -424,6 +486,7 @@ export default function App() {
           bird.taunt = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
           bird.tauntTime = 120;
           setIntegrity(prev => Math.max(0, prev - 10));
+          setLastDamageTime(Date.now());
         }
       } else if (bird.state === 'PASSED') {
         bird.x += bird.vx * 1.5;
@@ -447,6 +510,7 @@ export default function App() {
         
         if (!isGap) {
           setIntegrity(prev => Math.max(0, prev - 1.5));
+          setLastDamageTime(Date.now());
           createParticles(bullet.x, bullet.y, COLORS.WHITE, 5, 'SPARK');
           bullets.current.splice(bIdx, 1);
         }
@@ -692,32 +756,85 @@ export default function App() {
       
       <canvas ref={canvasRef} className="w-full h-full" />
 
+      {/* Warmup Indicator */}
+      {gameState === 'PLAYING' && isWarmup && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1, 1, 1.2] }}
+          transition={{ duration: 5, times: [0, 0.1, 0.8, 1] }}
+          onAnimationComplete={() => {
+            setIsWarmup(false);
+            localStorage.setItem('cocky-birds-tutorial-done', 'true');
+            setIsFirstTime(false);
+          }}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        >
+          <div className="bg-white border-4 border-black p-4 md:p-8 shadow-[8px_8px_0px_#000] -rotate-3 max-w-md text-center">
+            <h2 className="text-4xl md:text-8xl font-black text-black italic leading-none">WARMUP</h2>
+            <p className="text-black font-black uppercase text-xs md:text-xl tracking-widest mt-2">Birds are slow & peaceful...</p>
+            <div className="mt-4 pt-4 border-t-2 border-black/10">
+              <p className="text-orange-600 font-black text-lg md:text-2xl animate-bounce">
+                MOVE THE PIPE TO CRUSH BIRDS!
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* HUD */}
       {gameState === 'PLAYING' && (
         <div className="absolute top-0 left-0 w-full p-2 md:p-8 flex justify-between items-start pointer-events-none">
           <div className="flex flex-col gap-1 md:gap-4">
-            <div className="bg-white border-[1.5px] md:border-4 border-black shadow-[2px_2px_0px_#000] md:shadow-[6px_6px_0px_#000] p-1 md:p-4 flex items-center gap-1 md:gap-4">
-              <Shield className="text-black" size={10} md:size={24} strokeWidth={3} />
-              <div className="w-16 md:w-40 h-2 md:h-6 bg-black/10 border-[1px] border-black">
+            {/* Integrity Bar */}
+            <motion.div 
+              animate={lastDamageTime > Date.now() - 200 ? { x: [-2, 2, -2, 2, 0] } : {}}
+              className="bg-white border-[1.5px] md:border-4 border-black shadow-[2px_2px_0px_#000] md:shadow-[6px_6px_0px_#000] p-1 md:p-4 flex items-center gap-1 md:gap-4"
+            >
+              <Shield className={integrity < 30 ? "text-red-600 animate-pulse" : "text-black"} size={10} md:size={24} strokeWidth={3} />
+              <div className="w-16 md:w-40 h-2 md:h-6 bg-black/10 border-[1px] border-black relative overflow-hidden">
+                {/* Ghost Bar for Damage */}
                 <motion.div 
-                  className="h-full bg-[#00FF41]"
+                  className="absolute top-0 left-0 h-full bg-red-500/30"
                   animate={{ width: `${integrity}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                />
+                {/* Main Integrity Bar */}
+                <motion.div 
+                  className="absolute top-0 left-0 h-full"
+                  initial={false}
+                  animate={{ 
+                    width: `${integrity}%`,
+                    backgroundColor: integrity < 30 ? '#FF0000' : integrity < 60 ? '#FFD700' : '#00FF41'
+                  }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 />
               </div>
-            </div>
-            <div className={`bg-white border-[1.5px] md:border-4 border-black shadow-[2px_2px_0px_#000] md:shadow-[6px_6px_0px_#000] p-1 md:p-4 flex items-center gap-1 md:gap-4 ${isThunderReady ? 'animate-pulse bg-yellow-400' : ''}`}>
+            </motion.div>
+
+            {/* Chaos Bar */}
+            <motion.div 
+              animate={lastKillTime > Date.now() - 200 ? { scale: [1, 1.1, 1] } : {}}
+              className={`bg-white border-[1.5px] md:border-4 border-black shadow-[2px_2px_0px_#000] md:shadow-[6px_6px_0px_#000] p-1 md:p-4 flex items-center gap-1 md:gap-4 ${isThunderReady ? 'animate-pulse bg-yellow-400' : ''}`}
+            >
               <Zap className={`text-black ${isThunderReady ? 'animate-bounce' : ''}`} size={10} md:size={24} strokeWidth={3} />
-              <div className="w-16 md:w-40 h-2 md:h-6 bg-black/10 border-[1px] border-black">
+              <div className="w-16 md:w-40 h-2 md:h-6 bg-black/10 border-[1px] border-black relative overflow-hidden">
+                {/* Ghost Bar for Filling */}
                 <motion.div 
-                  className={`h-full ${isThunderReady ? 'bg-black' : 'bg-[#00F0FF]'}`}
+                  className="absolute top-0 left-0 h-full bg-white/50"
+                  animate={{ width: `${chaos}%` }}
+                  transition={{ duration: 0.2 }}
+                />
+                {/* Main Chaos Bar */}
+                <motion.div 
+                  className="absolute top-0 left-0 h-full"
                   animate={{ 
                     width: `${chaos}%`,
                     backgroundColor: isThunderReady ? ['#000', '#FFF000', '#000'] : '#00F0FF'
                   }}
-                  transition={isThunderReady ? { repeat: Infinity, duration: 0.5 } : {}}
+                  transition={isThunderReady ? { repeat: Infinity, duration: 0.5 } : { type: 'spring', stiffness: 500, damping: 25 }}
                 />
               </div>
-            </div>
+            </motion.div>
           </div>
 
           <div className="bg-white border-[1.5px] md:border-4 border-black shadow-[2px_2px_0px_#000] md:shadow-[8px_8px_0px_#000] p-1.5 md:p-6 text-center min-w-[40px] md:min-w-[80px]">
