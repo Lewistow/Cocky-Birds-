@@ -632,26 +632,65 @@ export default function App() {
     });
 
     // Draw Pipes - Brutalist Style
-    const pipeX = width / 2 - PIPE_WIDTH / 2;
-    const pipeColor = isThunderReady ? COLORS.YELLOW : COLORS.GREEN;
+    let pipeX = width / 2 - PIPE_WIDTH / 2;
+    let pipeYOffset = 0;
+    const isThunderActive = isThunderReadyRef.current && isSlamming.current;
+    
+    if (isThunderActive) {
+      pipeX += (Math.random() - 0.5) * 15;
+      pipeYOffset = (Math.random() - 0.5) * 15;
+      ctx.shadowBlur = 40;
+      ctx.shadowColor = COLORS.YELLOW;
+    }
+
+    const pipeColor = isThunderReadyRef.current ? COLORS.YELLOW : COLORS.GREEN;
     
     ctx.fillStyle = pipeColor;
     ctx.strokeStyle = COLORS.BLACK;
     ctx.lineWidth = 8;
 
     // Top Pipe
-    const topPipeHeight = gapY.current - currentGapSize.current / 2;
+    const topPipeHeight = gapY.current - currentGapSize.current / 2 + pipeYOffset;
     ctx.fillRect(pipeX, -10, PIPE_WIDTH, topPipeHeight + 10);
     ctx.strokeRect(pipeX, -10, PIPE_WIDTH, topPipeHeight + 10);
     
     // Bottom Pipe
-    const bottomPipeY = gapY.current + currentGapSize.current / 2;
+    const bottomPipeY = gapY.current + currentGapSize.current / 2 + pipeYOffset;
     const bottomPipeHeight = height - bottomPipeY;
     ctx.fillRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 10);
     ctx.strokeRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 10);
 
+    // Internal Lightning for Pipes - Now appears on EVERY slam
+    if (isSlamming.current) {
+      ctx.save();
+      const isSupercharged = isThunderReadyRef.current;
+      ctx.strokeStyle = isSupercharged ? COLORS.WHITE : 'rgba(255, 255, 255, 0.8)';
+      ctx.lineWidth = isSupercharged ? 4 : 2;
+      ctx.shadowBlur = isSupercharged ? 15 : 8;
+      ctx.shadowColor = isSupercharged ? COLORS.CYAN : COLORS.WHITE;
+      
+      const drawPipeLightning = (y1: number, y2: number) => {
+        const boltCount = isSupercharged ? 2 : 1;
+        for (let i = 0; i < boltCount; i++) {
+          ctx.beginPath();
+          let curY = y1;
+          ctx.moveTo(pipeX + Math.random() * PIPE_WIDTH, curY);
+          while (curY < y2) {
+            curY += 20 + Math.random() * 30;
+            ctx.lineTo(pipeX + Math.random() * PIPE_WIDTH, Math.min(curY, y2));
+          }
+          ctx.stroke();
+        }
+      };
+      
+      drawPipeLightning(0, topPipeHeight);
+      drawPipeLightning(bottomPipeY, height);
+      ctx.restore();
+    }
+
     // Pipe Details (Rivets)
     ctx.fillStyle = COLORS.BLACK;
+    ctx.shadowBlur = 0; // Reset shadow for rivets
     for (let y = 40; y < height; y += 80) {
       if (y < topPipeHeight - 15 || y > bottomPipeY + 15) {
         ctx.beginPath(); ctx.arc(pipeX + 12, y, 3, 0, Math.PI * 2); ctx.fill();
