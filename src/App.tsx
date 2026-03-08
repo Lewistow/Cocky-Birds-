@@ -446,21 +446,28 @@ export default function App() {
       ctx.save();
       ctx.translate(bird.x, bird.y);
       
+      // Taunt Bubble - Moved outside scale block for crispness
+      if (bird.taunt && bird.tauntTime > 0) {
+        ctx.save();
+        ctx.fillStyle = COLORS.BLACK;
+        ctx.font = '900 32px Bangers';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = COLORS.WHITE;
+        ctx.lineWidth = 6;
+        
+        // Add a slight "shout" shake
+        const shakeX = (Math.random() - 0.5) * 4;
+        const shakeY = (Math.random() - 0.5) * 4;
+        
+        ctx.strokeText(bird.taunt, shakeX, -bird.size - 20 + shakeY);
+        ctx.fillText(bird.taunt, shakeX, -bird.size - 20 + shakeY);
+        ctx.restore();
+      }
+
       // Squash & Stretch synced with movement
       const flap = Math.sin(bird.flapFrame) * 0.1;
       const velocityStretch = Math.abs(bird.vy) * 0.02;
       ctx.scale(1 + flap - velocityStretch, 1 - flap + velocityStretch);
-
-      // Taunt Bubble
-      if (bird.taunt && bird.tauntTime > 0) {
-        ctx.fillStyle = COLORS.BLACK;
-        ctx.font = '900 16px Bangers';
-        ctx.textAlign = 'center';
-        ctx.strokeStyle = COLORS.WHITE;
-        ctx.lineWidth = 3;
-        ctx.strokeText(bird.taunt, 0, -bird.size - 10);
-        ctx.fillText(bird.taunt, 0, -bird.size - 10);
-      }
 
       // Bird Body - Graphic Style
       const color = bird.type === 'TANK' ? COLORS.PURPLE : bird.type === 'SNIPER' ? COLORS.CYAN : COLORS.YELLOW;
