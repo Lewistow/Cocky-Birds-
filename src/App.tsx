@@ -96,6 +96,10 @@ export default function App() {
   const [isShaking, setIsShaking] = useState(false);
   const [isFlashing, setIsFlashing] = useState(false);
 
+  // Audio Refs
+  const bgMusic = useRef<HTMLAudioElement | null>(null);
+  const audioStarted = useRef(false);
+
   // Game state refs
   const chaosRef = useRef(0);
   const isThunderReadyRef = useRef(false);
@@ -136,6 +140,48 @@ export default function App() {
     isThunderReadyRef.current = false;
     setLightningBolt(null);
   }, []);
+
+  // Initialize Audio
+  useEffect(() => {
+    const audio = new Audio('https://files.catbox.moe/exbulh.mp3');
+    audio.loop = true;
+    audio.volume = 0;
+    bgMusic.current = audio;
+
+    return () => {
+      audio.pause();
+      bgMusic.current = null;
+    };
+  }, []);
+
+  // Handle Volume Fading
+  useEffect(() => {
+    if (!bgMusic.current) return;
+
+    const targetVolume = gameState === 'PLAYING' ? 0.2 : (gameState === 'GAME_OVER' ? 0.05 : 0.1);
+    
+    const fadeInterval = setInterval(() => {
+      if (!bgMusic.current) return;
+      const current = bgMusic.current.volume;
+      const diff = targetVolume - current;
+      
+      if (Math.abs(diff) < 0.01) {
+        bgMusic.current.volume = targetVolume;
+        clearInterval(fadeInterval);
+      } else {
+        bgMusic.current.volume = Math.max(0, Math.min(1, current + diff * 0.1));
+      }
+    }, 50);
+
+    return () => clearInterval(fadeInterval);
+  }, [gameState]);
+
+  const startAudio = () => {
+    if (bgMusic.current && !audioStarted.current) {
+      bgMusic.current.play().catch(e => console.log("Audio blocked", e));
+      audioStarted.current = true;
+    }
+  };
 
   useEffect(() => {
     initGame();
@@ -625,6 +671,7 @@ export default function App() {
   }, [loop]);
 
   const handleInteraction = (e: React.PointerEvent | React.MouseEvent) => {
+    startAudio();
     if (gameState === 'PLAYING') {
       isSlamming.current = true;
     }
@@ -712,6 +759,7 @@ export default function App() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
+                  startAudio();
                   initGame();
                   setGameState('PLAYING');
                 }}
@@ -751,6 +799,7 @@ export default function App() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
+                  startAudio();
                   initGame();
                   setGameState('PLAYING');
                 }}
