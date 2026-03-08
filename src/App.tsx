@@ -98,6 +98,7 @@ export default function App() {
   const [lightningBolt, setLightningBolt] = useState<{ x1: number, y1: number, x2: number, y2: number }[] | null>(null);
   const [isShaking, setIsShaking] = useState(false);
   const [isFlashing, setIsFlashing] = useState(false);
+  const [isDivine, setIsDivine] = useState(false);
   const [isWarmup, setIsWarmup] = useState(false);
   const [isFirstTime, setIsFirstTime] = useState(() => {
     return localStorage.getItem('cocky-birds-tutorial-done') !== 'true';
@@ -361,44 +362,72 @@ export default function App() {
           setIsThunderReady(false);
           chaosRef.current = 0;
           setChaos(0);
+          setIsDivine(true);
           
-          // Generate Lightning Bolt visual - More Jagged and Intense
-          const segments = [];
-          const startX = dimensions.current.width / 2;
-          const boltCount = 3; // Multiple bolts for more intensity
+          // Generate Lightning Bolt visual - SCREEN WIDE CHAOS
+          const segments: { x1: number, y1: number, x2: number, y2: number }[] = [];
+          const boltCount = 12; // Way more bolts
           
           for (let b = 0; b < boltCount; b++) {
             let curY = 0;
-            let lastX = startX + (Math.random() - 0.5) * 40;
+            // Spread bolts across the entire screen width
+            let lastX = Math.random() * dimensions.current.width;
             while (curY < dimensions.current.height) {
-              const nextY = curY + Math.random() * 30 + 10;
-              const nextX = lastX + (Math.random() - 0.5) * 150;
+              const nextY = curY + Math.random() * 40 + 20;
+              const nextX = lastX + (Math.random() - 0.5) * 200;
               segments.push({
                 x1: lastX,
                 y1: curY,
                 x2: nextX,
                 y2: nextY
               });
+              
+              // Occasional branching
+              if (Math.random() > 0.8) {
+                const branchX = nextX + (Math.random() - 0.5) * 100;
+                const branchY = nextY + Math.random() * 50;
+                segments.push({ x1: nextX, y1: nextY, x2: branchX, y2: branchY });
+              }
+              
               lastX = nextX;
               curY = nextY;
             }
           }
           setLightningBolt(segments);
-          setTimeout(() => setLightningBolt(null), 300);
+          
+          // Flicker effect for lightning
+          let flickerCount = 0;
+          const flickerInterval = setInterval(() => {
+            flickerCount++;
+            if (flickerCount % 2 === 0) {
+              setLightningBolt(null);
+            } else {
+              setLightningBolt(segments);
+            }
+            if (flickerCount > 6) {
+              clearInterval(flickerInterval);
+              setLightningBolt(null);
+            }
+          }, 60);
 
           // Kill ALL birds
           birds.current.forEach(bird => {
             if (bird.state !== 'CRUSHED') {
               bird.state = 'CRUSHED';
               setScore(s => s + 1);
-              createParticles(bird.x, bird.y, COLORS.CYAN, 15, 'SPARK');
-              createParticles(bird.x, bird.y, COLORS.YELLOW, 10, 'FEATHER');
+              createParticles(bird.x, bird.y, COLORS.CYAN, 20, 'SPARK');
+              createParticles(bird.x, bird.y, COLORS.YELLOW, 15, 'FEATHER');
             }
           });
           
-          createParticles(dimensions.current.width / 2, gapY.current, COLORS.WHITE, 1, 'TEXT', 'THUNDER!!!');
+          createParticles(dimensions.current.width / 2, gapY.current, COLORS.WHITE, 1, 'TEXT', 'DIVINE WRATH!!!');
           setIsShaking(true);
-          setTimeout(() => setIsShaking(false), 500);
+          setIsFlashing(true); // Extra long flash
+          setTimeout(() => {
+            setIsShaking(false);
+            setIsFlashing(false);
+            setIsDivine(false);
+          }, 800);
         } else {
           // Normal crush check
           birds.current.forEach(bird => {
@@ -700,10 +729,11 @@ export default function App() {
 
     // Draw Lightning Bolt
     if (lightningBolt) {
+      // Outer Glow
       ctx.strokeStyle = COLORS.CYAN;
-      ctx.lineWidth = 10;
+      ctx.lineWidth = 12;
       ctx.lineCap = 'round';
-      ctx.shadowBlur = 20;
+      ctx.shadowBlur = 30;
       ctx.shadowColor = COLORS.CYAN;
       ctx.beginPath();
       lightningBolt.forEach(seg => {
@@ -711,10 +741,11 @@ export default function App() {
         ctx.lineTo(seg.x2, seg.y2);
       });
       ctx.stroke();
-      ctx.shadowBlur = 0;
       
+      // Inner Core
       ctx.strokeStyle = COLORS.WHITE;
       ctx.lineWidth = 4;
+      ctx.shadowBlur = 0;
       ctx.beginPath();
       lightningBolt.forEach(seg => {
         ctx.moveTo(seg.x1, seg.y1);
@@ -791,7 +822,19 @@ export default function App() {
       onPointerMove={handleMove}
     >
       <div className="absolute inset-0 halftone" />
-      {isFlashing && <div className="absolute inset-0 impact-flash z-50" />}
+      {isFlashing && (
+        <div className={`absolute inset-0 z-50 flex items-center justify-center ${isDivine ? 'bg-cyan-400/40' : 'impact-flash'}`}>
+          {isDivine && (
+            <motion.h2 
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: [1, 1.5, 1.2], rotate: [-20, 5, -5] }}
+              className="text-6xl md:text-[12rem] font-black text-white italic drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] pointer-events-none uppercase tracking-tighter"
+            >
+              Divine Wrath
+            </motion.h2>
+          )}
+        </div>
+      )}
       
       <canvas ref={canvasRef} className="w-full h-full" />
 
