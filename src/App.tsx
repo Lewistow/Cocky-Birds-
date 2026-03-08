@@ -252,22 +252,29 @@ export default function App() {
           setIsThunderReady(false);
           setChaos(0);
           
-          // Generate Lightning Bolt visual
+          // Generate Lightning Bolt visual - More Jagged and Intense
           const segments = [];
-          let curY = 0;
           const startX = dimensions.current.width / 2;
-          while (curY < dimensions.current.height) {
-            const nextY = curY + Math.random() * 50 + 20;
-            segments.push({
-              x1: startX + (Math.random() - 0.5) * 100,
-              y1: curY,
-              x2: startX + (Math.random() - 0.5) * 100,
-              y2: nextY
-            });
-            curY = nextY;
+          const boltCount = 3; // Multiple bolts for more intensity
+          
+          for (let b = 0; b < boltCount; b++) {
+            let curY = 0;
+            let lastX = startX + (Math.random() - 0.5) * 40;
+            while (curY < dimensions.current.height) {
+              const nextY = curY + Math.random() * 30 + 10;
+              const nextX = lastX + (Math.random() - 0.5) * 150;
+              segments.push({
+                x1: lastX,
+                y1: curY,
+                x2: nextX,
+                y2: nextY
+              });
+              lastX = nextX;
+              curY = nextY;
+            }
           }
           setLightningBolt(segments);
-          setTimeout(() => setLightningBolt(null), 200);
+          setTimeout(() => setLightningBolt(null), 300);
 
           // Kill ALL birds
           birds.current.forEach(bird => {
@@ -559,11 +566,17 @@ export default function App() {
       if (p.type === 'TEXT') {
         ctx.fillStyle = COLORS.WHITE;
         ctx.strokeStyle = COLORS.BLACK;
-        ctx.lineWidth = 4;
-        ctx.font = '900 48px Bangers';
+        ctx.lineWidth = 8;
+        const fontSize = p.text === 'THUNDER!!!' ? 120 : 48;
+        ctx.font = `900 ${fontSize}px Bangers`;
         ctx.textAlign = 'center';
-        ctx.strokeText(p.text!, p.x, p.y);
-        ctx.fillText(p.text!, p.x, p.y);
+        
+        // Add a slight shake to the text itself
+        const tx = p.x + (Math.random() - 0.5) * 5;
+        const ty = p.y + (Math.random() - 0.5) * 5;
+        
+        ctx.strokeText(p.text!, tx, ty);
+        ctx.fillText(p.text!, tx, ty);
       } else {
         ctx.fillStyle = p.color;
         ctx.strokeStyle = COLORS.BLACK;
@@ -630,12 +643,16 @@ export default function App() {
                 />
               </div>
             </div>
-            <div className={`bg-white border-[1.5px] md:border-4 border-black shadow-[2px_2px_0px_#000] md:shadow-[6px_6px_0px_#000] p-1 md:p-4 flex items-center gap-1 md:gap-4 ${isThunderReady ? 'bg-yellow-400' : ''}`}>
-              <Zap className={`text-black ${isThunderReady ? 'animate-pulse' : ''}`} size={10} md:size={24} strokeWidth={3} />
+            <div className={`bg-white border-[1.5px] md:border-4 border-black shadow-[2px_2px_0px_#000] md:shadow-[6px_6px_0px_#000] p-1 md:p-4 flex items-center gap-1 md:gap-4 ${isThunderReady ? 'animate-pulse bg-yellow-400' : ''}`}>
+              <Zap className={`text-black ${isThunderReady ? 'animate-bounce' : ''}`} size={10} md:size={24} strokeWidth={3} />
               <div className="w-16 md:w-40 h-2 md:h-6 bg-black/10 border-[1px] border-black">
                 <motion.div 
                   className={`h-full ${isThunderReady ? 'bg-black' : 'bg-[#00F0FF]'}`}
-                  animate={{ width: `${chaos}%` }}
+                  animate={{ 
+                    width: `${chaos}%`,
+                    backgroundColor: isThunderReady ? ['#000', '#FFF000', '#000'] : '#00F0FF'
+                  }}
+                  transition={isThunderReady ? { repeat: Infinity, duration: 0.5 } : {}}
                 />
               </div>
             </div>
