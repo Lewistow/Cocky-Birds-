@@ -139,6 +139,21 @@ export default function App() {
     return () => window.removeEventListener('resize', initGame);
   }, [initGame]);
 
+  useEffect(() => {
+    if (gameState === 'GAME_OVER') {
+      if (score > highScore) {
+        setHighScore(score);
+        localStorage.setItem('cocky-birds-high-score', score.toString());
+      }
+    }
+  }, [gameState, score, highScore]);
+
+  useEffect(() => {
+    if (integrity <= 0 && gameState === 'PLAYING') {
+      setGameState('GAME_OVER');
+    }
+  }, [integrity, gameState]);
+
   const spawnBird = () => {
     const rand = Math.random();
     let type: BirdType = 'NORMAL';
@@ -347,11 +362,7 @@ export default function App() {
           bird.state = 'PASSED';
           bird.taunt = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
           bird.tauntTime = 120;
-          setIntegrity(prev => {
-            const next = prev - 10;
-            if (next <= 0) setGameState('GAME_OVER');
-            return Math.max(0, next);
-          });
+          setIntegrity(prev => Math.max(0, prev - 10));
         }
       } else if (bird.state === 'PASSED') {
         bird.x += bird.vx * 1.5;
