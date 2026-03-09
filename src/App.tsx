@@ -161,7 +161,7 @@ export default function App() {
   // Initialize Audio
   useEffect(() => {
     // Using a very reliable, high-compatibility arcade loop
-    const audio = new Audio('https://www.soundjay.com/free-music/sounds/arcade-music-loop-01.mp3');
+    const audio = new Audio('https://files.catbox.moe/81gbow.mp3');
     audio.loop = true;
     audio.volume = 0;
     audio.preload = 'auto';
