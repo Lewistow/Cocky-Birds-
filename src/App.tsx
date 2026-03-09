@@ -72,6 +72,28 @@ const TAUNTS = [
   "WEAK!"
 ];
 
+// Persistent audio instances to prevent "hiccups" during re-renders or StrictMode double-mounts
+const MENU_AUDIO_URL = 'https://image2url.com/r2/default/audio/1773065729481-2e4a9e71-6179-4f3e-91b7-a673ae7f7873.mp3';
+const PLAY_AUDIO_URL = 'https://image2url.com/r2/default/audio/1773065854849-861d272d-8080-439e-b668-888f3a413ada.mp3';
+
+let menuAudioInstance: HTMLAudioElement | null = null;
+let playAudioInstance: HTMLAudioElement | null = null;
+let isAudioUnlocked = false;
+
+if (typeof Audio !== 'undefined') {
+  menuAudioInstance = new Audio(MENU_AUDIO_URL);
+  menuAudioInstance.loop = true;
+  menuAudioInstance.volume = 0;
+  menuAudioInstance.preload = 'auto';
+  menuAudioInstance.crossOrigin = 'anonymous';
+
+  playAudioInstance = new Audio(PLAY_AUDIO_URL);
+  playAudioInstance.loop = true;
+  playAudioInstance.volume = 0;
+  playAudioInstance.preload = 'auto';
+  playAudioInstance.crossOrigin = 'anonymous';
+}
+
 const COLORS = {
   ORANGE: '#FF3E00',
   CYAN: '#00F0FF',
@@ -104,7 +126,6 @@ export default function App() {
   });
 
   // Audio Refs
-  const bgMusic = useRef<HTMLAudioElement | null>(null);
   const audioStarted = useRef(false);
 
   // Game state refs
@@ -158,71 +179,70 @@ export default function App() {
     }
   }, []);
 
-  // Initialize Audio
+  // Initialize Audio & Handle Visibility
   useEffect(() => {
-    // Using the user provided high-energy soundtrack
-    const audio = new Audio('https://files.catbox.moe/z0umwx.mp3');
-    audio.loop = true;
-    audio.volume = 0;
-    audio.preload = 'auto';
-    audio.crossOrigin = 'anonymous';
-    bgMusic.current = audio;
+    if (menuAudioInstance) {
+      menuAudioInstance.loop = true;
+      menuAudioInstance.volume = gameState === 'PLAYING' ? 0 : 0.3;
+    }
+    if (playAudioInstance) {
+      playAudioInstance.loop = true;
+      playAudioInstance.volume = gameState === 'PLAYING' ? 0.15 : 0;
+    }
 
-    // Force load and try to play immediately (autoplay)
-    audio.load();
-    
-    // Attempt autoplay as aggressively as possible
     const attemptPlay = () => {
-      audio.play().then(() => {
-        audioStarted.current = true;
-        console.log("Autoplay successful");
-      }).catch(e => {
-        console.log("Autoplay blocked, waiting for interaction");
-      });
+      if (isAudioUnlocked) return;
+      if (menuAudioInstance && menuAudioInstance.paused) menuAudioInstance.play().then(() => isAudioUnlocked = true).catch(() => {});
+      if (playAudioInstance && playAudioInstance.paused) playAudioInstance.play().then(() => isAudioUnlocked = true).catch(() => {});
     };
 
     attemptPlay();
-    // Also try after a tiny delay in case the DOM wasn't ready
-    setTimeout(attemptPlay, 100);
-
-    // Stop immediately when they leave (visibility change)
+    
     const handleVisibilityChange = () => {
-      if (!bgMusic.current) return;
       if (document.hidden) {
-        bgMusic.current.pause();
+        menuAudioInstance?.pause();
+        playAudioInstance?.pause();
       } else {
-        // Resume when they return
-        bgMusic.current.play().catch(() => {});
+        if (menuAudioInstance && menuAudioInstance.paused) menuAudioInstance.play().catch(() => {});
+        if (playAudioInstance && playAudioInstance.paused) playAudioInstance.play().catch(() => {});
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      audio.pause();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      bgMusic.current = null;
-    };
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // Handle Volume Fading
+  // Handle Volume Fading & Track Switching
   useEffect(() => {
-    if (!bgMusic.current) return;
+    if (!menuAudioInstance || !playAudioInstance) return;
 
-    // Slightly higher volumes to ensure it's audible
-    // USER REQUEST: Lower when playing (0.15), louder after losing (0.7)
-    const targetVolume = gameState === 'PLAYING' ? 0.15 : (gameState === 'GAME_OVER' ? 0.7 : 0.3);
+    const isPlaying = gameState === 'PLAYING';
+    const menuTarget = isPlaying ? 0 : (gameState === 'GAME_OVER' ? 0.7 : 0.3);
+    const playTarget = isPlaying ? 0.15 : 0;
     
     const fadeInterval = setInterval(() => {
-      if (!bgMusic.current) return;
-      const current = bgMusic.current.volume;
-      const diff = targetVolume - current;
+      if (!menuAudioInstance || !playAudioInstance) return;
       
-      if (Math.abs(diff) < 0.01) {
-        bgMusic.current.volume = targetVolume;
-        clearInterval(fadeInterval);
+      // Fade Menu Music
+      const mCurrent = menuAudioInstance.volume;
+      const mDiff = menuTarget - mCurrent;
+      if (Math.abs(mDiff) < 0.01) {
+        menuAudioInstance.volume = menuTarget;
       } else {
-        bgMusic.current.volume = Math.max(0, Math.min(1, current + diff * 0.1));
+        menuAudioInstance.volume = Math.max(0, Math.min(1, mCurrent + mDiff * 0.1));
+      }
+
+      // Fade Play Music
+      const pCurrent = playAudioInstance.volume;
+      const pDiff = playTarget - pCurrent;
+      if (Math.abs(pDiff) < 0.01) {
+        playAudioInstance.volume = playTarget;
+      } else {
+        playAudioInstance.volume = Math.max(0, Math.min(1, pCurrent + pDiff * 0.1));
+      }
+
+      if (Math.abs(mDiff) < 0.01 && Math.abs(pDiff) < 0.01) {
+        clearInterval(fadeInterval);
       }
     }, 50);
 
@@ -230,19 +250,19 @@ export default function App() {
   }, [gameState]);
 
   const startAudio = useCallback(() => {
-    if (bgMusic.current) {
-      // If it's already playing, don't restart, but ensure volume is up
-      if (bgMusic.current.paused) {
-        bgMusic.current.play()
-          .then(() => {
-            audioStarted.current = true;
-            console.log("Audio started successfully");
-          })
-          .catch(e => {
-            console.warn("Audio play failed:", e);
-          });
-      }
+    if (isAudioUnlocked) return;
+    
+    if (menuAudioInstance && menuAudioInstance.paused) {
+      menuAudioInstance.play().then(() => {
+        isAudioUnlocked = true;
+      }).catch(() => {});
     }
+    if (playAudioInstance && playAudioInstance.paused) {
+      playAudioInstance.play().then(() => {
+        isAudioUnlocked = true;
+      }).catch(() => {});
+    }
+    audioStarted.current = true;
   }, []);
 
   useEffect(() => {
