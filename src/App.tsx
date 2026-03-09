@@ -170,12 +170,20 @@ export default function App() {
 
     // Force load and try to play immediately (autoplay)
     audio.load();
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(e => {
-        console.log("Autoplay blocked by browser, waiting for interaction:", e);
+    
+    // Attempt autoplay as aggressively as possible
+    const attemptPlay = () => {
+      audio.play().then(() => {
+        audioStarted.current = true;
+        console.log("Autoplay successful");
+      }).catch(e => {
+        console.log("Autoplay blocked, waiting for interaction");
       });
-    }
+    };
+
+    attemptPlay();
+    // Also try after a tiny delay in case the DOM wasn't ready
+    setTimeout(attemptPlay, 100);
 
     // Stop immediately when they leave (visibility change)
     const handleVisibilityChange = () => {
@@ -202,7 +210,8 @@ export default function App() {
     if (!bgMusic.current) return;
 
     // Slightly higher volumes to ensure it's audible
-    const targetVolume = gameState === 'PLAYING' ? 0.4 : (gameState === 'GAME_OVER' ? 0.1 : 0.2);
+    // USER REQUEST: Lower when playing (0.15), louder after losing (0.7)
+    const targetVolume = gameState === 'PLAYING' ? 0.15 : (gameState === 'GAME_OVER' ? 0.7 : 0.3);
     
     const fadeInterval = setInterval(() => {
       if (!bgMusic.current) return;
