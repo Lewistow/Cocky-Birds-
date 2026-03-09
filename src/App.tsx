@@ -160,19 +160,39 @@ export default function App() {
 
   // Initialize Audio
   useEffect(() => {
-    // Using a very reliable, high-compatibility arcade loop
-    const audio = new Audio('https://files.catbox.moe/81gbow.mp3');
+    // Using the user provided high-energy soundtrack
+    const audio = new Audio('https://files.catbox.moe/z0umwx.mp3');
     audio.loop = true;
     audio.volume = 0;
     audio.preload = 'auto';
     audio.crossOrigin = 'anonymous';
     bgMusic.current = audio;
 
-    // Force load
+    // Force load and try to play immediately (autoplay)
     audio.load();
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(e => {
+        console.log("Autoplay blocked by browser, waiting for interaction:", e);
+      });
+    }
+
+    // Stop immediately when they leave (visibility change)
+    const handleVisibilityChange = () => {
+      if (!bgMusic.current) return;
+      if (document.hidden) {
+        bgMusic.current.pause();
+      } else {
+        // Resume when they return
+        bgMusic.current.play().catch(() => {});
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       audio.pause();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       bgMusic.current = null;
     };
   }, []);
