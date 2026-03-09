@@ -588,9 +588,10 @@ export default function App() {
       }
 
       // Squash & Stretch synced with movement
+      // User requested birds face forward (they move left, so we flip X)
       const flap = Math.sin(bird.flapFrame) * 0.1;
       const velocityStretch = Math.abs(bird.vy) * 0.02;
-      ctx.scale(1 + flap - velocityStretch, 1 - flap + velocityStretch);
+      ctx.scale(-(1 + flap - velocityStretch), 1 - flap + velocityStretch);
 
       // Bird Body - Graphic Style
       const color = bird.type === 'TANK' ? COLORS.PURPLE : bird.type === 'SNIPER' ? COLORS.CYAN : COLORS.YELLOW;
