@@ -95,7 +95,6 @@ export default function App() {
   const [isThunderReady, setIsThunderReady] = useState(false);
   const [lastDamageTime, setLastDamageTime] = useState(0);
   const [lastKillTime, setLastKillTime] = useState(0);
-  const [lightningBolt, setLightningBolt] = useState<{ x1: number, y1: number, x2: number, y2: number }[] | null>(null);
   const [isShaking, setIsShaking] = useState(false);
   const [isFlashing, setIsFlashing] = useState(false);
   const [isDivine, setIsDivine] = useState(false);
@@ -118,6 +117,7 @@ export default function App() {
   const currentGapSize = useRef(DEFAULT_GAP_SIZE);
   const isSlamming = useRef(false);
   const frameCount = useRef(0);
+  const isDivineRef = useRef(false);
   const animationFrameId = useRef<number>(0);
   const dimensions = useRef({ width: 0, height: 0 });
   const mousePos = useRef({ x: 0, y: 0 });
@@ -148,7 +148,6 @@ export default function App() {
     chaosRef.current = 0;
     setIsThunderReady(false);
     isThunderReadyRef.current = false;
-    setLightningBolt(null);
     
     const tutorialDone = localStorage.getItem('cocky-birds-tutorial-done') === 'true';
     if (!tutorialDone) {
@@ -363,60 +362,15 @@ export default function App() {
           chaosRef.current = 0;
           setChaos(0);
           setIsDivine(true);
+          isDivineRef.current = true;
           
-          // Generate Lightning Bolt visual - SCREEN WIDE CHAOS
-          const segments: { x1: number, y1: number, x2: number, y2: number }[] = [];
-          const boltCount = 12; // Way more bolts
-          
-          for (let b = 0; b < boltCount; b++) {
-            let curY = 0;
-            // Spread bolts across the entire screen width
-            let lastX = Math.random() * dimensions.current.width;
-            while (curY < dimensions.current.height) {
-              const nextY = curY + Math.random() * 40 + 20;
-              const nextX = lastX + (Math.random() - 0.5) * 200;
-              segments.push({
-                x1: lastX,
-                y1: curY,
-                x2: nextX,
-                y2: nextY
-              });
-              
-              // Occasional branching
-              if (Math.random() > 0.8) {
-                const branchX = nextX + (Math.random() - 0.5) * 100;
-                const branchY = nextY + Math.random() * 50;
-                segments.push({ x1: nextX, y1: nextY, x2: branchX, y2: branchY });
-              }
-              
-              lastX = nextX;
-              curY = nextY;
-            }
-          }
-          setLightningBolt(segments);
-          
-          // Flicker effect for lightning
-          let flickerCount = 0;
-          const flickerInterval = setInterval(() => {
-            flickerCount++;
-            if (flickerCount % 2 === 0) {
-              setLightningBolt(null);
-            } else {
-              setLightningBolt(segments);
-            }
-            if (flickerCount > 6) {
-              clearInterval(flickerInterval);
-              setLightningBolt(null);
-            }
-          }, 60);
-
           // Kill ALL birds
           birds.current.forEach(bird => {
             if (bird.state !== 'CRUSHED') {
               bird.state = 'CRUSHED';
               setScore(s => s + 1);
-              createParticles(bird.x, bird.y, COLORS.CYAN, 20, 'SPARK');
-              createParticles(bird.x, bird.y, COLORS.YELLOW, 15, 'FEATHER');
+              createParticles(bird.x, bird.y, COLORS.CYAN, 30, 'SPARK');
+              createParticles(bird.x, bird.y, COLORS.YELLOW, 20, 'FEATHER');
             }
           });
           
@@ -427,7 +381,8 @@ export default function App() {
             setIsShaking(false);
             setIsFlashing(false);
             setIsDivine(false);
-          }, 800);
+            isDivineRef.current = false;
+          }, 1000); // Full second of god mode
         } else {
           // Normal crush check
           birds.current.forEach(bird => {
@@ -665,11 +620,11 @@ export default function App() {
     let pipeYOffset = 0;
     const isThunderActive = isThunderReadyRef.current && isSlamming.current;
     
-    if (isThunderActive) {
-      pipeX += (Math.random() - 0.5) * 15;
-      pipeYOffset = (Math.random() - 0.5) * 15;
-      ctx.shadowBlur = 40;
-      ctx.shadowColor = COLORS.YELLOW;
+    if (isThunderActive || isDivineRef.current) {
+      pipeX += (Math.random() - 0.5) * 25; // More shake
+      pipeYOffset = (Math.random() - 0.5) * 25;
+      ctx.shadowBlur = isDivineRef.current ? 80 : 40;
+      ctx.shadowColor = isDivineRef.current ? COLORS.CYAN : COLORS.YELLOW;
     }
 
     const pipeColor = isThunderReadyRef.current ? COLORS.YELLOW : COLORS.GREEN;
@@ -690,22 +645,22 @@ export default function App() {
     ctx.strokeRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 10);
 
     // Internal Lightning for Pipes - Now appears on EVERY slam
-    if (isSlamming.current) {
+    if (isSlamming.current || isDivineRef.current) {
       ctx.save();
-      const isSupercharged = isThunderReadyRef.current;
+      const isSupercharged = isThunderReadyRef.current || isDivineRef.current;
       ctx.strokeStyle = isSupercharged ? COLORS.WHITE : 'rgba(255, 255, 255, 0.8)';
-      ctx.lineWidth = isSupercharged ? 4 : 2;
-      ctx.shadowBlur = isSupercharged ? 15 : 8;
+      ctx.lineWidth = isSupercharged ? 6 : 2; // Thicker lightning
+      ctx.shadowBlur = isSupercharged ? 30 : 8; // More glow
       ctx.shadowColor = isSupercharged ? COLORS.CYAN : COLORS.WHITE;
       
       const drawPipeLightning = (y1: number, y2: number) => {
-        const boltCount = isSupercharged ? 2 : 1;
+        const boltCount = isDivineRef.current ? 4 : (isSupercharged ? 2 : 1);
         for (let i = 0; i < boltCount; i++) {
           ctx.beginPath();
           let curY = y1;
           ctx.moveTo(pipeX + Math.random() * PIPE_WIDTH, curY);
           while (curY < y2) {
-            curY += 20 + Math.random() * 30;
+            curY += 15 + Math.random() * 25; // More jagged
             ctx.lineTo(pipeX + Math.random() * PIPE_WIDTH, Math.min(curY, y2));
           }
           ctx.stroke();
@@ -727,31 +682,55 @@ export default function App() {
       }
     }
 
-    // Draw Lightning Bolt
-    if (lightningBolt) {
-      // Outer Glow
-      ctx.strokeStyle = COLORS.CYAN;
-      ctx.lineWidth = 12;
-      ctx.lineCap = 'round';
-      ctx.shadowBlur = 30;
-      ctx.shadowColor = COLORS.CYAN;
-      ctx.beginPath();
-      lightningBolt.forEach(seg => {
-        ctx.moveTo(seg.x1, seg.y1);
-        ctx.lineTo(seg.x2, seg.y2);
-      });
-      ctx.stroke();
-      
-      // Inner Core
-      ctx.strokeStyle = COLORS.WHITE;
-      ctx.lineWidth = 4;
-      ctx.shadowBlur = 0;
-      ctx.beginPath();
-      lightningBolt.forEach(seg => {
-        ctx.moveTo(seg.x1, seg.y1);
-        ctx.lineTo(seg.x2, seg.y2);
-      });
-      ctx.stroke();
+    // Draw Screen-Wide Lightning Storm during Divine Wrath
+    if (isDivineRef.current) {
+      ctx.save();
+      const boltCount = 12; // 12 massive bolts per frame
+      for (let b = 0; b < boltCount; b++) {
+        const segments: { x1: number, y1: number, x2: number, y2: number }[] = [];
+        let curY = 0;
+        let lastX = Math.random() * width;
+        
+        while (curY < height) {
+          const nextY = curY + Math.random() * 40 + 20;
+          const nextX = lastX + (Math.random() - 0.5) * 300; // Wide spread
+          segments.push({ x1: lastX, y1: curY, x2: nextX, y2: nextY });
+          
+          if (Math.random() > 0.7) {
+            const branchX = nextX + (Math.random() - 0.5) * 200;
+            const branchY = nextY + Math.random() * 60;
+            segments.push({ x1: nextX, y1: nextY, x2: branchX, y2: branchY });
+          }
+          
+          lastX = nextX;
+          curY = nextY;
+        }
+
+        // Outer Glow
+        ctx.strokeStyle = COLORS.CYAN;
+        ctx.lineWidth = 15;
+        ctx.lineCap = 'round';
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = COLORS.CYAN;
+        ctx.beginPath();
+        segments.forEach(seg => {
+          ctx.moveTo(seg.x1, seg.y1);
+          ctx.lineTo(seg.x2, seg.y2);
+        });
+        ctx.stroke();
+        
+        // Inner Core
+        ctx.strokeStyle = COLORS.WHITE;
+        ctx.lineWidth = 5;
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        segments.forEach(seg => {
+          ctx.moveTo(seg.x1, seg.y1);
+          ctx.lineTo(seg.x2, seg.y2);
+        });
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
     // Draw Particles
@@ -823,7 +802,7 @@ export default function App() {
     >
       <div className="absolute inset-0 halftone" />
       {isFlashing && (
-        <div className={`absolute inset-0 z-50 flex items-center justify-center ${isDivine ? 'bg-cyan-400/40' : 'impact-flash'}`}>
+        <div className={`absolute inset-0 z-50 flex items-center justify-center ${isDivine ? 'strobe' : 'impact-flash'}`}>
           {isDivine && (
             <motion.h2 
               initial={{ scale: 0, rotate: -20 }}
