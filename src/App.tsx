@@ -72,27 +72,9 @@ const TAUNTS = [
   "WEAK!"
 ];
 
-// Persistent audio instances to prevent "hiccups" during re-renders or StrictMode double-mounts
+// Audio URLs
 const MENU_AUDIO_URL = 'https://image2url.com/r2/default/audio/1773065729481-2e4a9e71-6179-4f3e-91b7-a673ae7f7873.mp3';
 const PLAY_AUDIO_URL = 'https://image2url.com/r2/default/audio/1773065854849-861d272d-8080-439e-b668-888f3a413ada.mp3';
-
-let menuAudioInstance: HTMLAudioElement | null = null;
-let playAudioInstance: HTMLAudioElement | null = null;
-let isAudioUnlocked = false;
-
-if (typeof Audio !== 'undefined') {
-  menuAudioInstance = new Audio(MENU_AUDIO_URL);
-  menuAudioInstance.loop = true;
-  menuAudioInstance.volume = 0;
-  menuAudioInstance.preload = 'auto';
-  menuAudioInstance.crossOrigin = 'anonymous';
-
-  playAudioInstance = new Audio(PLAY_AUDIO_URL);
-  playAudioInstance.loop = true;
-  playAudioInstance.volume = 0;
-  playAudioInstance.preload = 'auto';
-  playAudioInstance.crossOrigin = 'anonymous';
-}
 
 const COLORS = {
   ORANGE: '#FF3E00',
@@ -179,90 +161,594 @@ export default function App() {
     }
   }, []);
 
-  // Initialize Audio & Handle Visibility
-  useEffect(() => {
-    if (menuAudioInstance) {
-      menuAudioInstance.loop = true;
-      menuAudioInstance.volume = gameState === 'PLAYING' ? 0 : 0.3;
-    }
-    if (playAudioInstance) {
-      playAudioInstance.loop = true;
-      playAudioInstance.volume = gameState === 'PLAYING' ? 0.15 : 0;
-    }
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const isAudioUnlockedRef = useRef(false);
+  const menuBufferRef = useRef<AudioBuffer | null>(null);
+  const playBufferRef = useRef<AudioBuffer | null>(null);
+  const menuGainNodeRef = useRef<GainNode | null>(null);
+  const playGainNodeRef = useRef<GainNode | null>(null);
+  const isLoopingStartedRef = useRef(false);
+  const thunderRumbleSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const thunderRumbleGainRef = useRef<GainNode | null>(null);
 
-    const attemptPlay = () => {
-      if (isAudioUnlocked) return;
-      if (menuAudioInstance && menuAudioInstance.paused) menuAudioInstance.play().then(() => isAudioUnlocked = true).catch(() => {});
-      if (playAudioInstance && playAudioInstance.paused) playAudioInstance.play().then(() => isAudioUnlocked = true).catch(() => {});
+  // Initialize Audio
+  useEffect(() => {
+    const loadBuffers = async () => {
+      try {
+        const [menuRes, playRes] = await Promise.all([
+          fetch(MENU_AUDIO_URL),
+          fetch(PLAY_AUDIO_URL)
+        ]);
+        const [menuAB, playAB] = await Promise.all([
+          menuRes.arrayBuffer(),
+          playRes.arrayBuffer()
+        ]);
+        
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        
+        const [menuBuffer, playBuffer] = await Promise.all([
+          audioCtxRef.current.decodeAudioData(menuAB),
+          audioCtxRef.current.decodeAudioData(playAB)
+        ]);
+        
+        menuBufferRef.current = menuBuffer;
+        playBufferRef.current = playBuffer;
+        
+        if (audioStarted.current) {
+          startAudio();
+        }
+      } catch (e) {
+        console.error("Failed to load audio buffers", e);
+      }
     };
 
-    attemptPlay();
+    loadBuffers();
+
+    return () => {
+      audioCtxRef.current?.close();
+    };
+  }, []);
+
+  const startAudio = useCallback(() => {
+    if (isLoopingStartedRef.current) return;
     
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    const ctx = audioCtxRef.current;
+    
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    // Initialize GainNodes if they don't exist
+    if (!menuGainNodeRef.current) {
+      const menuGain = ctx.createGain();
+      menuGain.gain.value = 0.3;
+      menuGain.connect(ctx.destination);
+      menuGainNodeRef.current = menuGain;
+    }
+    if (!playGainNodeRef.current) {
+      const playGain = ctx.createGain();
+      playGain.gain.value = 0;
+      playGain.connect(ctx.destination);
+      playGainNodeRef.current = playGain;
+    }
+
+    audioStarted.current = true;
+
+    if (menuBufferRef.current && playBufferRef.current) {
+      const scheduleLoop = (buffer: AudioBuffer, gainNode: GainNode) => {
+        let nextStartTime = ctx.currentTime + 0.1;
+        
+        const playNext = () => {
+          const source = ctx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(gainNode);
+          source.start(nextStartTime);
+          
+          const duration = buffer.duration;
+          nextStartTime += duration;
+          
+          // The "trick": schedule the next sound before the first one ends
+          // We schedule the next one 1 second before the current one ends to ensure gapless playback
+          const delay = (nextStartTime - ctx.currentTime - 1.0) * 1000;
+          setTimeout(playNext, Math.max(0, delay));
+        };
+        
+        playNext();
+      };
+
+      scheduleLoop(menuBufferRef.current, menuGainNodeRef.current!);
+      scheduleLoop(playBufferRef.current, playGainNodeRef.current!);
+      isLoopingStartedRef.current = true;
+      isAudioUnlockedRef.current = true;
+    }
+  }, []);
+
+  const playMetallicSound = useCallback((isMiss: boolean) => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+    const duration = isMiss ? 0.7 : 2.0;
+    
+    const masterGain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(isMiss ? 1500 : 1000, now);
+    filter.frequency.exponentialRampToValueAtTime(isMiss ? 400 : 200, now + 0.5);
+    filter.Q.setValueAtTime(1, now);
+
+    masterGain.gain.setValueAtTime(0.0001, now);
+    masterGain.gain.exponentialRampToValueAtTime(isMiss ? 0.4 : 0.6, now + 0.005);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    masterGain.connect(filter);
+    filter.connect(ctx.destination);
+
+    // Metallic partials for a 'clang' sound (inharmonic ratios)
+    const frequencies = isMiss 
+      ? [400, 700, 900, 1200, 1500].map(f => f * (0.95 + Math.random() * 0.1)) // Randomize pitch slightly for miss
+      : [120, 233, 310, 480, 720, 1100, 1500, 2200];
+      
+    const oscillators: { osc: OscillatorNode; g: GainNode }[] = [];
+
+    frequencies.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      
+      // Mix of sine and triangle for metallic texture
+      osc.type = i % 3 === 0 ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      
+      // Higher partials decay faster
+      const decay = duration / (1 + i * 0.5);
+      g.gain.setValueAtTime(isMiss ? 0.2 : 0.3, now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+      
+      osc.connect(g);
+      g.connect(masterGain);
+      
+      osc.start(now);
+      osc.stop(now + duration);
+      
+      oscillators.push({ osc, g });
+    });
+
+    setTimeout(() => {
+      oscillators.forEach(item => {
+        item.osc.disconnect();
+        item.g.disconnect();
+      });
+      masterGain.disconnect();
+      filter.disconnect();
+    }, duration * 1000 + 100);
+  }, []);
+
+  const playThunderRumble = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const now = ctx.currentTime;
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(150, now);
+    
+    // LFO for rumble movement
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.5;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 50;
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+    lfo.start();
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.05, now + 1);
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    source.start();
+    thunderRumbleSourceRef.current = source;
+    thunderRumbleGainRef.current = gain;
+  }, []);
+
+  const stopThunderRumble = useCallback(() => {
+    const source = thunderRumbleSourceRef.current;
+    const gain = thunderRumbleGainRef.current;
+    if (source && gain && audioCtxRef.current) {
+      const now = audioCtxRef.current.currentTime;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+      setTimeout(() => {
+        source.stop();
+        source.disconnect();
+      }, 150);
+    }
+    thunderRumbleSourceRef.current = null;
+    thunderRumbleGainRef.current = null;
+  }, []);
+
+  const playDivineStrike = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+
+    // --- Sound 1: Broadband Strike & Long Rumble (5s) ---
+    const s1Duration = 5;
+    const s1Buffer = ctx.createBuffer(1, ctx.sampleRate * s1Duration, ctx.sampleRate);
+    const s1Data = s1Buffer.getChannelData(0);
+    for (let i = 0; i < s1Data.length; i++) s1Data[i] = Math.random() * 2 - 1;
+    
+    const s1Noise = ctx.createBufferSource();
+    s1Noise.buffer = s1Buffer;
+    const s1Filter = ctx.createBiquadFilter();
+    s1Filter.type = 'lowpass';
+    s1Filter.frequency.setValueAtTime(12000, now);
+    s1Filter.frequency.exponentialRampToValueAtTime(60, now + s1Duration);
+    const s1Gain = ctx.createGain();
+    s1Gain.gain.setValueAtTime(0.0001, now);
+    s1Gain.gain.exponentialRampToValueAtTime(1.0, now + 0.01);
+    s1Gain.gain.exponentialRampToValueAtTime(0.2, now + 0.08);
+    s1Gain.gain.exponentialRampToValueAtTime(0.7, now + 0.12);
+    s1Gain.gain.exponentialRampToValueAtTime(0.15, now + 0.25);
+    s1Gain.gain.exponentialRampToValueAtTime(0.4, now + 0.35);
+    s1Gain.gain.exponentialRampToValueAtTime(0.05, now + 1.5);
+    s1Gain.gain.exponentialRampToValueAtTime(0.0001, now + s1Duration);
+    
+    s1Noise.connect(s1Filter);
+    s1Filter.connect(s1Gain);
+    s1Gain.connect(ctx.destination);
+    s1Noise.start(now);
+
+    // --- Sound 2: Sharp Crack & Bolt Flickering (4s) ---
+    const s2Duration = 4;
+    const s2Buffer = ctx.createBuffer(1, ctx.sampleRate * s2Duration, ctx.sampleRate);
+    const s2Data = s2Buffer.getChannelData(0);
+    for (let i = 0; i < s2Data.length; i++) s2Data[i] = Math.random() * 2 - 1;
+    
+    const s2Noise = ctx.createBufferSource();
+    s2Noise.buffer = s2Buffer;
+    const s2Filter = ctx.createBiquadFilter();
+    s2Filter.type = 'lowpass';
+    s2Filter.frequency.setValueAtTime(4000, now);
+    s2Filter.frequency.exponentialRampToValueAtTime(40, now + s2Duration);
+    s2Filter.Q.setValueAtTime(10, now);
+    s2Filter.Q.linearRampToValueAtTime(1, now + 0.5);
+    const s2Gain = ctx.createGain();
+    s2Gain.gain.setValueAtTime(0, now);
+    s2Gain.gain.linearRampToValueAtTime(1, now + 0.005);
+    s2Gain.gain.exponentialRampToValueAtTime(0.2, now + 0.05);
+    s2Gain.gain.exponentialRampToValueAtTime(0.8, now + 0.07);
+    s2Gain.gain.exponentialRampToValueAtTime(0.1, now + 0.12);
+    s2Gain.gain.exponentialRampToValueAtTime(0.4, now + 0.18);
+    s2Gain.gain.exponentialRampToValueAtTime(0.001, now + s2Duration);
+    
+    const subOsc = ctx.createOscillator();
+    subOsc.type = 'triangle';
+    subOsc.frequency.setValueAtTime(60, now);
+    subOsc.frequency.exponentialRampToValueAtTime(30, now + 1.5);
+    const subGain = ctx.createGain();
+    subGain.gain.setValueAtTime(0, now);
+    subGain.gain.linearRampToValueAtTime(0.8, now + 0.05);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+
+    s2Noise.connect(s2Filter);
+    s2Filter.connect(s2Gain);
+    s2Gain.connect(ctx.destination);
+    subOsc.connect(subGain);
+    subGain.connect(ctx.destination);
+    s2Noise.start(now);
+    subOsc.start(now);
+
+    // --- Sound 3: Punchy Impact (2s) ---
+    const s3Duration = 2;
+    const s3Buffer = ctx.createBuffer(1, ctx.sampleRate * s3Duration, ctx.sampleRate);
+    const s3Data = s3Buffer.getChannelData(0);
+    for (let i = 0; i < s3Data.length; i++) s3Data[i] = Math.random() * 2 - 1;
+    
+    const s3Noise = ctx.createBufferSource();
+    s3Noise.buffer = s3Buffer;
+    const s3Filter = ctx.createBiquadFilter();
+    s3Filter.type = 'lowpass';
+    s3Filter.frequency.setValueAtTime(1000, now);
+    s3Filter.frequency.exponentialRampToValueAtTime(40, now + s3Duration);
+    const s3Gain = ctx.createGain();
+    s3Gain.gain.setValueAtTime(1, now);
+    s3Gain.gain.exponentialRampToValueAtTime(0.001, now + s3Duration);
+    
+    const s3Osc = ctx.createOscillator();
+    const s3OscGain = ctx.createGain();
+    s3Osc.type = 'triangle';
+    s3Osc.frequency.setValueAtTime(160, now);
+    s3Osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+    s3OscGain.gain.setValueAtTime(1.0, now);
+    s3OscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+    s3Noise.connect(s3Filter);
+    s3Filter.connect(s3Gain);
+    s3Gain.connect(ctx.destination);
+    s3Osc.connect(s3OscGain);
+    s3OscGain.connect(ctx.destination);
+    s3Noise.start(now);
+    s3Osc.start(now);
+
+    // Cleanup
+    setTimeout(() => {
+      [s1Noise, s2Noise, s3Noise, subOsc, s3Osc].forEach(n => { try { n.stop(); n.disconnect(); } catch(e){} });
+    }, s1Duration * 1000 + 100);
+  }, []);
+
+  const playSquashSound = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    const duration = 0.6;
+
+    const masterGain = ctx.createGain();
+    masterGain.connect(ctx.destination);
+
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(120, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(20, now + duration);
+
+    oscGain.gain.setValueAtTime(0.8, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    const bufferSize = ctx.sampleRate * duration;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.Q.setValueAtTime(15, now);
+    noiseFilter.frequency.setValueAtTime(1500, now);
+    noiseFilter.frequency.exponentialRampToValueAtTime(60, now + duration * 0.8);
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.5, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    const dist = ctx.createWaveShaper();
+    const curve = new Float32Array(44100);
+    for (let i = 0; i < 44100; i++) {
+      const x = (i * 2) / 44100 - 1;
+      curve[i] = (Math.PI + 50) * x / (Math.PI + 50 * Math.abs(x));
+    }
+    dist.curve = curve;
+
+    osc.connect(oscGain);
+    oscGain.connect(dist);
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(dist);
+    dist.connect(masterGain);
+
+    osc.start(now);
+    noise.start(now);
+    osc.stop(now + duration);
+    noise.stop(now + duration);
+
+    setTimeout(() => {
+      osc.disconnect();
+      noise.disconnect();
+      oscGain.disconnect();
+      noiseFilter.disconnect();
+      noiseGain.disconnect();
+      dist.disconnect();
+      masterGain.disconnect();
+    }, duration * 1000 + 100);
+  }, []);
+
+  const playSmallBirdLaugh = useCallback((birdSpeed: number) => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    const masterGain = ctx.createGain();
+    masterGain.connect(ctx.destination);
+
+    // Speed up the laugh if the bird is fast
+    const speedFactor = Math.max(0.5, Math.min(2.5, Math.abs(birdSpeed) / 3));
+    const numBursts = 6;
+    const burstInterval = 0.18 / speedFactor;
+    const burstDuration = 0.14 / speedFactor;
+
+    for (let i = 0; i < numBursts; i++) {
+      const startTime = now + (i * burstInterval);
+      const stopTime = startTime + burstDuration;
+
+      const osc = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const burstGain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      
+      const startFreq = (220 - (i * 5)) * speedFactor;
+      const endFreq = (170 - (i * 5)) * speedFactor;
+      osc.frequency.setValueAtTime(startFreq, startTime);
+      osc.frequency.exponentialRampToValueAtTime(endFreq, stopTime);
+
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1100, startTime);
+      filter.Q.value = 5;
+
+      burstGain.gain.setValueAtTime(0.0001, startTime);
+      burstGain.gain.exponentialRampToValueAtTime(0.5, startTime + 0.04);
+      burstGain.gain.exponentialRampToValueAtTime(0.0001, stopTime);
+
+      osc.connect(filter);
+      filter.connect(burstGain);
+      burstGain.connect(masterGain);
+
+      osc.start(startTime);
+      osc.stop(stopTime);
+
+      osc.onended = () => {
+        osc.disconnect();
+        filter.disconnect();
+        burstGain.disconnect();
+        if (i === numBursts - 1) {
+          masterGain.disconnect();
+        }
+      };
+    }
+  }, []);
+
+  const playBigBirdLaugh = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    const masterGain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    const compressor = ctx.createDynamicsCompressor();
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1200, now);
+    filter.Q.value = 10;
+
+    masterGain.connect(filter);
+    filter.connect(compressor);
+    compressor.connect(ctx.destination);
+
+    const numPulses = 6;
+    const pulseGap = 0.25;
+
+    for (let i = 0; i < numPulses; i++) {
+      const startTime = now + (i * pulseGap);
+      const duration = 0.2;
+      const endTime = startTime + duration;
+
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const pulseGain = ctx.createGain();
+
+      osc1.type = 'sawtooth';
+      osc2.type = 'square';
+
+      const baseFreq = 70 - (i * 4);
+      osc1.frequency.setValueAtTime(baseFreq, startTime);
+      osc1.frequency.exponentialRampToValueAtTime(baseFreq * 0.6, endTime);
+      
+      osc2.frequency.setValueAtTime(baseFreq * 1.05, startTime);
+      osc2.frequency.exponentialRampToValueAtTime(baseFreq * 0.5, endTime);
+
+      pulseGain.gain.setValueAtTime(0.001, startTime);
+      pulseGain.gain.exponentialRampToValueAtTime(0.6, startTime + 0.05);
+      pulseGain.gain.exponentialRampToValueAtTime(0.001, endTime);
+
+      osc1.connect(pulseGain);
+      osc2.connect(pulseGain);
+      pulseGain.connect(masterGain);
+
+      osc1.start(startTime);
+      osc1.stop(endTime);
+      osc2.start(startTime);
+      osc2.stop(endTime);
+    }
+
+    masterGain.gain.setValueAtTime(1, now);
+    masterGain.gain.exponentialRampToValueAtTime(0.001, now + (numPulses * pulseGap) + 0.5);
+
+    setTimeout(() => {
+      masterGain.disconnect();
+      filter.disconnect();
+      compressor.disconnect();
+    }, (numPulses * pulseGap + 1) * 1000);
+  }, []);
+
+  const playShootSound = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(300, now + 0.04);
+
+    gain.gain.setValueAtTime(0.04, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.04);
+  }, []);
+
+  const playBulletHitSound = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1500, now);
+    osc.frequency.exponentialRampToValueAtTime(800, now + 0.02);
+
+    gain.gain.setValueAtTime(0.02, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.02);
+  }, []);
+
+  // Handle Visibility
+  useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        menuAudioInstance?.pause();
-        playAudioInstance?.pause();
-      } else {
-        if (menuAudioInstance && menuAudioInstance.paused) menuAudioInstance.play().catch(() => {});
-        if (playAudioInstance && playAudioInstance.paused) playAudioInstance.play().catch(() => {});
+        audioCtxRef.current?.suspend();
+      } else if (isAudioUnlockedRef.current) {
+        audioCtxRef.current?.resume();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
-
-  // Handle Volume Fading & Track Switching
-  useEffect(() => {
-    if (!menuAudioInstance || !playAudioInstance) return;
-
-    const isPlaying = gameState === 'PLAYING';
-    const menuTarget = isPlaying ? 0 : (gameState === 'GAME_OVER' ? 0.7 : 0.3);
-    const playTarget = isPlaying ? 0.15 : 0;
-    
-    const fadeInterval = setInterval(() => {
-      if (!menuAudioInstance || !playAudioInstance) return;
-      
-      // Fade Menu Music
-      const mCurrent = menuAudioInstance.volume;
-      const mDiff = menuTarget - mCurrent;
-      if (Math.abs(mDiff) < 0.01) {
-        menuAudioInstance.volume = menuTarget;
-      } else {
-        menuAudioInstance.volume = Math.max(0, Math.min(1, mCurrent + mDiff * 0.1));
-      }
-
-      // Fade Play Music
-      const pCurrent = playAudioInstance.volume;
-      const pDiff = playTarget - pCurrent;
-      if (Math.abs(pDiff) < 0.01) {
-        playAudioInstance.volume = playTarget;
-      } else {
-        playAudioInstance.volume = Math.max(0, Math.min(1, pCurrent + pDiff * 0.1));
-      }
-
-      if (Math.abs(mDiff) < 0.01 && Math.abs(pDiff) < 0.01) {
-        clearInterval(fadeInterval);
-      }
-    }, 50);
-
-    return () => clearInterval(fadeInterval);
-  }, [gameState]);
-
-  const startAudio = useCallback(() => {
-    if (isAudioUnlocked) return;
-    
-    if (menuAudioInstance && menuAudioInstance.paused) {
-      menuAudioInstance.play().then(() => {
-        isAudioUnlocked = true;
-      }).catch(() => {});
-    }
-    if (playAudioInstance && playAudioInstance.paused) {
-      playAudioInstance.play().then(() => {
-        isAudioUnlocked = true;
-      }).catch(() => {});
-    }
-    audioStarted.current = true;
   }, []);
 
   useEffect(() => {
@@ -308,7 +794,7 @@ export default function App() {
     }
   }, [integrity, gameState]);
 
-  const spawnBird = () => {
+  const spawnBird = useCallback(() => {
     const rand = Math.random();
     let type: BirdType = 'NORMAL';
     let health = 1;
@@ -361,7 +847,7 @@ export default function App() {
       oscPhase: Math.random() * Math.PI * 2
     };
     birds.current.push(bird);
-  };
+  }, []);
 
   const createParticles = (x: number, y: number, color: string, count: number, type: 'FEATHER' | 'SPARK' | 'TEXT' = 'FEATHER', text?: string) => {
     for (let i = 0; i < count; i++) {
@@ -379,7 +865,7 @@ export default function App() {
     }
   };
 
-  const update = () => {
+  const update = useCallback(() => {
     if (gameState !== 'PLAYING') return;
 
     frameCount.current++;
@@ -388,6 +874,7 @@ export default function App() {
     if (chaosRef.current >= CHAOS_LIMIT && !isThunderReadyRef.current) {
       isThunderReadyRef.current = true;
       setIsThunderReady(true);
+      playThunderRumble();
     }
 
     // Gap logic
@@ -408,6 +895,8 @@ export default function App() {
         if (isThunderReadyRef.current) {
           isThunderReadyRef.current = false;
           setIsThunderReady(false);
+          stopThunderRumble();
+          playDivineStrike();
           chaosRef.current = 0;
           setChaos(0);
           setIsDivine(true);
@@ -418,6 +907,7 @@ export default function App() {
             if (bird.state !== 'CRUSHED') {
               bird.state = 'CRUSHED';
               setScore(s => s + 1);
+              playSquashSound();
               createParticles(bird.x, bird.y, COLORS.CYAN, 30, 'SPARK');
               createParticles(bird.x, bird.y, COLORS.YELLOW, 20, 'FEATHER');
             }
@@ -434,16 +924,19 @@ export default function App() {
           }, 1000); // Full second of god mode
         } else {
           // Normal crush check
+          let hitAny = false;
           birds.current.forEach(bird => {
             if (bird.state === 'FLYING' && 
                 bird.x > dimensions.current.width / 2 - PIPE_WIDTH / 2 - 20 && 
                 bird.x < dimensions.current.width / 2 + PIPE_WIDTH / 2 + 20) {
               
               if (bird.y > gapY.current - DEFAULT_GAP_SIZE/2 && bird.y < gapY.current + DEFAULT_GAP_SIZE/2) {
+                hitAny = true;
                 bird.health--;
                 if (bird.health <= 0) {
                   bird.state = 'CRUSHED';
                   setScore(s => s + 1);
+                  playSquashSound();
                   
                   chaosRef.current = Math.min(CHAOS_LIMIT, chaosRef.current + 15);
                   setChaos(chaosRef.current);
@@ -457,10 +950,15 @@ export default function App() {
                 } else {
                   createParticles(bird.x, bird.y, COLORS.WHITE, 1, 'TEXT', 'CLANG!');
                   bird.vx = -0.5; // Stun
+                  playMetallicSound(false); // Clang sound
                 }
               }
             }
           });
+
+          if (!hitAny) {
+            playMetallicSound(true); // Miss sound
+          }
         }
       }
     } else {
@@ -505,6 +1003,7 @@ export default function App() {
 
         if (canShoot && frameCount.current - bird.lastShot > shootRate && bird.x > dimensions.current.width / 2) {
           bird.lastShot = frameCount.current;
+          playShootSound();
           bullets.current.push({
             x: bird.x - bird.size/2,
             y: bird.y,
@@ -520,6 +1019,12 @@ export default function App() {
           bird.tauntTime = 120;
           setIntegrity(prev => Math.max(0, prev - 10));
           setLastDamageTime(Date.now());
+
+          if (bird.type === 'TANK') {
+            playBigBirdLaugh();
+          } else {
+            playSmallBirdLaugh(bird.vx);
+          }
         }
       } else if (bird.state === 'PASSED') {
         bird.x += bird.vx * 1.5;
@@ -544,6 +1049,7 @@ export default function App() {
         if (!isGap) {
           setIntegrity(prev => Math.max(0, prev - 1.5));
           setLastDamageTime(Date.now());
+          playBulletHitSound();
           createParticles(bullet.x, bullet.y, COLORS.WHITE, 5, 'SPARK');
           bullets.current.splice(bIdx, 1);
         }
@@ -561,9 +1067,9 @@ export default function App() {
 
     birds.current = birds.current.filter(b => b.x > -200);
     bullets.current = bullets.current.filter(b => b.x > -100);
-  };
+  }, [gameState, spawnBird]);
 
-  const draw = (ctx: CanvasRenderingContext2D) => {
+  const draw = useCallback((ctx: CanvasRenderingContext2D) => {
     const { width, height } = dimensions.current;
     ctx.clearRect(0, 0, width, height);
 
@@ -816,17 +1322,45 @@ export default function App() {
       }
       ctx.restore();
     });
-  };
+  }, [gameState]); // Added dependencies
 
   const loop = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
+    
+    // Handle Audio Fading in Game Loop
+    const menuGain = menuGainNodeRef.current;
+    const playGain = playGainNodeRef.current;
+    if (menuGain && playGain) {
+      const isPlaying = gameState === 'PLAYING';
+      const menuTarget = isPlaying ? 0 : (gameState === 'GAME_OVER' ? 0.7 : 0.3);
+      const playTarget = isPlaying ? 0.01 : 0;
+
+      // Fade Menu
+      const mCurrent = menuGain.gain.value;
+      const mDiff = menuTarget - mCurrent;
+      if (Math.abs(mDiff) < 0.005) {
+        menuGain.gain.value = menuTarget;
+      } else {
+        menuGain.gain.value = Math.max(0, Math.min(1, mCurrent + mDiff * 0.05));
+      }
+
+      // Fade Play
+      const pCurrent = playGain.gain.value;
+      const pDiff = playTarget - pCurrent;
+      if (Math.abs(pDiff) < 0.005) {
+        playGain.gain.value = playTarget;
+      } else {
+        playGain.gain.value = Math.max(0, Math.min(1, pCurrent + pDiff * 0.05));
+      }
+    }
+
     if (ctx) {
       update();
       draw(ctx);
     }
     animationFrameId.current = requestAnimationFrame(loop);
-  }, [gameState]); // Only depend on gameState to avoid frequent loop restarts
+  }, [gameState, update, draw]); // Added update and draw to dependencies
 
   useEffect(() => {
     animationFrameId.current = requestAnimationFrame(loop);
