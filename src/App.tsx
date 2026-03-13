@@ -195,6 +195,8 @@ export default function App() {
   const isSlamming = useRef(false);
   const frameCount = useRef(0);
   const isDivineRef = useRef(false);
+  const killStreakRef = useRef(0);
+  const lastMilestoneRef = useRef(0);
   const animationFrameId = useRef<number>(0);
   const dimensions = useRef({ width: 0, height: 0 });
   const mousePos = useRef({ x: 0, y: 0 });
@@ -224,6 +226,8 @@ export default function App() {
     isSlamming.current = false;
     frameCount.current = 0;
     setScore(0);
+    killStreakRef.current = 0;
+    lastMilestoneRef.current = 0;
     setIntegrity(MAX_INTEGRITY);
     setChaos(0);
     chaosRef.current = 0;
@@ -1079,7 +1083,21 @@ export default function App() {
           birds.current.forEach(bird => {
             if (bird.state !== 'CRUSHED') {
               bird.state = 'CRUSHED';
-              setScore(s => s + 1);
+              setScore(s => {
+                const next = s + 1;
+                if (next % 10 === 0 && next > lastMilestoneRef.current) {
+                  lastMilestoneRef.current = next;
+                  createParticles(dimensions.current.width / 2, gapY.current, COLORS.WHITE, 1, 'TEXT', `${next} POINTS!`);
+                  setIsShaking(true);
+                  setTimeout(() => setIsShaking(false), 300);
+                }
+                return next;
+              });
+              killStreakRef.current++;
+              if (killStreakRef.current % 5 === 0) {
+                setIntegrity(prev => Math.min(MAX_INTEGRITY, prev + 2));
+                createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', '+2 HP');
+              }
               playSquashSound();
               createParticles(bird.x, bird.y, COLORS.CYAN, 30, 'SPARK');
               createParticles(bird.x, bird.y, COLORS.YELLOW, 20, 'FEATHER');
@@ -1108,7 +1126,21 @@ export default function App() {
                 bird.health--;
                 if (bird.health <= 0) {
                   bird.state = 'CRUSHED';
-                  setScore(s => s + 1);
+                  setScore(s => {
+                    const next = s + 1;
+                    if (next % 10 === 0 && next > lastMilestoneRef.current) {
+                      lastMilestoneRef.current = next;
+                      createParticles(dimensions.current.width / 2, gapY.current, COLORS.WHITE, 1, 'TEXT', `${next} POINTS!`);
+                      setIsShaking(true);
+                      setTimeout(() => setIsShaking(false), 300);
+                    }
+                    return next;
+                  });
+                  killStreakRef.current++;
+                  if (killStreakRef.current % 5 === 0) {
+                    setIntegrity(prev => Math.min(MAX_INTEGRITY, prev + 2));
+                    createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', '+2 HP');
+                  }
                   playSquashSound();
                   
                   chaosRef.current = Math.min(CHAOS_LIMIT, chaosRef.current + 15);
@@ -1217,6 +1249,7 @@ export default function App() {
           bird.tauntTime = 120;
           setIntegrity(prev => Math.max(0, prev - 10)); // Increased breach damage to 10
           setLastDamageTime(Date.now());
+          killStreakRef.current = 0; // Reset streak on breach
 
           if (bird.type === 'TANK') {
             playBigBirdLaugh();
@@ -1249,6 +1282,7 @@ export default function App() {
             setIntegrity(prev => Math.max(0, prev - 10)); // Increased bullet damage to 10
             setLastDamageTime(Date.now());
             playBulletHitSound();
+            killStreakRef.current = 0; // Reset streak on damage
           }
           createParticles(bullet.x, bullet.y, COLORS.WHITE, 5, 'SPARK');
           bullets.current.splice(bIdx, 1);
@@ -1438,8 +1472,14 @@ export default function App() {
         ctx.shadowColor = isDivineRef.current ? COLORS.CYAN : COLORS.YELLOW;
       }
 
-      const pipeColor = isThunderReadyRef.current ? COLORS.YELLOW : COLORS.GREEN;
+      const isPepperZone = score >= 50;
+      const pipeColor = isPepperZone ? '#FF0000' : (isThunderReadyRef.current ? COLORS.YELLOW : COLORS.GREEN);
       
+      if (isPepperZone) {
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = '#FF0000';
+      }
+
       ctx.fillStyle = pipeColor;
       ctx.strokeStyle = COLORS.BLACK;
       ctx.lineWidth = 8;
