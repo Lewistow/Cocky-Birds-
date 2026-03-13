@@ -1018,14 +1018,15 @@ export default function App() {
 
   const createParticles = (x: number, y: number, color: string, count: number, type: 'FEATHER' | 'SPARK' | 'TEXT' = 'FEATHER', text?: string) => {
     for (let i = 0; i < count; i++) {
+      const isText = type === 'TEXT';
       particles.current.push({
         x,
         y,
-        vx: (Math.random() - 0.5) * 15,
-        vy: (Math.random() - 0.5) * 15,
+        vx: isText ? 0 : (Math.random() - 0.5) * 15,
+        vy: isText ? -2 : (Math.random() - 0.5) * 15,
         life: 1,
         color,
-        size: Math.random() * 8 + 2,
+        size: isText ? 40 : Math.random() * 8 + 2,
         type,
         text
       });
@@ -1258,6 +1259,9 @@ export default function App() {
           }
         }
       } else if (bird.state === 'PASSED') {
+        if (bird.x > -100 && bird.x < -50) { // Just passed
+          killStreakRef.current = 0; // Reset streak on pass
+        }
         bird.x += bird.vx * 1.5;
         // Still bobbing while passing
         const oscTime = frameCount.current * bird.oscSpeed + bird.oscPhase;
@@ -1294,8 +1298,10 @@ export default function App() {
     particles.current.forEach((p, i) => {
       p.x += p.vx;
       p.y += p.vy;
-      p.vy += 0.4; // Gravity for feathers
-      p.life -= 0.025;
+      if (p.type !== 'TEXT') {
+        p.vy += 0.4; // Gravity for feathers/sparks
+      }
+      p.life -= p.type === 'TEXT' ? 0.01 : 0.025; // Text lasts longer
       if (p.life <= 0) particles.current.splice(i, 1);
     });
 
@@ -1606,7 +1612,10 @@ export default function App() {
         ctx.fillStyle = COLORS.WHITE;
         ctx.strokeStyle = COLORS.BLACK;
         ctx.lineWidth = 8;
-        const fontSize = p.text === 'THUNDER!!!' ? 120 : 48;
+        let fontSize = 48;
+        if (p.text === 'THUNDER!!!' || p.text === 'DIVINE WRATH!!!') fontSize = 120;
+        else if (p.text?.includes('POINTS!')) fontSize = 80;
+        
         ctx.font = `900 ${fontSize}px Bangers`;
         ctx.textAlign = 'center';
         
@@ -1631,7 +1640,7 @@ export default function App() {
       }
       ctx.restore();
     });
-  }, [gameState]); // Added dependencies
+  }, [gameState, score]); // Added score dependency
 
   const loop = useCallback(() => {
     const canvas = canvasRef.current;
