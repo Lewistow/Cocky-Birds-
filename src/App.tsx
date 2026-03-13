@@ -69,7 +69,47 @@ const TAUNTS = [
   "BYE!",
   "ZOOOOM!",
   "TRY HARDER!",
-  "WEAK!"
+  "WEAK!",
+  "SKILL ISSUE!",
+  "GET GUD!",
+  "TRASH!",
+  "EZ!",
+  "CLOWN!",
+  "DELETE APP!",
+  "STILL 0?",
+  "GO HOME!",
+  "YAWN!",
+  "U STINK!",
+  "NOOB!",
+  "CHOKE!",
+  "GIVE UP!",
+  "PATHETIC!",
+  "MID!",
+  "L + RATIO!",
+  "CRY!",
+  "SO BAD!",
+  "RETIRE!",
+  "DOG WATER!",
+  "EMBARRASSING!",
+  "BOT!",
+  "FREE!",
+  "WASHED!",
+  "COOKED!",
+  "FRAUD!",
+  "NPC!",
+  "UNINSTALL!",
+  "SAD!",
+  "WHIFF!",
+  "TERRIBLE!",
+  "LOSER!",
+  "GIFTED!",
+  "AFK?",
+  "SLEEPING?",
+  "MY GRANDMA?",
+  "ZERO AURA!",
+  "FLOP!",
+  "BRONZE!",
+  "IRON!"
 ];
 
 // Audio URLs
@@ -83,7 +123,9 @@ const COLORS = {
   GREEN: '#00FF41',
   PURPLE: '#BC00FF',
   BLACK: '#000000',
-  WHITE: '#FFFFFF'
+  WHITE: '#FFFFFF',
+  DARK_BG: '#0a0a0c',
+  DARK_ACCENT: '#141419'
 };
 
 export default function App() {
@@ -1074,7 +1116,8 @@ export default function App() {
     ctx.clearRect(0, 0, width, height);
 
     // Background - Brutalist Shapes
-    ctx.fillStyle = COLORS.ORANGE;
+    const isPowerSurge = isSlamming.current && Math.random() > 0.7;
+    ctx.fillStyle = isPowerSurge ? COLORS.WHITE : COLORS.ORANGE;
     ctx.fillRect(0, 0, width, height);
     
     // Parallax Shapes
@@ -1087,6 +1130,11 @@ export default function App() {
       ctx.lineTo(i - offset + 400, height);
       ctx.fill();
     }
+
+    // Scanning Line
+    const scanY = (frameCount.current * 1.5) % height;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.fillRect(0, scanY, width, 2);
 
     // Draw Birds
     birds.current.forEach(bird => {
