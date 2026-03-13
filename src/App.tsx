@@ -148,6 +148,18 @@ const COLORS = {
   DARK_ACCENT: '#141419'
 };
 
+interface PipeFragment {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  vx: number;
+  vy: number;
+  rotation: number;
+  vRotation: number;
+  color: string;
+}
+
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState>('START');
@@ -186,6 +198,8 @@ export default function App() {
   const animationFrameId = useRef<number>(0);
   const dimensions = useRef({ width: 0, height: 0 });
   const mousePos = useRef({ x: 0, y: 0 });
+  const pipeFragments = useRef<PipeFragment[]>([]);
+  const isCrumbling = useRef(false);
   const birdIdCounter = useRef(0);
   const isWarmupActiveRef = useRef(false);
 
@@ -202,6 +216,8 @@ export default function App() {
     birds.current = [];
     bullets.current = [];
     particles.current = [];
+    pipeFragments.current = [];
+    isCrumbling.current = false;
     gapY.current = height / 2;
     mousePos.current = { x: width / 2, y: height / 2 };
     currentGapSize.current = DEFAULT_GAP_SIZE;
@@ -789,14 +805,14 @@ export default function App() {
     osc.frequency.setValueAtTime(1500, now);
     osc.frequency.exponentialRampToValueAtTime(800, now + 0.02);
 
-    gain.gain.setValueAtTime(0.02, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start(now);
-    osc.stop(now + 0.02);
+    osc.stop(now + 0.05);
   }, []);
 
   // Handle Visibility
@@ -850,11 +866,96 @@ export default function App() {
     }
   }, [gameState, score, highScore]);
 
+  const playCrumbleSound = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    const now = ctx.currentTime;
+    
+    // Low frequency crunch
+    const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    
+    const noise = ctx.createBufferSource();
+    noise.buffer = noiseBuffer;
+    
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(400, now);
+    filter.frequency.exponentialRampToValueAtTime(40, now + 1.5);
+    
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+    
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    noise.start();
+
+    // Metallic clangs
+    for (let i = 0; i < 5; i++) {
+      const osc = ctx.createOscillator();
+      const oGain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(100 + Math.random() * 100, now + i * 0.1);
+      osc.frequency.exponentialRampToValueAtTime(40, now + i * 0.1 + 0.3);
+      oGain.gain.setValueAtTime(0.2, now + i * 0.1);
+      oGain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
+      osc.connect(oGain);
+      oGain.connect(ctx.destination);
+      osc.start(now + i * 0.1);
+      osc.stop(now + i * 0.1 + 0.3);
+    }
+  }, []);
+
+  const triggerCrumble = useCallback(() => {
+    if (isCrumbling.current) return;
+    isCrumbling.current = true;
+    playCrumbleSound();
+    setIsShaking(true);
+    setTimeout(() => setIsShaking(false), 500);
+
+    const { width, height } = dimensions.current;
+    const pipeX = width / 2 - PIPE_WIDTH / 2;
+    const topPipeHeight = gapY.current - currentGapSize.current / 2;
+    const bottomPipeY = gapY.current + currentGapSize.current / 2;
+    const bottomPipeHeight = height - bottomPipeY;
+
+    const createFragments = (x: number, y: number, w: number, h: number) => {
+      const rows = Math.ceil(h / 30);
+      const cols = Math.ceil(w / 20);
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          pipeFragments.current.push({
+            x: x + c * (w / cols),
+            y: y + r * (h / rows),
+            w: w / cols,
+            h: h / rows,
+            vx: (Math.random() - 0.5) * 10,
+            vy: (Math.random() - 2) * 5,
+            rotation: Math.random() * Math.PI * 2,
+            vRotation: (Math.random() - 0.5) * 0.2,
+            color: isThunderReadyRef.current ? COLORS.YELLOW : COLORS.GREEN
+          });
+        }
+      }
+    };
+
+    createFragments(pipeX, 0, PIPE_WIDTH, topPipeHeight);
+    createFragments(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight);
+
+    // Delay the actual Game Over state
+    setTimeout(() => {
+      setGameState('GAME_OVER');
+    }, 1500);
+  }, [playCrumbleSound]);
+
   useEffect(() => {
     if (integrity <= 0 && gameState === 'PLAYING') {
-      setGameState('GAME_OVER');
+      triggerCrumble();
     }
-  }, [integrity, gameState]);
+  }, [integrity, gameState, triggerCrumble]);
 
   const spawnBird = useCallback(() => {
     const rand = Math.random();
@@ -928,9 +1029,19 @@ export default function App() {
   };
 
   const update = useCallback(() => {
-    if (gameState !== 'PLAYING') return;
+    if (gameState !== 'PLAYING' && !isCrumbling.current) return;
 
     frameCount.current++;
+
+    // Update Fragments
+    pipeFragments.current.forEach(f => {
+      f.x += f.vx;
+      f.y += f.vy;
+      f.vy += 0.5; // Gravity
+      f.rotation += f.vRotation;
+    });
+
+    if (gameState !== 'PLAYING') return;
 
     // Thunder Ready logic - Use Ref for logic, State for UI
     if (chaosRef.current >= CHAOS_LIMIT && !isThunderReadyRef.current) {
@@ -1066,12 +1177,37 @@ export default function App() {
         if (canShoot && frameCount.current - bird.lastShot > shootRate && bird.x > dimensions.current.width / 2) {
           bird.lastShot = frameCount.current;
           playShootSound();
+          
+          const dx = bird.x - dimensions.current.width / 2;
+          const timeToReach = dx / 10;
+          let bulletVy = (gapY.current - bird.y) * 0.015;
+
+          if (timeToReach > 0) {
+            // Aim for the pipes (above or below the gap)
+            // If we aim for the gap center, we miss the pipes!
+            // So we target a point slightly offset from the gap center
+            const pipeTargetOffset = (currentGapSize.current / 2) + 30 + (Math.random() * 40);
+            const targetY = gapY.current + (Math.random() > 0.5 ? pipeTargetOffset : -pipeTargetOffset);
+            
+            const perfectVy = (targetY - bird.y) / timeToReach;
+            
+            if (bird.type === 'SNIPER') {
+              // Snipers are very accurate at hitting the pipe edges
+              const spread = (Math.random() - 0.5) * 0.2; 
+              bulletVy = perfectVy + spread;
+            } else {
+              // Other birds have more spread but still target the pipes
+              const spread = (Math.random() - 0.5) * 1.2;
+              bulletVy = perfectVy + spread;
+            }
+          }
+
           bullets.current.push({
             x: bird.x - bird.size/2,
             y: bird.y,
             vx: -10,
-            vy: (gapY.current - bird.y) * 0.015,
-            color: bird.type === 'SNIPER' ? COLORS.PURPLE : COLORS.CYAN
+            vy: bulletVy,
+            color: bird.type === 'SNIPER' ? COLORS.CYAN : COLORS.PURPLE
           });
         }
 
@@ -1079,7 +1215,7 @@ export default function App() {
           bird.state = 'PASSED';
           bird.taunt = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
           bird.tauntTime = 120;
-          setIntegrity(prev => Math.max(0, prev - 10));
+          setIntegrity(prev => Math.max(0, prev - 10)); // Increased breach damage to 10
           setLastDamageTime(Date.now());
 
           if (bird.type === 'TANK') {
@@ -1109,9 +1245,11 @@ export default function App() {
                       bullet.y < gapY.current + currentGapSize.current / 2;
         
         if (!isGap) {
-          setIntegrity(prev => Math.max(0, prev - 1.5));
-          setLastDamageTime(Date.now());
-          playBulletHitSound();
+          if (!isSlamming.current) {
+            setIntegrity(prev => Math.max(0, prev - 10)); // Increased bullet damage to 10
+            setLastDamageTime(Date.now());
+            playBulletHitSound();
+          }
           createParticles(bullet.x, bullet.y, COLORS.WHITE, 5, 'SPARK');
           bullets.current.splice(bIdx, 1);
         }
@@ -1288,69 +1426,71 @@ export default function App() {
     });
 
     // Draw Pipes - Brutalist Style
-    let pipeX = width / 2 - PIPE_WIDTH / 2;
-    let pipeYOffset = 0;
-    const isThunderActive = isThunderReadyRef.current && isSlamming.current;
-    
-    if (isThunderActive || isDivineRef.current) {
-      pipeX += (Math.random() - 0.5) * 25; // More shake
-      pipeYOffset = (Math.random() - 0.5) * 25;
-      ctx.shadowBlur = isDivineRef.current ? 80 : 40;
-      ctx.shadowColor = isDivineRef.current ? COLORS.CYAN : COLORS.YELLOW;
-    }
-
-    const pipeColor = isThunderReadyRef.current ? COLORS.YELLOW : COLORS.GREEN;
-    
-    ctx.fillStyle = pipeColor;
-    ctx.strokeStyle = COLORS.BLACK;
-    ctx.lineWidth = 8;
-
-    // Top Pipe
-    const topPipeHeight = gapY.current - currentGapSize.current / 2 + pipeYOffset;
-    ctx.fillRect(pipeX, -10, PIPE_WIDTH, topPipeHeight + 10);
-    ctx.strokeRect(pipeX, -10, PIPE_WIDTH, topPipeHeight + 10);
-    
-    // Bottom Pipe
-    const bottomPipeY = gapY.current + currentGapSize.current / 2 + pipeYOffset;
-    const bottomPipeHeight = height - bottomPipeY;
-    ctx.fillRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 10);
-    ctx.strokeRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 10);
-
-    // Internal Lightning for Pipes - Now appears on EVERY slam
-    if (isSlamming.current || isDivineRef.current) {
-      ctx.save();
-      const isSupercharged = isThunderReadyRef.current || isDivineRef.current;
-      ctx.strokeStyle = isSupercharged ? COLORS.WHITE : 'rgba(255, 255, 255, 0.8)';
-      ctx.lineWidth = isSupercharged ? 6 : 2; // Thicker lightning
-      ctx.shadowBlur = isSupercharged ? 30 : 8; // More glow
-      ctx.shadowColor = isSupercharged ? COLORS.CYAN : COLORS.WHITE;
+    if (!isCrumbling.current) {
+      let pipeX = width / 2 - PIPE_WIDTH / 2;
+      let pipeYOffset = 0;
+      const isThunderActive = isThunderReadyRef.current && isSlamming.current;
       
-      const drawPipeLightning = (y1: number, y2: number) => {
-        const boltCount = isDivineRef.current ? 4 : (isSupercharged ? 2 : 1);
-        for (let i = 0; i < boltCount; i++) {
-          ctx.beginPath();
-          let curY = y1;
-          ctx.moveTo(pipeX + Math.random() * PIPE_WIDTH, curY);
-          while (curY < y2) {
-            curY += 15 + Math.random() * 25; // More jagged
-            ctx.lineTo(pipeX + Math.random() * PIPE_WIDTH, Math.min(curY, y2));
+      if (isThunderActive || isDivineRef.current) {
+        pipeX += (Math.random() - 0.5) * 25; // More shake
+        pipeYOffset = (Math.random() - 0.5) * 25;
+        ctx.shadowBlur = isDivineRef.current ? 80 : 40;
+        ctx.shadowColor = isDivineRef.current ? COLORS.CYAN : COLORS.YELLOW;
+      }
+
+      const pipeColor = isThunderReadyRef.current ? COLORS.YELLOW : COLORS.GREEN;
+      
+      ctx.fillStyle = pipeColor;
+      ctx.strokeStyle = COLORS.BLACK;
+      ctx.lineWidth = 8;
+
+      // Top Pipe
+      const topPipeHeight = gapY.current - currentGapSize.current / 2 + pipeYOffset;
+      ctx.fillRect(pipeX, -10, PIPE_WIDTH, topPipeHeight + 10);
+      ctx.strokeRect(pipeX, -10, PIPE_WIDTH, topPipeHeight + 10);
+      
+      // Bottom Pipe
+      const bottomPipeY = gapY.current + currentGapSize.current / 2 + pipeYOffset;
+      const bottomPipeHeight = height - bottomPipeY;
+      ctx.fillRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 10);
+      ctx.strokeRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 10);
+
+      // Internal Lightning for Pipes - Now appears on EVERY slam
+      if (isSlamming.current || isDivineRef.current) {
+        ctx.save();
+        const isSupercharged = isThunderReadyRef.current || isDivineRef.current;
+        ctx.strokeStyle = isSupercharged ? COLORS.WHITE : 'rgba(255, 255, 255, 0.8)';
+        ctx.lineWidth = isSupercharged ? 6 : 2; // Thicker lightning
+        ctx.shadowBlur = isSupercharged ? 30 : 8; // More glow
+        ctx.shadowColor = isSupercharged ? COLORS.CYAN : COLORS.WHITE;
+        
+        const drawPipeLightning = (y1: number, y2: number) => {
+          const boltCount = isDivineRef.current ? 4 : (isSupercharged ? 2 : 1);
+          for (let i = 0; i < boltCount; i++) {
+            ctx.beginPath();
+            let curY = y1;
+            ctx.moveTo(pipeX + Math.random() * PIPE_WIDTH, curY);
+            while (curY < y2) {
+              curY += 15 + Math.random() * 25; // More jagged
+              ctx.lineTo(pipeX + Math.random() * PIPE_WIDTH, Math.min(curY, y2));
+            }
+            ctx.stroke();
           }
-          ctx.stroke();
-        }
-      };
-      
-      drawPipeLightning(0, topPipeHeight);
-      drawPipeLightning(bottomPipeY, height);
-      ctx.restore();
-    }
+        };
+        
+        drawPipeLightning(0, topPipeHeight);
+        drawPipeLightning(bottomPipeY, height);
+        ctx.restore();
+      }
 
-    // Pipe Details (Rivets)
-    ctx.fillStyle = COLORS.BLACK;
-    ctx.shadowBlur = 0; // Reset shadow for rivets
-    for (let y = 40; y < height; y += 80) {
-      if (y < topPipeHeight - 15 || y > bottomPipeY + 15) {
-        ctx.beginPath(); ctx.arc(pipeX + 12, y, 3, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(pipeX + PIPE_WIDTH - 12, y, 3, 0, Math.PI * 2); ctx.fill();
+      // Pipe Details (Rivets)
+      ctx.fillStyle = COLORS.BLACK;
+      ctx.shadowBlur = 0; // Reset shadow for rivets
+      for (let y = 40; y < height; y += 80) {
+        if (y < topPipeHeight - 15 || y > bottomPipeY + 15) {
+          ctx.beginPath(); ctx.arc(pipeX + 12, y, 3, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(pipeX + PIPE_WIDTH - 12, y, 3, 0, Math.PI * 2); ctx.fill();
+        }
       }
     }
 
@@ -1404,6 +1544,19 @@ export default function App() {
       }
       ctx.restore();
     }
+
+    // Draw Pipe Fragments
+    pipeFragments.current.forEach(f => {
+      ctx.save();
+      ctx.translate(f.x + f.w / 2, f.y + f.h / 2);
+      ctx.rotate(f.rotation);
+      ctx.fillStyle = f.color;
+      ctx.strokeStyle = COLORS.BLACK;
+      ctx.lineWidth = 2;
+      ctx.fillRect(-f.w / 2, -f.h / 2, f.w, f.h);
+      ctx.strokeRect(-f.w / 2, -f.h / 2, f.w, f.h);
+      ctx.restore();
+    });
 
     // Draw Particles
     particles.current.forEach(p => {
