@@ -249,6 +249,7 @@ export default function App() {
   const playBufferRef = useRef<AudioBuffer | null>(null);
   const menuGainNodeRef = useRef<GainNode | null>(null);
   const playGainNodeRef = useRef<GainNode | null>(null);
+  const milestoneGainNodeRef = useRef<GainNode | null>(null);
   const isLoopingStartedRef = useRef(false);
   const thunderRumbleSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const thunderRumbleGainRef = useRef<GainNode | null>(null);
@@ -317,6 +318,13 @@ export default function App() {
       playGain.gain.value = 0;
       playGain.connect(ctx.destination);
       playGainNodeRef.current = playGain;
+    }
+
+    if (!milestoneGainNodeRef.current) {
+      const milestoneGain = ctx.createGain();
+      milestoneGain.gain.value = 0;
+      milestoneGain.connect(ctx.destination);
+      milestoneGainNodeRef.current = milestoneGain;
     }
 
     audioStarted.current = true;
@@ -1016,6 +1024,35 @@ export default function App() {
     birds.current.push(bird);
   }, []);
 
+  const playMilestoneSound = () => {
+    const ctx = audioCtxRef.current;
+    const gain = milestoneGainNodeRef.current;
+    if (!ctx || !gain) return;
+
+    const now = ctx.currentTime;
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.4, now + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+
+    // Victory Fanfare Chord (C Majorish)
+    [440, 554.37, 659.25, 880].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = i % 2 === 0 ? 'triangle' : 'square';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.2, now + 0.5);
+      
+      const oscGain = ctx.createGain();
+      oscGain.gain.setValueAtTime(0.1, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.01, now + 1);
+      
+      osc.connect(oscGain);
+      oscGain.connect(gain);
+      osc.start(now);
+      osc.stop(now + 1.5);
+    });
+  };
+
   const createParticles = (x: number, y: number, color: string, count: number, type: 'FEATHER' | 'SPARK' | 'TEXT' = 'FEATHER', text?: string) => {
     for (let i = 0; i < count; i++) {
       const isText = type === 'TEXT';
@@ -1088,7 +1125,8 @@ export default function App() {
                 const next = s + 1;
                 if (next % 10 === 0 && next > lastMilestoneRef.current) {
                   lastMilestoneRef.current = next;
-                  createParticles(dimensions.current.width / 2, gapY.current, COLORS.WHITE, 1, 'TEXT', `${next} POINTS!`);
+                  createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
+                  playMilestoneSound();
                   setIsShaking(true);
                   setTimeout(() => setIsShaking(false), 300);
                 }
@@ -1131,7 +1169,8 @@ export default function App() {
                     const next = s + 1;
                     if (next % 10 === 0 && next > lastMilestoneRef.current) {
                       lastMilestoneRef.current = next;
-                      createParticles(dimensions.current.width / 2, gapY.current, COLORS.WHITE, 1, 'TEXT', `${next} POINTS!`);
+                      createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
+                      playMilestoneSound();
                       setIsShaking(true);
                       setTimeout(() => setIsShaking(false), 300);
                     }
@@ -1609,7 +1648,7 @@ export default function App() {
       ctx.save();
       ctx.globalAlpha = p.life;
       if (p.type === 'TEXT') {
-        ctx.fillStyle = COLORS.WHITE;
+        ctx.fillStyle = COLORS.YELLOW;
         ctx.strokeStyle = COLORS.BLACK;
         ctx.lineWidth = 8;
         let fontSize = 48;
