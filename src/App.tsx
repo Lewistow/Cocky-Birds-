@@ -109,7 +109,27 @@ const TAUNTS = [
   "ZERO AURA!",
   "FLOP!",
   "BRONZE!",
-  "IRON!"
+  "IRON!",
+  "SKILL GAP!",
+  "COULDN'T BE ME!",
+  "CLIPPED!",
+  "SIT DOWN!",
+  "RENT FREE!",
+  "STAY MAD!",
+  "GO TOUCH GRASS!",
+  "LACKING!",
+  "FREE ELO!",
+  "GG NO RE!",
+  "HOLD THIS L!",
+  "IMAGINE MISSING!",
+  "YOU'RE DONE!",
+  "GO BACK TO LOBBY!",
+  "WHO ARE YOU?",
+  "EMOTE ON EM!",
+  "CHECK YOUR MONITOR!",
+  "LAGGING?",
+  "CONTROLLER DISCONNECTED?",
+  "GHOSTED!"
 ];
 
 // Audio URLs
@@ -1120,16 +1140,64 @@ export default function App() {
     ctx.fillStyle = isPowerSurge ? COLORS.WHITE : COLORS.ORANGE;
     ctx.fillRect(0, 0, width, height);
     
-    // Parallax Shapes
-    ctx.fillStyle = 'rgba(0,0,0,0.05)';
-    const offset = (frameCount.current * 0.5) % 400;
-    for (let i = -400; i < width + 400; i += 400) {
-      ctx.beginPath();
-      ctx.moveTo(i - offset, height);
-      ctx.lineTo(i - offset + 200, 0);
-      ctx.lineTo(i - offset + 400, height);
-      ctx.fill();
-    }
+    // Draw Sun
+    const sunX = width * 0.8;
+    const sunY = height * 0.15;
+    const sunR = 60;
+    
+    // Sun Glow
+    const sunGlow = ctx.createRadialGradient(sunX, sunY, sunR * 0.5, sunX, sunY, sunR * 2);
+    sunGlow.addColorStop(0, 'rgba(255, 240, 0, 0.4)');
+    sunGlow.addColorStop(1, 'rgba(255, 240, 0, 0)');
+    ctx.fillStyle = sunGlow;
+    ctx.fillRect(sunX - sunR * 2, sunY - sunR * 2, sunR * 4, sunR * 4);
+    
+    // Sun Core
+    ctx.fillStyle = COLORS.YELLOW;
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Parallax Shapes - 3D Pyramids (Multi-layered for depth)
+    const layers = [
+      { width: 600, speed: 0.2, opacity: 0.3, peakShift: 50, heightMult: 0.3 }, // Distant
+      { width: 400, speed: 0.6, opacity: 0.6, peakShift: 30, heightMult: 0.45 }, // Middle
+      { width: 800, speed: 1.5, opacity: 1.0, peakShift: 100, heightMult: 0.6 }  // Close
+    ];
+
+    layers.forEach(layer => {
+      const layerOffset = (frameCount.current * layer.speed) % layer.width;
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = `rgba(0,0,0,${0.08 * layer.opacity})`;
+      
+      for (let i = -layer.width; i < width + layer.width; i += layer.width) {
+        const xStart = i - layerOffset;
+        const xEnd = xStart + layer.width;
+        const xPeak = xStart + layer.width / 2 + layer.peakShift;
+        const xBaseMid = xStart + layer.width / 2;
+        const pyramidHeight = height * layer.heightMult;
+        const yBase = height;
+        const yPeak = height - pyramidHeight;
+
+        // Left Face (Light side - now a subtle dark overlay)
+        ctx.fillStyle = `rgba(0,0,0,${0.15 * layer.opacity})`;
+        ctx.beginPath();
+        ctx.moveTo(xStart, yBase);
+        ctx.lineTo(xPeak, yPeak);
+        ctx.lineTo(xBaseMid, yBase);
+        ctx.fill();
+        ctx.stroke();
+
+        // Right Face (Shadow side - deeper dark overlay)
+        ctx.fillStyle = `rgba(0,0,0,${0.45 * layer.opacity})`;
+        ctx.beginPath();
+        ctx.moveTo(xBaseMid, yBase);
+        ctx.lineTo(xPeak, yPeak);
+        ctx.lineTo(xEnd, yBase);
+        ctx.fill();
+        ctx.stroke();
+      }
+    });
 
     // Scanning Line
     const scanY = (frameCount.current * 1.5) % height;
