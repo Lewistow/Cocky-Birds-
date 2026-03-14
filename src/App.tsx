@@ -198,6 +198,7 @@ export default function App() {
   const killStreakRef = useRef(0);
   const lastMilestoneRef = useRef(0);
   const animationFrameId = useRef<number>(0);
+  const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dimensions = useRef({ width: 0, height: 0 });
   const mousePos = useRef({ x: 0, y: 0 });
   const pipeFragments = useRef<PipeFragment[]>([]);
@@ -1103,8 +1104,8 @@ export default function App() {
         isSlamming.current = false;
         
         // Impact Frame
+        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
         setIsFlashing(true);
-        setTimeout(() => setIsFlashing(false), 50);
 
         // Thunder Strike Trigger - Check Ref
         if (isThunderReadyRef.current) {
@@ -1144,14 +1145,14 @@ export default function App() {
           });
           
           setIsShaking(true);
-          setIsFlashing(true); // Extra long flash
-          setTimeout(() => {
+          flashTimeoutRef.current = setTimeout(() => {
             setIsShaking(false);
             setIsFlashing(false);
             setIsDivine(false);
             isDivineRef.current = false;
           }, 1000); // Full second of god mode
         } else {
+          flashTimeoutRef.current = setTimeout(() => setIsFlashing(false), 50);
           // Normal crush check
           let hitAny = false;
           birds.current.forEach(bird => {
@@ -1744,13 +1745,36 @@ export default function App() {
       {isFlashing && (
         <div className={`absolute inset-0 z-50 flex items-center justify-center ${isDivine ? 'strobe' : 'impact-flash'}`}>
           {isDivine && (
-            <motion.h2 
-              initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: [1, 1.2, 1], rotate: [-20, 5, -5] }}
-              className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white italic drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] pointer-events-none uppercase tracking-tighter text-center px-4"
-            >
-              DIVINE WRATH!!!
-            </motion.h2>
+            <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+              {/* Version 1: Horizontal Centered */}
+              <motion.h2 
+                initial={{ scale: 0, rotate: -20 }}
+                animate={{ scale: [1, 1.2, 1], rotate: [-20, 5, -5] }}
+                className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white italic drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] pointer-events-none uppercase tracking-tighter text-center px-4 z-10"
+              >
+                DIVINE WRATH!!!
+              </motion.h2>
+
+              {/* Version 2: Stacked on the Side */}
+              <motion.div 
+                initial={{ x: -200, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="absolute left-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col leading-[0.8] font-black text-white italic drop-shadow-2xl uppercase tracking-tighter text-9xl opacity-40 select-none"
+              >
+                <span>DIVINE</span>
+                <span>WRATH!</span>
+              </motion.div>
+
+              {/* Version 2: Stacked on the other Side (Mirrored) */}
+              <motion.div 
+                initial={{ x: 200, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="absolute right-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col items-end leading-[0.8] font-black text-white italic drop-shadow-2xl uppercase tracking-tighter text-9xl opacity-40 select-none"
+              >
+                <span>DIVINE</span>
+                <span>WRATH!</span>
+              </motion.div>
+            </div>
           )}
         </div>
       )}
