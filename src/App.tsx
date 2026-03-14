@@ -1060,7 +1060,7 @@ export default function App() {
         x,
         y,
         vx: isText ? 0 : (Math.random() - 0.5) * 15,
-        vy: isText ? -2 : (Math.random() - 0.5) * 15,
+        vy: isText ? (text === 'DIVINE WRATH!!!' ? 0 : -2) : (Math.random() - 0.5) * 15,
         life: 1,
         color,
         size: isText ? 40 : Math.random() * 8 + 2,
@@ -1143,7 +1143,7 @@ export default function App() {
             }
           });
           
-          createParticles(dimensions.current.width / 2, gapY.current, COLORS.WHITE, 1, 'TEXT', 'DIVINE WRATH!!!');
+          createParticles(dimensions.current.width / 2, dimensions.current.height / 2, COLORS.WHITE, 1, 'TEXT', 'DIVINE WRATH!!!');
           setIsShaking(true);
           setIsFlashing(true); // Extra long flash
           setTimeout(() => {
@@ -1652,7 +1652,7 @@ export default function App() {
         ctx.strokeStyle = COLORS.BLACK;
         ctx.lineWidth = 8;
         let fontSize = 48;
-        if (p.text === 'THUNDER!!!' || p.text === 'DIVINE WRATH!!!') fontSize = 120;
+        if (p.text === 'THUNDER!!!' || p.text === 'DIVINE WRATH!!!') fontSize = 100;
         else if (p.text?.includes('POINTS!')) fontSize = 80;
         
         ctx.font = `900 ${fontSize}px Bangers`;
