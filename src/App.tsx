@@ -1143,7 +1143,6 @@ export default function App() {
             }
           });
           
-          createParticles(dimensions.current.width / 2, dimensions.current.height / 2, COLORS.WHITE, 1, 'TEXT', 'DIVINE WRATH!!!');
           setIsShaking(true);
           setIsFlashing(true); // Extra long flash
           setTimeout(() => {
@@ -1747,10 +1746,10 @@ export default function App() {
           {isDivine && (
             <motion.h2 
               initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: [1, 1.5, 1.2], rotate: [-20, 5, -5] }}
-              className="text-6xl md:text-[12rem] font-black text-white italic drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] pointer-events-none uppercase tracking-tighter"
+              animate={{ scale: [1, 1.2, 1], rotate: [-20, 5, -5] }}
+              className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white italic drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] pointer-events-none uppercase tracking-tighter text-center px-4"
             >
-              Divine Wrath
+              DIVINE WRATH!!!
             </motion.h2>
           )}
         </div>
