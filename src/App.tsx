@@ -1153,7 +1153,7 @@ export default function App() {
                 return next;
               });
               killStreakRef.current++;
-              if (killStreakRef.current % 5 === 0) {
+              if (killStreakRef.current % 2 === 0) {
                 setIntegrity(prev => Math.min(MAX_INTEGRITY, prev + 2));
                 createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', '+2 HP');
               }
@@ -1202,7 +1202,7 @@ export default function App() {
                     return next;
                   });
                   killStreakRef.current++;
-                  if (killStreakRef.current % 5 === 0) {
+                  if (killStreakRef.current % 2 === 0) {
                     setIntegrity(prev => Math.min(MAX_INTEGRITY, prev + 2));
                     createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', '+2 HP');
                   }
