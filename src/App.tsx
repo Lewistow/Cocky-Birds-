@@ -1032,7 +1032,7 @@ export default function App() {
     const now = ctx.currentTime;
     gain.gain.cancelScheduledValues(now);
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.4, now + 0.05);
+    gain.gain.linearRampToValueAtTime(0.8, now + 0.05);
     gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
 
     // Victory Fanfare Chord (C Majorish)
@@ -1043,7 +1043,7 @@ export default function App() {
       osc.frequency.exponentialRampToValueAtTime(freq * 1.2, now + 0.5);
       
       const oscGain = ctx.createGain();
-      oscGain.gain.setValueAtTime(0.1, now);
+      oscGain.gain.setValueAtTime(0.2, now);
       oscGain.gain.exponentialRampToValueAtTime(0.01, now + 1);
       
       osc.connect(oscGain);
@@ -1648,7 +1648,7 @@ export default function App() {
       ctx.save();
       ctx.globalAlpha = p.life;
       if (p.type === 'TEXT') {
-        ctx.fillStyle = COLORS.YELLOW;
+        ctx.fillStyle = p.color;
         ctx.strokeStyle = COLORS.BLACK;
         ctx.lineWidth = 8;
         let fontSize = 48;
