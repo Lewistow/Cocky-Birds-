@@ -195,6 +195,9 @@ export default function App() {
   const isSlamming = useRef(false);
   const frameCount = useRef(0);
   const isDivineRef = useRef(false);
+  const divineEndTimeRef = useRef(0);
+  const flashEndTimeRef = useRef(0);
+  const shakeEndTimeRef = useRef(0);
   const killStreakRef = useRef(0);
   const lastMilestoneRef = useRef(0);
   const scoreRef = useRef(0);
@@ -240,10 +243,14 @@ export default function App() {
     isThunderReadyRef.current = false;
     setIsDivine(false);
     isDivineRef.current = false;
+    divineEndTimeRef.current = 0;
+    flashEndTimeRef.current = 0;
+    shakeEndTimeRef.current = 0;
     stopThunderRumble();
     if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     setIsFlashing(false);
     setIsShaking(false);
+    setIsDivine(false);
     
     const tutorialDone = localStorage.getItem('cocky-birds-tutorial-done') === 'true';
     if (!tutorialDone) {
@@ -953,14 +960,15 @@ export default function App() {
     isCrumbling.current = true;
     playCrumbleSound();
     setIsShaking(true);
+    shakeEndTimeRef.current = Date.now() + 500;
     setIsDivine(false);
     isDivineRef.current = false;
+    divineEndTimeRef.current = 0;
     setIsThunderReady(false);
     isThunderReadyRef.current = false;
     stopThunderRumble();
     if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
-    
-    setTimeout(() => setIsShaking(false), 500);
+    flashEndTimeRef.current = 0;
 
     const { width, height } = dimensions.current;
     const pipeX = width / 2 - PIPE_WIDTH / 2;
@@ -1117,6 +1125,22 @@ export default function App() {
       f.rotation += f.vRotation;
     });
 
+    // Update Visual Effect States based on timestamps
+    const now = Date.now();
+    
+    if (isDivineRef.current && now > divineEndTimeRef.current) {
+      isDivineRef.current = false;
+      setIsDivine(false);
+    }
+    
+    if (isFlashing && now > flashEndTimeRef.current) {
+      setIsFlashing(false);
+    }
+    
+    if (isShaking && now > shakeEndTimeRef.current) {
+      setIsShaking(false);
+    }
+
     if (gameState !== 'PLAYING') return;
 
     // Thunder Ready logic - Use Ref for logic, State for UI
@@ -1137,8 +1161,8 @@ export default function App() {
         isSlamming.current = false;
         
         // Impact Frame
-        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
         setIsFlashing(true);
+        flashEndTimeRef.current = now + 50;
 
         // Thunder Strike Trigger - Check Ref
         if (isThunderReadyRef.current) {
@@ -1148,8 +1172,16 @@ export default function App() {
           playDivineStrike();
           chaosRef.current = 0;
           setChaos(0);
-          setIsDivine(true);
+          
           isDivineRef.current = true;
+          setIsDivine(true);
+          divineEndTimeRef.current = now + 1200;
+          
+          setIsShaking(true);
+          shakeEndTimeRef.current = now + 1200;
+          
+          setIsFlashing(true);
+          flashEndTimeRef.current = now + 1200;
           
           // Kill ALL birds
           birds.current.forEach(bird => {
@@ -1165,7 +1197,7 @@ export default function App() {
                 createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
                 playMilestoneSound();
                 setIsShaking(true);
-                setTimeout(() => setIsShaking(false), 300);
+                shakeEndTimeRef.current = now + 300;
               }
 
               killStreakRef.current++;
@@ -1178,78 +1210,61 @@ export default function App() {
               createParticles(bird.x, bird.y, COLORS.YELLOW, 20, 'FEATHER');
             }
           });
-          
-          setIsShaking(true);
-          setIsDivine(true);
-          setIsFlashing(true);
-          
-          if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
-          flashTimeoutRef.current = setTimeout(() => {
-            setIsShaking(false);
-            setIsFlashing(false);
-            setIsDivine(false);
-            isDivineRef.current = false;
-          }, 1200); // Full second of god mode
         } else {
-          // Normal impact flash - only if NOT divine
+          // Normal crush check - only if NOT divine
           if (!isDivineRef.current) {
-            if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
-            setIsFlashing(true);
-            flashTimeoutRef.current = setTimeout(() => setIsFlashing(false), 50);
-          }
-          
-          // Normal crush check
-          let hitAny = false;
-          birds.current.forEach(bird => {
-            if (bird.state === 'FLYING' && 
-                bird.x > dimensions.current.width / 2 - PIPE_WIDTH / 2 - 20 && 
-                bird.x < dimensions.current.width / 2 + PIPE_WIDTH / 2 + 20) {
-              
-              if (bird.y > gapY.current - DEFAULT_GAP_SIZE/2 && bird.y < gapY.current + DEFAULT_GAP_SIZE/2) {
-                hitAny = true;
-                bird.health--;
-                if (bird.health <= 0) {
-                  bird.state = 'CRUSHED';
-                  
-                  scoreRef.current++;
-                  const next = scoreRef.current;
-                  if (next % 10 === 0 && next > lastMilestoneRef.current) {
-                    lastMilestoneRef.current = next;
-                    integrityRef.current = MAX_INTEGRITY;
-                    createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
-                    createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
-                    playMilestoneSound();
-                    setIsShaking(true);
-                    setTimeout(() => setIsShaking(false), 300);
-                  }
+            let hitAny = false;
+            birds.current.forEach(bird => {
+              if (bird.state === 'FLYING' && 
+                  bird.x > dimensions.current.width / 2 - PIPE_WIDTH / 2 - 20 && 
+                  bird.x < dimensions.current.width / 2 + PIPE_WIDTH / 2 + 20) {
+                
+                if (bird.y > gapY.current - DEFAULT_GAP_SIZE/2 && bird.y < gapY.current + DEFAULT_GAP_SIZE/2) {
+                  hitAny = true;
+                  bird.health--;
+                  if (bird.health <= 0) {
+                    bird.state = 'CRUSHED';
+                    
+                    scoreRef.current++;
+                    const next = scoreRef.current;
+                    if (next % 10 === 0 && next > lastMilestoneRef.current) {
+                      lastMilestoneRef.current = next;
+                      integrityRef.current = MAX_INTEGRITY;
+                      createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
+                      createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
+                      playMilestoneSound();
+                      setIsShaking(true);
+                      shakeEndTimeRef.current = now + 300;
+                    }
 
-                  killStreakRef.current++;
-                  if (killStreakRef.current % 2 === 0) {
-                    integrityRef.current = Math.min(MAX_INTEGRITY, integrityRef.current + 2);
-                    createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', '+2 HP');
+                    killStreakRef.current++;
+                    if (killStreakRef.current % 2 === 0) {
+                      integrityRef.current = Math.min(MAX_INTEGRITY, integrityRef.current + 2);
+                      createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', '+2 HP');
+                    }
+                    playSquashSound();
+                    
+                    chaosRef.current = Math.min(CHAOS_LIMIT, chaosRef.current + 15);
+                    setChaos(chaosRef.current);
+                    setLastKillTime(Date.now());
+                    
+                    // Graphic Effects
+                    createParticles(bird.x, bird.y, COLORS.YELLOW, 25, 'FEATHER');
+                    createParticles(bird.x, bird.y, COLORS.WHITE, 1, 'TEXT', 'SQUASH!');
+                    setIsShaking(true);
+                    shakeEndTimeRef.current = now + 300;
+                  } else {
+                    createParticles(bird.x, bird.y, COLORS.WHITE, 1, 'TEXT', 'CLANG!');
+                    bird.vx = -0.5; // Stun
+                    playMetallicSound(false); // Clang sound
                   }
-                  playSquashSound();
-                  
-                  chaosRef.current = Math.min(CHAOS_LIMIT, chaosRef.current + 15);
-                  setChaos(chaosRef.current);
-                  setLastKillTime(Date.now());
-                  
-                  // Graphic Effects
-                  createParticles(bird.x, bird.y, COLORS.YELLOW, 25, 'FEATHER');
-                  createParticles(bird.x, bird.y, COLORS.WHITE, 1, 'TEXT', 'SQUASH!');
-                  setIsShaking(true);
-                  setTimeout(() => setIsShaking(false), 300);
-                } else {
-                  createParticles(bird.x, bird.y, COLORS.WHITE, 1, 'TEXT', 'CLANG!');
-                  bird.vx = -0.5; // Stun
-                  playMetallicSound(false); // Clang sound
                 }
               }
-            }
-          });
+            });
 
-          if (!hitAny) {
-            playMetallicSound(true); // Miss sound
+            if (!hitAny) {
+              playMetallicSound(true); // Miss sound
+            }
           }
         }
       }
