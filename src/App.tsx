@@ -241,6 +241,9 @@ export default function App() {
     setIsDivine(false);
     isDivineRef.current = false;
     stopThunderRumble();
+    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    setIsFlashing(false);
+    setIsShaking(false);
     
     const tutorialDone = localStorage.getItem('cocky-birds-tutorial-done') === 'true';
     if (!tutorialDone) {
@@ -950,6 +953,13 @@ export default function App() {
     isCrumbling.current = true;
     playCrumbleSound();
     setIsShaking(true);
+    setIsDivine(false);
+    isDivineRef.current = false;
+    setIsThunderReady(false);
+    isThunderReadyRef.current = false;
+    stopThunderRumble();
+    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    
     setTimeout(() => setIsShaking(false), 500);
 
     const { width, height } = dimensions.current;
@@ -1181,9 +1191,13 @@ export default function App() {
             isDivineRef.current = false;
           }, 1200); // Full second of god mode
         } else {
-          if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
-          setIsFlashing(true);
-          flashTimeoutRef.current = setTimeout(() => setIsFlashing(false), 50);
+          // Normal impact flash - only if NOT divine
+          if (!isDivineRef.current) {
+            if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+            setIsFlashing(true);
+            flashTimeoutRef.current = setTimeout(() => setIsFlashing(false), 50);
+          }
+          
           // Normal crush check
           let hitAny = false;
           birds.current.forEach(bird => {
