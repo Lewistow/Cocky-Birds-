@@ -1145,7 +1145,9 @@ export default function App() {
                 const next = s + 1;
                 if (next % 10 === 0 && next > lastMilestoneRef.current) {
                   lastMilestoneRef.current = next;
+                  setIntegrity(MAX_INTEGRITY);
                   createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
+                  createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
                   playMilestoneSound();
                   setIsShaking(true);
                   setTimeout(() => setIsShaking(false), 300);
@@ -1194,7 +1196,9 @@ export default function App() {
                     const next = s + 1;
                     if (next % 10 === 0 && next > lastMilestoneRef.current) {
                       lastMilestoneRef.current = next;
+                      setIntegrity(MAX_INTEGRITY);
                       createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
+                      createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
                       playMilestoneSound();
                       setIsShaking(true);
                       setTimeout(() => setIsShaking(false), 300);
