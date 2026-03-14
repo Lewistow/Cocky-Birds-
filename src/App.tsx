@@ -236,6 +236,7 @@ export default function App() {
     isThunderReadyRef.current = false;
     setIsDivine(false);
     isDivineRef.current = false;
+    stopThunderRumble();
     
     const tutorialDone = localStorage.getItem('cocky-birds-tutorial-done') === 'true';
     if (!tutorialDone) {
@@ -256,6 +257,7 @@ export default function App() {
   const isLoopingStartedRef = useRef(false);
   const thunderRumbleSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const thunderRumbleGainRef = useRef<GainNode | null>(null);
+  const thunderRumbleLFORef = useRef<OscillatorNode | null>(null);
 
   // Initialize Audio
   useEffect(() => {
@@ -427,10 +429,41 @@ export default function App() {
     }, duration * 1000 + 100);
   }, []);
 
+  const stopThunderRumble = useCallback(() => {
+    const source = thunderRumbleSourceRef.current;
+    const gain = thunderRumbleGainRef.current;
+    const lfo = thunderRumbleLFORef.current;
+
+    if (gain && audioCtxRef.current) {
+      const now = audioCtxRef.current.currentTime;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+    }
+
+    setTimeout(() => {
+      if (source) {
+        try { source.stop(); } catch(e) {}
+        source.disconnect();
+      }
+      if (lfo) {
+        try { lfo.stop(); } catch(e) {}
+        lfo.disconnect();
+      }
+    }, 150);
+
+    thunderRumbleSourceRef.current = null;
+    thunderRumbleGainRef.current = null;
+    thunderRumbleLFORef.current = null;
+  }, []);
+
   const playThunderRumble = useCallback(() => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
     if (ctx.state === 'suspended') ctx.resume();
+
+    // Stop existing if any
+    stopThunderRumble();
 
     const now = ctx.currentTime;
     const bufferSize = ctx.sampleRate * 2;
@@ -468,24 +501,8 @@ export default function App() {
     source.start();
     thunderRumbleSourceRef.current = source;
     thunderRumbleGainRef.current = gain;
-  }, []);
-
-  const stopThunderRumble = useCallback(() => {
-    const source = thunderRumbleSourceRef.current;
-    const gain = thunderRumbleGainRef.current;
-    if (source && gain && audioCtxRef.current) {
-      const now = audioCtxRef.current.currentTime;
-      gain.gain.cancelScheduledValues(now);
-      gain.gain.setValueAtTime(gain.gain.value, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
-      setTimeout(() => {
-        source.stop();
-        source.disconnect();
-      }, 150);
-    }
-    thunderRumbleSourceRef.current = null;
-    thunderRumbleGainRef.current = null;
-  }, []);
+    thunderRumbleLFORef.current = lfo;
+  }, [stopThunderRumble]);
 
   const playDivineStrike = useCallback(() => {
     if (!audioCtxRef.current) return;
@@ -493,8 +510,8 @@ export default function App() {
     if (ctx.state === 'suspended') ctx.resume();
     const now = ctx.currentTime;
 
-    // --- Sound 1: Broadband Strike & Long Rumble (5s) ---
-    const s1Duration = 5;
+    // --- Sound 1: Broadband Strike & Long Rumble (3s) ---
+    const s1Duration = 3;
     const s1Buffer = ctx.createBuffer(1, ctx.sampleRate * s1Duration, ctx.sampleRate);
     const s1Data = s1Buffer.getChannelData(0);
     for (let i = 0; i < s1Data.length; i++) s1Data[i] = Math.random() * 2 - 1;
