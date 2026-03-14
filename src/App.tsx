@@ -197,6 +197,8 @@ export default function App() {
   const isDivineRef = useRef(false);
   const killStreakRef = useRef(0);
   const lastMilestoneRef = useRef(0);
+  const scoreRef = useRef(0);
+  const integrityRef = useRef(MAX_INTEGRITY);
   const animationFrameId = useRef<number>(0);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dimensions = useRef({ width: 0, height: 0 });
@@ -227,9 +229,11 @@ export default function App() {
     isSlamming.current = false;
     frameCount.current = 0;
     setScore(0);
+    scoreRef.current = 0;
     killStreakRef.current = 0;
     lastMilestoneRef.current = 0;
     setIntegrity(MAX_INTEGRITY);
+    integrityRef.current = MAX_INTEGRITY;
     setChaos(0);
     chaosRef.current = 0;
     setIsThunderReady(false);
@@ -1141,22 +1145,22 @@ export default function App() {
           birds.current.forEach(bird => {
             if (bird.state !== 'CRUSHED') {
               bird.state = 'CRUSHED';
-              setScore(s => {
-                const next = s + 1;
-                if (next % 10 === 0 && next > lastMilestoneRef.current) {
-                  lastMilestoneRef.current = next;
-                  setIntegrity(MAX_INTEGRITY);
-                  createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
-                  createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
-                  playMilestoneSound();
-                  setIsShaking(true);
-                  setTimeout(() => setIsShaking(false), 300);
-                }
-                return next;
-              });
+              
+              scoreRef.current++;
+              const next = scoreRef.current;
+              if (next % 10 === 0 && next > lastMilestoneRef.current) {
+                lastMilestoneRef.current = next;
+                integrityRef.current = MAX_INTEGRITY;
+                createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
+                createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
+                playMilestoneSound();
+                setIsShaking(true);
+                setTimeout(() => setIsShaking(false), 300);
+              }
+
               killStreakRef.current++;
               if (killStreakRef.current % 2 === 0) {
-                setIntegrity(prev => Math.min(MAX_INTEGRITY, prev + 2));
+                integrityRef.current = Math.min(MAX_INTEGRITY, integrityRef.current + 2);
                 createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', '+2 HP');
               }
               playSquashSound();
@@ -1192,22 +1196,22 @@ export default function App() {
                 bird.health--;
                 if (bird.health <= 0) {
                   bird.state = 'CRUSHED';
-                  setScore(s => {
-                    const next = s + 1;
-                    if (next % 10 === 0 && next > lastMilestoneRef.current) {
-                      lastMilestoneRef.current = next;
-                      setIntegrity(MAX_INTEGRITY);
-                      createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
-                      createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
-                      playMilestoneSound();
-                      setIsShaking(true);
-                      setTimeout(() => setIsShaking(false), 300);
-                    }
-                    return next;
-                  });
+                  
+                  scoreRef.current++;
+                  const next = scoreRef.current;
+                  if (next % 10 === 0 && next > lastMilestoneRef.current) {
+                    lastMilestoneRef.current = next;
+                    integrityRef.current = MAX_INTEGRITY;
+                    createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
+                    createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
+                    playMilestoneSound();
+                    setIsShaking(true);
+                    setTimeout(() => setIsShaking(false), 300);
+                  }
+
                   killStreakRef.current++;
                   if (killStreakRef.current % 2 === 0) {
-                    setIntegrity(prev => Math.min(MAX_INTEGRITY, prev + 2));
+                    integrityRef.current = Math.min(MAX_INTEGRITY, integrityRef.current + 2);
                     createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', '+2 HP');
                   }
                   playSquashSound();
@@ -1243,7 +1247,7 @@ export default function App() {
     }
 
     // Spawn birds
-    const spawnRate = Math.max(15, 80 - Math.floor(score / 5) * 4);
+    const spawnRate = Math.max(15, 80 - Math.floor(scoreRef.current / 5) * 4);
     if (frameCount.current % spawnRate === 0) {
       spawnBird();
     }
@@ -1316,7 +1320,7 @@ export default function App() {
           bird.state = 'PASSED';
           bird.taunt = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
           bird.tauntTime = 120;
-          setIntegrity(prev => Math.max(0, prev - 10)); // Increased breach damage to 10
+          integrityRef.current = Math.max(0, integrityRef.current - 10); // Increased breach damage to 10
           setLastDamageTime(Date.now());
           killStreakRef.current = 0; // Reset streak on breach
 
@@ -1351,7 +1355,7 @@ export default function App() {
         
         if (!isGap) {
           if (!isSlamming.current) {
-            setIntegrity(prev => Math.max(0, prev - 10)); // Increased bullet damage to 10
+            integrityRef.current = Math.max(0, integrityRef.current - 10); // Increased bullet damage to 10
             setLastDamageTime(Date.now());
             playBulletHitSound();
             killStreakRef.current = 0; // Reset streak on damage
@@ -1375,6 +1379,10 @@ export default function App() {
 
     birds.current = birds.current.filter(b => b.x > -200);
     bullets.current = bullets.current.filter(b => b.x > -100);
+
+    // Sync state for UI
+    setScore(scoreRef.current);
+    setIntegrity(integrityRef.current);
   }, [gameState, spawnBird]);
 
   const draw = useCallback((ctx: CanvasRenderingContext2D) => {
