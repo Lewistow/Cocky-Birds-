@@ -210,6 +210,7 @@ export default function App() {
   const isCrumbling = useRef(false);
   const birdIdCounter = useRef(0);
   const isWarmupActiveRef = useRef(false);
+  const thunderActiveForSlam = useRef(false);
 
   const initGame = useCallback(() => {
     const canvas = canvasRef.current;
@@ -230,6 +231,7 @@ export default function App() {
     mousePos.current = { x: width / 2, y: height / 2 };
     currentGapSize.current = DEFAULT_GAP_SIZE;
     isSlamming.current = false;
+    thunderActiveForSlam.current = false;
     frameCount.current = 0;
     setScore(0);
     scoreRef.current = 0;
@@ -1148,6 +1150,8 @@ export default function App() {
       isThunderReadyRef.current = true;
       setIsThunderReady(true);
       playThunderRumble();
+      // Force slam state to false to ensure they must tap again
+      isSlamming.current = false;
     }
 
     // Gap logic
@@ -1164,8 +1168,8 @@ export default function App() {
         setIsFlashing(true);
         flashEndTimeRef.current = now + 50;
 
-        // Thunder Strike Trigger - Check Ref
-        if (isThunderReadyRef.current) {
+        // Thunder Strike Trigger - Check Ref AND if it was ready when slam started
+        if (isThunderReadyRef.current && thunderActiveForSlam.current) {
           isThunderReadyRef.current = false;
           setIsThunderReady(false);
           stopThunderRumble();
@@ -1794,6 +1798,8 @@ export default function App() {
     startAudio();
     if (gameState === 'PLAYING') {
       isSlamming.current = true;
+      // Capture readiness state at the start of the slam
+      thunderActiveForSlam.current = isThunderReadyRef.current;
     }
   };
 
