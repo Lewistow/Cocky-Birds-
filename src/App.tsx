@@ -164,8 +164,19 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState>('START');
   const [score, setScore] = useState(0);
+  const totalSmashedRef = useRef(0);
   const [highScore, setHighScore] = useState(() => {
     const saved = localStorage.getItem('cocky-birds-high-score');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [totalBirdsSmashed, setTotalBirdsSmashed] = useState(() => {
+    const saved = localStorage.getItem('cocky-birds-total-smashed');
+    const val = saved ? parseInt(saved, 10) : 0;
+    totalSmashedRef.current = val;
+    return val;
+  });
+  const [totalGamesPlayed, setTotalGamesPlayed] = useState(() => {
+    const saved = localStorage.getItem('cocky-birds-total-games');
     return saved ? parseInt(saved, 10) : 0;
   });
   const [integrity, setIntegrity] = useState(MAX_INTEGRITY);
@@ -235,6 +246,14 @@ export default function App() {
     frameCount.current = 0;
     setScore(0);
     scoreRef.current = 0;
+    
+    // Increment total games played
+    setTotalGamesPlayed(prev => {
+      const next = prev + 1;
+      localStorage.setItem('cocky-birds-total-games', next.toString());
+      return next;
+    });
+
     killStreakRef.current = 0;
     lastMilestoneRef.current = 0;
     setIntegrity(MAX_INTEGRITY);
@@ -906,12 +925,7 @@ export default function App() {
   }, [initGame]);
 
   useEffect(() => {
-    if (gameState === 'GAME_OVER') {
-      if (score > highScore) {
-        setHighScore(score);
-        localStorage.setItem('cocky-birds-high-score', score.toString());
-      }
-    }
+    // High score is now updated immediately during gameplay
   }, [gameState, score, highScore]);
 
   const playCrumbleSound = useCallback(() => {
@@ -1194,6 +1208,16 @@ export default function App() {
               
               scoreRef.current++;
               const next = scoreRef.current;
+              
+              // Update high score immediately
+              if (next > highScore) {
+                setHighScore(next);
+                localStorage.setItem('cocky-birds-high-score', next.toString());
+              }
+
+              // Update total smashed ref
+              totalSmashedRef.current++;
+
               if (next % 10 === 0 && next > lastMilestoneRef.current) {
                 lastMilestoneRef.current = next;
                 integrityRef.current = MAX_INTEGRITY;
@@ -1231,6 +1255,16 @@ export default function App() {
                     
                     scoreRef.current++;
                     const next = scoreRef.current;
+
+                    // Update high score immediately
+                    if (next > highScore) {
+                      setHighScore(next);
+                      localStorage.setItem('cocky-birds-high-score', next.toString());
+                    }
+
+                    // Update total smashed ref
+                    totalSmashedRef.current++;
+
                     if (next % 10 === 0 && next > lastMilestoneRef.current) {
                       lastMilestoneRef.current = next;
                       integrityRef.current = MAX_INTEGRITY;
@@ -1416,7 +1450,13 @@ export default function App() {
     // Sync state for UI
     setScore(scoreRef.current);
     setIntegrity(integrityRef.current);
-  }, [gameState, spawnBird]);
+    
+    // Sync total smashed to state and localStorage
+    if (totalBirdsSmashed !== totalSmashedRef.current) {
+      setTotalBirdsSmashed(totalSmashedRef.current);
+      localStorage.setItem('cocky-birds-total-smashed', totalSmashedRef.current.toString());
+    }
+  }, [gameState, spawnBird, totalBirdsSmashed, highScore]);
 
   const draw = useCallback((ctx: CanvasRenderingContext2D) => {
     const { width, height } = dimensions.current;
@@ -2026,6 +2066,10 @@ export default function App() {
                 </div>
                 <div className="bg-black text-white p-2 md:p-4 border-2 md:border-4 border-white">
                   <p className="font-black uppercase text-[7px] md:text-xs tracking-widest">Best Record: {highScore}</p>
+                </div>
+                <div className="bg-white/10 p-2 border border-white/20">
+                  <p className="text-[6px] md:text-[8px] font-black uppercase text-white/60">Total Smashed (Lifetime)</p>
+                  <p className="text-xs md:text-lg font-black text-white italic">{totalBirdsSmashed}</p>
                 </div>
               </div>
 
