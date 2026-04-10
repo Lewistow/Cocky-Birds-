@@ -222,6 +222,20 @@ export default function App() {
   const birdIdCounter = useRef(0);
   const isWarmupActiveRef = useRef(false);
   const thunderActiveForSlam = useRef(false);
+  const tauntDeck = useRef<string[]>([]);
+
+  const getNextTaunt = useCallback(() => {
+    if (tauntDeck.current.length === 0) {
+      const deck = [...TAUNTS];
+      // Fisher-Yates Shuffle
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      tauntDeck.current = deck;
+    }
+    return tauntDeck.current.pop() || "LAME!";
+  }, []);
 
   const initGame = useCallback(() => {
     const canvas = canvasRef.current;
@@ -1385,7 +1399,7 @@ export default function App() {
 
         if (bird.x < dimensions.current.width / 2 - PIPE_WIDTH) {
           bird.state = 'PASSED';
-          bird.taunt = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
+          bird.taunt = getNextTaunt();
           bird.tauntTime = 120;
           integrityRef.current = Math.max(0, integrityRef.current - 10); // Increased breach damage to 10
           setLastDamageTime(Date.now());
@@ -1551,8 +1565,18 @@ export default function App() {
         const shakeX = (Math.random() - 0.5) * 4;
         const shakeY = (Math.random() - 0.5) * 4;
         
-        ctx.strokeText(bird.taunt, shakeX, -bird.size - 20 + shakeY);
-        ctx.fillText(bird.taunt, shakeX, -bird.size - 20 + shakeY);
+        const words = bird.taunt.split(' ');
+        let lines = [bird.taunt];
+        if (bird.taunt.length > 10 && words.length > 1) {
+          const mid = Math.ceil(words.length / 2);
+          lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
+        }
+
+        lines.forEach((line, i) => {
+          const yOffset = -bird.size - 20 + shakeY - (lines.length - 1 - i) * 35;
+          ctx.strokeText(line, shakeX, yOffset);
+          ctx.fillText(line, shakeX, yOffset);
+        });
         ctx.restore();
       }
 
@@ -1772,8 +1796,19 @@ export default function App() {
         const tx = p.x + (Math.random() - 0.5) * 5;
         const ty = p.y + (Math.random() - 0.5) * 5;
         
-        ctx.strokeText(p.text!, tx, ty);
-        ctx.fillText(p.text!, tx, ty);
+        const words = p.text!.split(' ');
+        let lines = [p.text!];
+        // Only split if it's long and has spaces, but don't split special big messages
+        if (p.text!.length > 12 && words.length > 1 && !p.text!.includes('!!!') && !p.text!.includes('POINTS!')) {
+          const mid = Math.ceil(words.length / 2);
+          lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
+        }
+
+        lines.forEach((line, i) => {
+          const lineY = ty + (i - (lines.length - 1) / 2) * (fontSize * 0.9);
+          ctx.strokeText(line, tx, lineY);
+          ctx.fillText(line, tx, lineY);
+        });
       } else {
         ctx.fillStyle = p.color;
         ctx.strokeStyle = COLORS.BLACK;
