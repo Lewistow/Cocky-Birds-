@@ -308,46 +308,6 @@ export default function App() {
   const thunderRumbleGainRef = useRef<GainNode | null>(null);
   const thunderRumbleLFORef = useRef<OscillatorNode | null>(null);
 
-  // Initialize Audio
-  useEffect(() => {
-    const loadBuffers = async () => {
-      try {
-        const [menuRes, playRes] = await Promise.all([
-          fetch(MENU_AUDIO_URL),
-          fetch(PLAY_AUDIO_URL)
-        ]);
-        const [menuAB, playAB] = await Promise.all([
-          menuRes.arrayBuffer(),
-          playRes.arrayBuffer()
-        ]);
-        
-        if (!audioCtxRef.current) {
-          audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        }
-        
-        const [menuBuffer, playBuffer] = await Promise.all([
-          audioCtxRef.current.decodeAudioData(menuAB),
-          audioCtxRef.current.decodeAudioData(playAB)
-        ]);
-        
-        menuBufferRef.current = menuBuffer;
-        playBufferRef.current = playBuffer;
-        
-        if (audioStarted.current) {
-          startAudio();
-        }
-      } catch (e) {
-        console.error("Failed to load audio buffers", e);
-      }
-    };
-
-    loadBuffers();
-
-    return () => {
-      audioCtxRef.current?.close();
-    };
-  }, []);
-
   const startAudio = useCallback(() => {
     if (isLoopingStartedRef.current) return;
     
@@ -383,11 +343,13 @@ export default function App() {
 
     audioStarted.current = true;
 
-    if (menuBufferRef.current && playBufferRef.current) {
+    if (menuBufferRef.current || playBufferRef.current) {
       const scheduleLoop = (buffer: AudioBuffer, gainNode: GainNode) => {
         let nextStartTime = ctx.currentTime + 0.1;
         
         const playNext = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          
           const source = ctx.createBufferSource();
           source.buffer = buffer;
           source.connect(gainNode);
@@ -396,8 +358,6 @@ export default function App() {
           const duration = buffer.duration;
           nextStartTime += duration;
           
-          // The "trick": schedule the next sound before the first one ends
-          // We schedule the next one 1 second before the current one ends to ensure gapless playback
           const delay = (nextStartTime - ctx.currentTime - 1.0) * 1000;
           setTimeout(playNext, Math.max(0, delay));
         };
@@ -405,12 +365,59 @@ export default function App() {
         playNext();
       };
 
-      scheduleLoop(menuBufferRef.current, menuGainNodeRef.current!);
-      scheduleLoop(playBufferRef.current, playGainNodeRef.current!);
+      if (menuBufferRef.current) {
+        scheduleLoop(menuBufferRef.current, menuGainNodeRef.current!);
+      }
+      if (playBufferRef.current) {
+        scheduleLoop(playBufferRef.current, playGainNodeRef.current!);
+      }
+      
       isLoopingStartedRef.current = true;
       isAudioUnlockedRef.current = true;
     }
   }, []);
+
+  // Initialize Audio
+  useEffect(() => {
+    const loadBuffers = async () => {
+      const loadOne = async (url: string, name: string) => {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const ab = await res.arrayBuffer();
+          if (!audioCtxRef.current) {
+            audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+          }
+          const buffer = await audioCtxRef.current.decodeAudioData(ab);
+          console.log(`Successfully loaded ${name}`);
+          return buffer;
+        } catch (e) {
+          console.warn(`Failed to load ${name} from ${url}:`, e);
+          return null;
+        }
+      };
+
+      const [menuBuffer, playBuffer] = await Promise.all([
+        loadOne(MENU_AUDIO_URL, 'Menu Audio'),
+        loadOne(PLAY_AUDIO_URL, 'Play Audio')
+      ]);
+
+      menuBufferRef.current = menuBuffer;
+      playBufferRef.current = playBuffer;
+
+      if (audioStarted.current) {
+        startAudio();
+      }
+    };
+
+    loadBuffers();
+
+    return () => {
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, [startAudio]);
 
   const playMetallicSound = useCallback((isMiss: boolean) => {
     if (!audioCtxRef.current) {
