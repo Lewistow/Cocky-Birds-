@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, RotateCcw, Shield, Zap, Skull, Target, Flame } from 'lucide-react';
+import { Play, RotateCcw, Shield, Zap, Skull, Target, Flame, Share2 } from 'lucide-react';
 
 // Constants
 const PIPE_WIDTH = 60;
@@ -179,6 +179,10 @@ export default function App() {
     const saved = localStorage.getItem('cocky-birds-total-games');
     return saved ? parseInt(saved, 10) : 0;
   });
+  const [hasSeenShareBanner, setHasSeenShareBanner] = useState(() => {
+    return localStorage.getItem('cocky-birds-share-banner-seen') === 'true';
+  });
+  const [showShareBanner, setShowShareBanner] = useState(false);
   const [integrity, setIntegrity] = useState(MAX_INTEGRITY);
   const [chaos, setChaos] = useState(0);
   const [isThunderReady, setIsThunderReady] = useState(false);
@@ -265,6 +269,12 @@ export default function App() {
     setTotalGamesPlayed(prev => {
       const next = prev + 1;
       localStorage.setItem('cocky-birds-total-games', next.toString());
+      
+      // Check for share banner trigger (3rd game for first timers)
+      if (next === 3 && !hasSeenShareBanner) {
+        setShowShareBanner(true);
+      }
+      
       return next;
     });
 
@@ -1876,6 +1886,25 @@ export default function App() {
     return () => cancelAnimationFrame(animationFrameId.current);
   }, [loop]);
 
+  const handleShare = async () => {
+    const shareData = {
+      title: 'Cocky Birds',
+      text: `I just squashed ${score} birds in Cocky Birds! Can you beat my score? 🐦🕶️`,
+      url: 'https://cocky-birds.vercel.app'
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        createParticles(dimensions.current.width / 2, dimensions.current.height / 2, COLORS.GREEN, 1, 'TEXT', 'LINK COPIED!');
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
+
   const handleInteraction = (e: React.PointerEvent | React.MouseEvent) => {
     startAudio();
     if (gameState === 'PLAYING') {
@@ -2071,19 +2100,31 @@ export default function App() {
                 REVENGE IS A PIPE
               </p>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  startAudio();
-                  initGame();
-                  setGameState('PLAYING');
-                }}
-                className="brutalist-btn w-full py-3 md:py-6 text-lg md:text-3xl font-black text-black flex items-center justify-center gap-2 md:gap-4"
-              >
-                <Play fill="currentColor" size={20} md:size={32} />
-                CRUSH 'EM!
-              </motion.button>
+              <div className="flex flex-col gap-3 w-full">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    startAudio();
+                    initGame();
+                    setGameState('PLAYING');
+                  }}
+                  className="brutalist-btn w-full py-3 md:py-6 text-lg md:text-3xl font-black text-black flex items-center justify-center gap-2 md:gap-4 bg-[#00FF41]"
+                >
+                  <Play fill="currentColor" size={20} md:size={32} />
+                  CRUSH 'EM!
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleShare}
+                  className="brutalist-btn w-full py-2 md:py-4 text-sm md:text-xl font-black text-black flex items-center justify-center gap-2 md:gap-3 bg-[#00F0FF]"
+                >
+                  <Share2 size={16} md:size={24} strokeWidth={3} />
+                  SHARE GAME
+                </motion.button>
+              </div>
             </div>
           </motion.div>
         )}
@@ -2092,8 +2133,40 @@ export default function App() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md p-4"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md p-4 z-[200]"
           >
+            {showShareBanner && (
+              <motion.div 
+                initial={{ y: -100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="mb-4 bg-yellow-400 border-4 border-black p-4 shadow-[8px_8px_0px_#000] -rotate-2 max-w-sm w-full relative"
+              >
+                <button 
+                  onClick={() => {
+                    setShowShareBanner(false);
+                    setHasSeenShareBanner(true);
+                    localStorage.setItem('cocky-birds-share-banner-seen', 'true');
+                  }}
+                  className="absolute -top-4 -right-4 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center font-black border-2 border-white"
+                >
+                  X
+                </button>
+                <h3 className="text-xl font-black text-black uppercase leading-none mb-2">YOU'RE GETTING GOOD!</h3>
+                <p className="text-black font-bold text-sm mb-4">Share your best score of {highScore} and see if your friends can beat it! 🐦🕶️</p>
+                <button 
+                  onClick={() => {
+                    handleShare();
+                    setShowShareBanner(false);
+                    setHasSeenShareBanner(true);
+                    localStorage.setItem('cocky-birds-share-banner-seen', 'true');
+                  }}
+                  className="w-full bg-black text-white py-2 font-black uppercase tracking-widest hover:bg-white hover:text-black transition-colors border-2 border-black"
+                >
+                  SHARE NOW
+                </button>
+              </motion.div>
+            )}
+
             <div className="brutalist-card p-4 md:p-12 w-full max-w-[260px] md:max-w-sm text-center relative overflow-hidden bg-[#FF3E00]">
               <div className="absolute top-0 left-0 w-full h-2 md:h-4 bg-black" />
               
