@@ -1604,7 +1604,7 @@ export default function App() {
       ctx.scale(-(1 + flap - velocityStretch), 1 - flap + velocityStretch);
 
       // Bird Body - Graphic Style
-      const color = bird.type === 'TANK' ? COLORS.PURPLE : bird.type === 'SNIPER' ? COLORS.CYAN : COLORS.YELLOW;
+      const color = bird.type === 'TANK' ? COLORS.PURPLE : bird.type === 'SNIPER' ? COLORS.CYAN : bird.type === 'DIVER' ? '#FF0000' : COLORS.YELLOW;
       ctx.fillStyle = color;
       ctx.strokeStyle = COLORS.BLACK;
       ctx.lineWidth = 6;
