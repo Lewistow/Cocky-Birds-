@@ -2100,31 +2100,19 @@ export default function App() {
                 REVENGE IS A PIPE
               </p>
 
-              <div className="flex flex-col gap-3 w-full">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    startAudio();
-                    initGame();
-                    setGameState('PLAYING');
-                  }}
-                  className="brutalist-btn w-full py-3 md:py-6 text-lg md:text-3xl font-black text-black flex items-center justify-center gap-2 md:gap-4 bg-[#00FF41]"
-                >
-                  <Play fill="currentColor" size={20} md:size={32} />
-                  CRUSH 'EM!
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleShare}
-                  className="brutalist-btn w-full py-2 md:py-4 text-sm md:text-xl font-black text-black flex items-center justify-center gap-2 md:gap-3 bg-[#00F0FF]"
-                >
-                  <Share2 size={16} md:size={24} strokeWidth={3} />
-                  SHARE GAME
-                </motion.button>
-              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  startAudio();
+                  initGame();
+                  setGameState('PLAYING');
+                }}
+                className="brutalist-btn w-full py-3 md:py-6 text-lg md:text-3xl font-black text-black flex items-center justify-center gap-2 md:gap-4 bg-[#00FF41]"
+              >
+                <Play fill="currentColor" size={20} md:size={32} />
+                CRUSH 'EM!
+              </motion.button>
             </div>
           </motion.div>
         )}
@@ -2188,19 +2176,31 @@ export default function App() {
                 </div>
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  startAudio();
-                  initGame();
-                  setGameState('PLAYING');
-                }}
-                className="brutalist-btn w-full py-3 md:py-6 text-base md:text-2xl font-black text-black flex items-center justify-center gap-2 md:gap-4 bg-[#00F0FF]"
-              >
-                <RotateCcw size={20} md:size={32} strokeWidth={3} />
-                RETRY!
-              </motion.button>
+              <div className="flex flex-col gap-3 w-full">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleShare}
+                  className="brutalist-btn w-full py-2 md:py-4 text-sm md:text-xl font-black text-black flex items-center justify-center gap-2 md:gap-3 bg-[#FFF000]"
+                >
+                  <Share2 size={16} md:size={24} strokeWidth={3} />
+                  SHARE SCORE
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    startAudio();
+                    initGame();
+                    setGameState('PLAYING');
+                  }}
+                  className="brutalist-btn w-full py-3 md:py-6 text-base md:text-2xl font-black text-black flex items-center justify-center gap-2 md:gap-4 bg-[#00F0FF]"
+                >
+                  <RotateCcw size={20} md:size={32} strokeWidth={3} />
+                  RETRY!
+                </motion.button>
+              </div>
             </div>
           </motion.div>
         )}
