@@ -47,6 +47,7 @@ interface Bullet {
   vx: number;
   vy: number;
   color: string;
+  type?: 'NORMAL' | 'FIRE';
 }
 
 interface Particle {
@@ -891,6 +892,40 @@ export default function App() {
     osc.stop(now + 0.04);
   }, []);
 
+  const playFireShootSound = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    
+    // Low frequency noise for fire "whoosh"
+    const bufferSize = ctx.sampleRate * 0.1;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(800, now);
+    filter.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+    
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    
+    noise.start(now);
+    noise.stop(now + 0.1);
+  }, []);
+
   const playBulletHitSound = useCallback(() => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
@@ -911,6 +946,39 @@ export default function App() {
 
     osc.start(now);
     osc.stop(now + 0.05);
+  }, []);
+
+  const playFireHitSound = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    
+    // Sizzling sound
+    const bufferSize = ctx.sampleRate * 0.2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(2000, now);
+    
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    
+    noise.start(now);
+    noise.stop(now + 0.2);
   }, []);
 
   // Handle Visibility
@@ -1375,11 +1443,15 @@ export default function App() {
 
         const warmupFactor = isWarmupActiveRef.current ? Math.min(1, frameCount.current / WARMUP_FRAMES) : 1;
         const shootRate = bird.type === 'SNIPER' ? 50 : 100;
-        const canShoot = isWarmupActiveRef.current ? (frameCount.current > WARMUP_FRAMES / 3) : true;
+        const canShoot = isWarmupActiveRef.current ? (frameCount.current > WARMUP_FRAMES) : true;
 
         if (canShoot && frameCount.current - bird.lastShot > shootRate && bird.x > dimensions.current.width / 2) {
           bird.lastShot = frameCount.current;
-          playShootSound();
+          if (bird.type === 'DIVER') {
+            playFireShootSound();
+          } else {
+            playShootSound();
+          }
           
           const dx = bird.x - dimensions.current.width / 2;
           const timeToReach = dx / 10;
@@ -1410,7 +1482,8 @@ export default function App() {
             y: bird.y,
             vx: -10,
             vy: bulletVy,
-            color: bird.type === 'SNIPER' ? COLORS.CYAN : COLORS.PURPLE
+            color: bird.type === 'SNIPER' ? COLORS.CYAN : bird.type === 'DIVER' ? '#FF4500' : COLORS.PURPLE,
+            type: bird.type === 'DIVER' ? 'FIRE' : 'NORMAL'
           });
         }
 
@@ -1455,10 +1528,19 @@ export default function App() {
           if (!isSlamming.current) {
             integrityRef.current = Math.max(0, integrityRef.current - 10); // Increased bullet damage to 10
             setLastDamageTime(Date.now());
-            playBulletHitSound();
+            if (bullet.type === 'FIRE') {
+              playFireHitSound();
+            } else {
+              playBulletHitSound();
+            }
             killStreakRef.current = 0; // Reset streak on damage
           }
-          createParticles(bullet.x, bullet.y, COLORS.WHITE, 5, 'SPARK');
+          if (bullet.type === 'FIRE') {
+            createParticles(bullet.x, bullet.y, '#FF4500', 10, 'SPARK');
+            createParticles(bullet.x, bullet.y, '#FFA500', 5, 'SPARK');
+          } else {
+            createParticles(bullet.x, bullet.y, COLORS.WHITE, 5, 'SPARK');
+          }
           bullets.current.splice(bIdx, 1);
         }
       }
@@ -1646,13 +1728,37 @@ export default function App() {
 
     // Draw Bullets
     bullets.current.forEach(b => {
-      ctx.fillStyle = b.color;
-      ctx.strokeStyle = COLORS.BLACK;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, 8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      if (b.type === 'FIRE') {
+        // Fireball effect
+        const gradient = ctx.createRadialGradient(b.x, b.y, 2, b.x, b.y, 12);
+        gradient.addColorStop(0, '#FFF');
+        gradient.addColorStop(0.3, '#FFD700');
+        gradient.addColorStop(0.6, '#FF4500');
+        gradient.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Fire trail
+        for (let i = 0; i < 3; i++) {
+          const tx = b.x + Math.random() * 10;
+          const ty = b.y + (Math.random() - 0.5) * 10;
+          ctx.fillStyle = Math.random() > 0.5 ? '#FF4500' : '#FFA500';
+          ctx.beginPath();
+          ctx.arc(tx, ty, Math.random() * 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = b.color;
+        ctx.strokeStyle = COLORS.BLACK;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
     });
 
     // Draw Pipes - Brutalist Style
