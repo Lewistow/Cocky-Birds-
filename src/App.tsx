@@ -246,8 +246,8 @@ export default function App() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const width = Math.min(canvas.parentElement?.clientWidth || window.innerWidth, 450);
-    const height = canvas.parentElement?.clientHeight || window.innerHeight;
+    const width = canvas.parentElement?.clientWidth || 430;
+    const height = canvas.parentElement?.clientHeight || 764;
     canvas.width = width;
     canvas.height = height;
     dimensions.current = { width, height };
@@ -2110,7 +2110,7 @@ export default function App() {
 
   return (
     <div 
-      className={`relative w-full max-w-[450px] mx-auto h-screen overflow-hidden font-sans touch-none shadow-[0_0_50px_rgba(0,0,0,0.8)] ${isShaking ? 'shake' : ''}`}
+      className={`relative w-full h-full overflow-hidden font-sans touch-none ${isShaking ? 'shake' : ''}`}
       onPointerDown={handleInteraction}
       onPointerMove={handleMove}
     >
