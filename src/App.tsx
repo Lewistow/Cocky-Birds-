@@ -807,6 +807,71 @@ export default function App() {
     }
   }, []);
 
+  const playFireDiverCue = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    
+    const duration = 1.2;
+    const masterGain = ctx.createGain();
+    masterGain.connect(ctx.destination);
+    
+    // Jet engine / Vroom sound
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.type = 'sawtooth';
+    
+    // Pitch sweep up to simulate approaching speed
+    osc.frequency.setValueAtTime(40, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + duration);
+    
+    oscGain.gain.setValueAtTime(0, now);
+    oscGain.gain.linearRampToValueAtTime(0.4, now + 0.4);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    
+    // Add some noise for the "jet" texture
+    const bufferSize = ctx.sampleRate * duration;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(80, now);
+    noiseFilter.frequency.exponentialRampToValueAtTime(1200, now + duration);
+    noiseFilter.Q.value = 1.5;
+    
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0, now);
+    noiseGain.gain.linearRampToValueAtTime(0.3, now + 0.5);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    
+    osc.connect(oscGain);
+    oscGain.connect(masterGain);
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(masterGain);
+    
+    osc.start(now);
+    noise.start(now);
+    osc.stop(now + duration);
+    noise.stop(now + duration);
+    
+    setTimeout(() => {
+      osc.disconnect();
+      noise.disconnect();
+      oscGain.disconnect();
+      noiseFilter.disconnect();
+      noiseGain.disconnect();
+      masterGain.disconnect();
+    }, duration * 1000 + 100);
+  }, []);
+
   const playBigBirdLaugh = useCallback(() => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
@@ -1138,6 +1203,29 @@ export default function App() {
     let oscSpeed = 0.1 + Math.random() * 0.05;
     let oscAmp = 15 + Math.random() * 15;
 
+    const createBird = (t: BirdType, h: number, v: number, s: number, os: number, oa: number) => {
+      const bird: Bird = {
+        id: birdIdCounter.current++,
+        x: dimensions.current.width + 100,
+        y: 0,
+        baseY: Math.random() * (dimensions.current.height - 300) + 150,
+        type: t,
+        health: h,
+        maxHealth: h,
+        vx: v,
+        vy: 0,
+        size: s,
+        state: 'FLYING',
+        lastShot: 0,
+        tauntTime: 0,
+        flapFrame: 0,
+        oscSpeed: os,
+        oscAmp: oa,
+        oscPhase: Math.random() * Math.PI * 2
+      };
+      birds.current.push(bird);
+    };
+
     if (rand > 0.92) {
       type = 'TANK';
       health = 3;
@@ -1151,6 +1239,13 @@ export default function App() {
       size = 20;
       oscSpeed = 0.2;
       oscAmp = 45;
+      
+      // Play cue and delay spawn
+      playFireDiverCue();
+      setTimeout(() => {
+        createBird('DIVER', 1, -6, 20, 0.2, 45);
+      }, 500);
+      return;
     } else if (rand > 0.65) {
       type = 'SNIPER';
       vx = -2.5;
@@ -1159,27 +1254,8 @@ export default function App() {
       oscAmp = 10;
     }
 
-    const bird: Bird = {
-      id: birdIdCounter.current++,
-      x: dimensions.current.width + 100,
-      y: 0,
-      baseY: Math.random() * (dimensions.current.height - 300) + 150,
-      type,
-      health,
-      maxHealth: health,
-      vx,
-      vy: 0,
-      size,
-      state: 'FLYING',
-      lastShot: 0,
-      tauntTime: 0,
-      flapFrame: 0,
-      oscSpeed,
-      oscAmp,
-      oscPhase: Math.random() * Math.PI * 2
-    };
-    birds.current.push(bird);
-  }, []);
+    createBird(type, health, vx, size, oscSpeed, oscAmp);
+  }, [playFireDiverCue]);
 
   const playMilestoneSound = () => {
     const ctx = audioCtxRef.current;
