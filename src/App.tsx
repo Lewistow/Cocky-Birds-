@@ -246,8 +246,8 @@ export default function App() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const width = 430;
-    const height = 932;
+    const width = 600;
+    const height = 1300;
     canvas.width = width;
     canvas.height = height;
     dimensions.current = { width, height };
