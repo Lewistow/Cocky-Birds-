@@ -33,6 +33,7 @@ interface Bird {
   size: number;
   state: 'FLYING' | 'CRUSHED' | 'PASSED';
   lastShot: number;
+  shotsFired: number;
   taunt?: string;
   tauntTime: number;
   flapFrame: number;
@@ -1215,6 +1216,7 @@ export default function App() {
         size: s,
         state: 'FLYING',
         lastShot: 0,
+        shotsFired: 0,
         tauntTime: 0,
         flapFrame: 0,
         oscSpeed: os,
@@ -1518,9 +1520,11 @@ export default function App() {
         const warmupFactor = isWarmupActiveRef.current ? Math.min(1, frameCount.current / WARMUP_FRAMES) : 1;
         const shootRate = bird.type === 'SNIPER' ? 50 : 100;
         const canShoot = isWarmupActiveRef.current ? (frameCount.current > WARMUP_FRAMES) : true;
+        const maxShots = bird.type === 'SNIPER' ? 2 : 1;
 
-        if (canShoot && frameCount.current - bird.lastShot > shootRate && bird.x > dimensions.current.width / 2) {
+        if (canShoot && bird.shotsFired < maxShots && frameCount.current - bird.lastShot > shootRate && bird.x > dimensions.current.width / 2) {
           bird.lastShot = frameCount.current;
+          bird.shotsFired++;
           if (bird.type === 'DIVER') {
             playFireShootSound();
           } else {
