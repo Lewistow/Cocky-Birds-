@@ -2110,7 +2110,7 @@ export default function App() {
 
   return (
     <div 
-      className={`relative w-full h-screen overflow-hidden font-sans touch-none ${isShaking ? 'shake' : ''}`}
+      className={`relative w-full max-w-[450px] mx-auto h-screen overflow-hidden font-sans touch-none shadow-[0_0_50px_rgba(0,0,0,0.8)] ${isShaking ? 'shake' : ''}`}
       onPointerDown={handleInteraction}
       onPointerMove={handleMove}
     >
