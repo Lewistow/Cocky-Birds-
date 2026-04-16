@@ -26,7 +26,7 @@ html, body {
   max-width: 600px; /* Locked Game Width */
   max-height: 1300px; /* Locked Game Height */
   aspect-ratio: 9 / 16; /* THE MAGIC KEY 🔑 */
-  background-color: #FF3E00; /* Cocky Birds Orange */
+  background-color: transparent; /* Removed the red edges */
   box-shadow: 0 0 50px rgba(0,0,0,0.5); /* Makes it look like a floating phone */
   display: flex;
   flex-direction: column;
