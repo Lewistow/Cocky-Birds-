@@ -246,8 +246,8 @@ export default function App() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const width = canvas.parentElement?.clientWidth || window.innerWidth;
+    const height = canvas.parentElement?.clientHeight || window.innerHeight;
     canvas.width = width;
     canvas.height = height;
     dimensions.current = { width, height };
@@ -2097,7 +2097,15 @@ export default function App() {
   };
 
   const handleMove = (e: React.PointerEvent | React.MouseEvent) => {
-    mousePos.current = { x: e.clientX, y: e.clientY };
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (rect) {
+      mousePos.current = { 
+        x: (e.clientX - rect.left) * (canvasRef.current!.width / rect.width),
+        y: (e.clientY - rect.top) * (canvasRef.current!.height / rect.height)
+      };
+    } else {
+      mousePos.current = { x: e.clientX, y: e.clientY };
+    }
   };
 
   return (
