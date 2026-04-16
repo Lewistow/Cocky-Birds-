@@ -24,9 +24,9 @@ html, body {
   position: relative;
   width: 100vw;
   height: 100vh;
-  max-width: 430px; /* Standard iPhone/Android width */
-  max-height: 932px; /* Standard Pro Max height */
-  aspect-ratio: 9 / 16; /* THE MAGIC KEY 🔑 */
+  max-width: 400px; /* Locked Game Width */
+  max-height: 800px; /* Locked Game Height */
+  aspect-ratio: 1 / 2; /* THE MAGIC KEY 🔑 */
   background-color: #FF3E00; /* Cocky Birds Orange */
   box-shadow: 0 0 50px rgba(0,0,0,0.5); /* Makes it look like a floating phone */
   display: flex;
@@ -34,6 +34,9 @@ html, body {
 }
 
 canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   display: block;
 }
 
