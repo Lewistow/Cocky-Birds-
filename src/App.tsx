@@ -246,8 +246,8 @@ export default function App() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const width = 400;
-    const height = 800;
+    const width = 360;
+    const height = 640;
     canvas.width = width;
     canvas.height = height;
     dimensions.current = { width, height };
@@ -1084,8 +1084,6 @@ export default function App() {
 
   useEffect(() => {
     initGame();
-    window.addEventListener('resize', initGame);
-    return () => window.removeEventListener('resize', initGame);
   }, [initGame]);
 
   useEffect(() => {

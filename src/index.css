@@ -9,13 +9,12 @@
 html, body {
   margin: 0;
   padding: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #0e0e0e; /* Dark background outside the game */
+  background: black;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden; /* Stops the phone from scrolling */
+  height: 100vh;
+  overflow: hidden;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -24,9 +23,9 @@ html, body {
   position: relative;
   width: 100vw;
   height: 100vh;
-  max-width: 400px; /* Locked Game Width */
-  max-height: 800px; /* Locked Game Height */
-  aspect-ratio: 1 / 2; /* THE MAGIC KEY 🔑 */
+  max-width: 360px; /* Locked Game Width */
+  max-height: 640px; /* Locked Game Height */
+  aspect-ratio: 9 / 16; /* THE MAGIC KEY 🔑 */
   background-color: #FF3E00; /* Cocky Birds Orange */
   box-shadow: 0 0 50px rgba(0,0,0,0.5); /* Makes it look like a floating phone */
   display: flex;
@@ -36,6 +35,8 @@ html, body {
 canvas {
   width: 100%;
   height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
   object-fit: contain;
   display: block;
 }
