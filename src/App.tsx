@@ -246,7 +246,7 @@ export default function App() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const width = canvas.parentElement?.clientWidth || window.innerWidth;
+    const width = Math.min(canvas.parentElement?.clientWidth || window.innerWidth, 450);
     const height = canvas.parentElement?.clientHeight || window.innerHeight;
     canvas.width = width;
     canvas.height = height;
