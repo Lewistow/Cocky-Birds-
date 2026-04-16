@@ -1655,8 +1655,8 @@ export default function App() {
     ctx.fillRect(0, 0, width, height);
     
     // Draw Sun
-    const sunX = width * 0.8;
-    const sunY = height * 0.15;
+    const sunX = width * 0.75;
+    const sunY = height * 0.2;
     const sunR = 60;
     
     // Sun Glow
