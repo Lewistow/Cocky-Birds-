@@ -819,15 +819,22 @@ export default function App() {
     if (ctx.state === 'suspended') ctx.resume();
     const now = ctx.currentTime;
     
-    // Rapid high-pitched digital chirps
-    for (let i = 0; i < 3; i++) {
+    // 4-burst "Priority One" insistent phone alarm vibe
+    for (let i = 0; i < 4; i++) {
         const time = now + i * 0.1;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.frequency.setValueAtTime(2000, time);
+        osc.type = 'sine';
+        
+        // High pitch with a panicked frequency slide
+        const freq = 1400 + (i * 50); 
+        osc.frequency.setValueAtTime(freq, time);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.85, time + 0.08); 
+        
         gain.gain.setValueAtTime(0, time);
-        gain.gain.linearRampToValueAtTime(0.2, time + 0.02);
+        gain.gain.linearRampToValueAtTime(0.35, time + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+        
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(time);
