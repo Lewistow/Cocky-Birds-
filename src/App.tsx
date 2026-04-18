@@ -1653,40 +1653,55 @@ export default function App() {
     const { width, height } = dimensions.current;
     ctx.clearRect(0, 0, width, height);
 
-    // Background - Brutalist Shapes
+    // Background - Industrial Atmosphere
     const isPowerSurge = isSlamming.current && Math.random() > 0.7;
-    ctx.fillStyle = isPowerSurge ? COLORS.WHITE : COLORS.ORANGE;
-    ctx.fillRect(0, 0, width, height);
     
-    // Draw Sun
+    if (isPowerSurge) {
+      ctx.fillStyle = COLORS.WHITE;
+      ctx.fillRect(0, 0, width, height);
+    } else {
+      const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+      bgGradient.addColorStop(0, '#4a1400'); // Deep dark top
+      bgGradient.addColorStop(0.5, COLORS.ORANGE); // Radiant center
+      bgGradient.addColorStop(1, '#6b2000'); // Dusty bottom
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, width, height);
+    }
+    
+    // Draw Sun with Heat Glow
     const sunX = width * 0.75;
     const sunY = height * 0.2;
-    const sunR = 60;
+    const sunR = 70;
     
-    // Sun Glow
-    const sunGlow = ctx.createRadialGradient(sunX, sunY, sunR * 0.5, sunX, sunY, sunR * 2);
-    sunGlow.addColorStop(0, 'rgba(255, 240, 0, 0.4)');
-    sunGlow.addColorStop(1, 'rgba(255, 240, 0, 0)');
+    // Massive Hazy Glow
+    const sunGlow = ctx.createRadialGradient(sunX, sunY, sunR * 0.2, sunX, sunY, sunR * 3);
+    sunGlow.addColorStop(0, 'rgba(255, 180, 0, 0.4)');
+    sunGlow.addColorStop(0.6, 'rgba(255, 60, 0, 0.1)');
+    sunGlow.addColorStop(1, 'rgba(255, 40, 0, 0)');
     ctx.fillStyle = sunGlow;
-    ctx.fillRect(sunX - sunR * 2, sunY - sunR * 2, sunR * 4, sunR * 4);
+    ctx.fillRect(sunX - sunR * 3, sunY - sunR * 3, sunR * 6, sunR * 6);
     
-    // Sun Core
+    // Sun Core - Slightly Textured
     ctx.fillStyle = COLORS.YELLOW;
     ctx.beginPath();
     ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
     ctx.fill();
+    
+    // Subtle internal sun highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.beginPath();
+    ctx.arc(sunX - sunR/3, sunY - sunR/3, sunR/3, 0, Math.PI * 2);
+    ctx.fill();
 
-    // Parallax Shapes - 3D Pyramids (Multi-layered for depth)
+    // Parallax Mountains - Receding into haze
     const layers = [
-      { width: 600, speed: 0.2, opacity: 0.3, peakShift: 50, heightMult: 0.3 }, // Distant
-      { width: 400, speed: 0.6, opacity: 0.6, peakShift: 30, heightMult: 0.45 }, // Middle
-      { width: 800, speed: 1.5, opacity: 1.0, peakShift: 100, heightMult: 0.6 }  // Close
+      { width: 800, speed: 0.15, opacity: 0.2, peakShift: 120, heightMult: 0.25, color: '#300a00' }, // Far
+      { width: 600, speed: 0.45, opacity: 0.4, peakShift: 80, heightMult: 0.4, color: '#5a1200' },  // Middle
+      { width: 900, speed: 1.2, opacity: 0.8, peakShift: 200, heightMult: 0.55, color: '#8a2500' }   // Close
     ];
 
-    layers.forEach(layer => {
+    layers.forEach((layer, lIdx) => {
       const layerOffset = (frameCount.current * layer.speed) % layer.width;
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = `rgba(0,0,0,${0.08 * layer.opacity})`;
       
       for (let i = -layer.width; i < width + layer.width; i += layer.width) {
         const xStart = i - layerOffset;
@@ -1697,23 +1712,27 @@ export default function App() {
         const yBase = height;
         const yPeak = height - pyramidHeight;
 
-        // Left Face (Light side - now a subtle dark overlay)
-        ctx.fillStyle = `rgba(0,0,0,${0.15 * layer.opacity})`;
+        // Apply distance haze by blending with background color
+        ctx.save();
+        ctx.globalAlpha = layer.opacity;
+
+        // Left Face
+        ctx.fillStyle = layer.color;
         ctx.beginPath();
         ctx.moveTo(xStart, yBase);
         ctx.lineTo(xPeak, yPeak);
         ctx.lineTo(xBaseMid, yBase);
         ctx.fill();
-        ctx.stroke();
 
-        // Right Face (Shadow side - deeper dark overlay)
-        ctx.fillStyle = `rgba(0,0,0,${0.45 * layer.opacity})`;
+        // Right Face (Darker)
+        ctx.fillStyle = '#1a0500'; // Even darker shadow
         ctx.beginPath();
         ctx.moveTo(xBaseMid, yBase);
         ctx.lineTo(xPeak, yPeak);
         ctx.lineTo(xEnd, yBase);
         ctx.fill();
-        ctx.stroke();
+        
+        ctx.restore();
       }
     });
 
@@ -1839,43 +1858,51 @@ export default function App() {
       }
     });
 
-    // Draw Pipes - Brutalist Style
+    // Draw Pipes - Heavy Metal Industrial Style
     if (!isCrumbling.current) {
       let pipeX = width / 2 - PIPE_WIDTH / 2;
       let pipeYOffset = 0;
       const isThunderActive = isThunderReadyRef.current && isSlamming.current;
       
       if (isThunderActive || isDivineRef.current) {
-        pipeX += (Math.random() - 0.5) * 25; // More shake
+        pipeX += (Math.random() - 0.5) * 25; 
         pipeYOffset = (Math.random() - 0.5) * 25;
         ctx.shadowBlur = isDivineRef.current ? 80 : 40;
         ctx.shadowColor = isDivineRef.current ? COLORS.CYAN : COLORS.YELLOW;
       }
 
       const isPepperZone = score >= 50;
-      const pipeColor = isPepperZone ? '#FF0000' : (isThunderReadyRef.current ? COLORS.YELLOW : COLORS.GREEN);
+      const basePipeColor = isPepperZone ? '#8b0000' : (isThunderReadyRef.current ? '#8b8b00' : '#004d00');
+      const lightPipeColor = isPepperZone ? '#ff4d4d' : (isThunderReadyRef.current ? '#ffff4d' : '#00cc00');
       
       if (isPepperZone) {
         ctx.shadowBlur = 30;
         ctx.shadowColor = '#FF0000';
       }
 
-      ctx.fillStyle = pipeColor;
+      // Metallic Pipe Gradient
+      const pipeGradient = ctx.createLinearGradient(pipeX, 0, pipeX + PIPE_WIDTH, 0);
+      pipeGradient.addColorStop(0, basePipeColor);
+      pipeGradient.addColorStop(0.3, lightPipeColor);
+      pipeGradient.addColorStop(0.7, lightPipeColor);
+      pipeGradient.addColorStop(1, basePipeColor);
+
+      ctx.fillStyle = pipeGradient;
       ctx.strokeStyle = COLORS.BLACK;
-      ctx.lineWidth = 8;
+      ctx.lineWidth = 10; // Thicker brutalist outlines
 
       // Top Pipe
       const topPipeHeight = gapY.current - currentGapSize.current / 2 + pipeYOffset;
-      ctx.fillRect(pipeX, -10, PIPE_WIDTH, topPipeHeight + 10);
-      ctx.strokeRect(pipeX, -10, PIPE_WIDTH, topPipeHeight + 10);
+      ctx.fillRect(pipeX, -20, PIPE_WIDTH, topPipeHeight + 20);
+      ctx.strokeRect(pipeX, -20, PIPE_WIDTH, topPipeHeight + 20);
       
       // Bottom Pipe
       const bottomPipeY = gapY.current + currentGapSize.current / 2 + pipeYOffset;
       const bottomPipeHeight = height - bottomPipeY;
-      ctx.fillRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 10);
-      ctx.strokeRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 10);
+      ctx.fillRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 20);
+      ctx.strokeRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 20);
 
-      // Internal Lightning for Pipes - Now appears on EVERY slam
+      // Internal Lightning for Pipes
       if (isSlamming.current || isDivineRef.current) {
         ctx.save();
         const isSupercharged = isThunderReadyRef.current || isDivineRef.current;
@@ -1886,7 +1913,7 @@ export default function App() {
         
         const drawPipeLightning = (y1: number, y2: number) => {
           const boltCount = isDivineRef.current ? 4 : (isSupercharged ? 2 : 1);
-          for (let i = 0; i < boltCount; i++) {
+          for (let bIdx = 0; bIdx < boltCount; bIdx++) {
             ctx.beginPath();
             let curY = y1;
             ctx.moveTo(pipeX + Math.random() * PIPE_WIDTH, curY);
@@ -1903,21 +1930,47 @@ export default function App() {
         ctx.restore();
       }
 
-      // Pipe Details (Rivets)
-      ctx.fillStyle = COLORS.BLACK;
-      ctx.shadowBlur = 0; // Reset shadow for rivets
-      for (let y = 40; y < height; y += 80) {
-        if (y < topPipeHeight - 15 || y > bottomPipeY + 15) {
-          ctx.beginPath(); ctx.arc(pipeX + 12, y, 3, 0, Math.PI * 2); ctx.fill();
-          ctx.beginPath(); ctx.arc(pipeX + PIPE_WIDTH - 12, y, 3, 0, Math.PI * 2); ctx.fill();
+      // Pipe Details (3D Recessed Rivets)
+      const drawRivet = (x: number, y: number) => {
+        ctx.save();
+        ctx.shadowBlur = 0;
+        
+        // Rivet Outer Ring (Shadow)
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rivet Head Gradient (Convex)
+        const rivetGrad = ctx.createRadialGradient(x - 2, y - 2, 0, x, y, 5);
+        rivetGrad.addColorStop(0, '#e0e0e0');
+        rivetGrad.addColorStop(1, '#606060');
+        ctx.fillStyle = rivetGrad;
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Specular Highlight
+        ctx.fillStyle = COLORS.WHITE;
+        ctx.beginPath();
+        ctx.arc(x - 2, y - 2, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+      };
+
+      for (let y = 40; y < height; y += 70) {
+        if (y < topPipeHeight - 20 || y > bottomPipeY + 20) {
+          drawRivet(pipeX + 15, y);
+          drawRivet(pipeX + PIPE_WIDTH - 15, y);
         }
       }
     }
 
-    // Draw Screen-Wide Lightning Storm during Divine Wrath
+    // Draw Screen-Wide Lightning Storm during Divine Wrath (Optimized for performance)
     if (isDivineRef.current) {
       ctx.save();
-      const boltCount = 12; // 12 massive bolts per frame
+      const boltCount = 4; // Reduced from 12 for smoother performance
       for (let b = 0; b < boltCount; b++) {
         const segments: { x1: number, y1: number, x2: number, y2: number }[] = [];
         let curY = 0;
@@ -1938,28 +1991,25 @@ export default function App() {
           curY = nextY;
         }
 
-        // Outer Glow
-        ctx.strokeStyle = COLORS.CYAN;
-        ctx.lineWidth = 15;
-        ctx.lineCap = 'round';
-        ctx.shadowBlur = 40;
-        ctx.shadowColor = COLORS.CYAN;
+        // Draw the bolt path once to reuse for glow and core
         ctx.beginPath();
         segments.forEach(seg => {
           ctx.moveTo(seg.x1, seg.y1);
           ctx.lineTo(seg.x2, seg.y2);
         });
+
+        // Outer Glow
+        ctx.strokeStyle = COLORS.CYAN;
+        ctx.lineWidth = 12;
+        ctx.lineCap = 'round';
+        ctx.shadowBlur = 15; // Much faster than 40
+        ctx.shadowColor = COLORS.CYAN;
         ctx.stroke();
         
         // Inner Core
         ctx.strokeStyle = COLORS.WHITE;
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 4;
         ctx.shadowBlur = 0;
-        ctx.beginPath();
-        segments.forEach(seg => {
-          ctx.moveTo(seg.x1, seg.y1);
-          ctx.lineTo(seg.x2, seg.y2);
-        });
         ctx.stroke();
       }
       ctx.restore();
