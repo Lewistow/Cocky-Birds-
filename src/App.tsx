@@ -186,7 +186,12 @@ export default function App() {
   });
   const [showShareBanner, setShowShareBanner] = useState(false);
   const [integrity, setIntegrity] = useState(MAX_INTEGRITY);
+  const gameStateRef = useRef<GameState>(gameState);
   const [chaos, setChaos] = useState(0);
+
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
   const [isThunderReady, setIsThunderReady] = useState(false);
   const [lastDamageTime, setLastDamageTime] = useState(0);
   const [lastKillTime, setLastKillTime] = useState(0);
@@ -787,7 +792,7 @@ export default function App() {
       filter.Q.value = 5;
 
       burstGain.gain.setValueAtTime(0.0001, startTime);
-      burstGain.gain.exponentialRampToValueAtTime(0.5, startTime + 0.04);
+      burstGain.gain.exponentialRampToValueAtTime(0.8, startTime + 0.04);
       burstGain.gain.exponentialRampToValueAtTime(0.0001, stopTime);
 
       osc.connect(filter);
@@ -806,6 +811,103 @@ export default function App() {
         }
       };
     }
+  }, []);
+
+  const playNormalBirdCue = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    
+    // Rapid high-pitched digital chirps
+    for (let i = 0; i < 3; i++) {
+        const time = now + i * 0.1;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.setValueAtTime(2000, time);
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(0.2, time + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(time);
+        osc.stop(time + 0.08);
+    }
+  }, []);
+
+  const playSniperBirdCue = useCallback(() => {
+     if (!audioCtxRef.current) return;
+     const ctx = audioCtxRef.current;
+     if (ctx.state === 'suspended') ctx.resume();
+     const now = ctx.currentTime;
+     
+     // Descending target lock-on tones
+     [1000, 800, 600].forEach((freq, i) => {
+         const time = now + i * 0.15;
+         const osc = ctx.createOscillator();
+         const gain = ctx.createGain();
+         osc.type = 'sine';
+         osc.frequency.setValueAtTime(freq, time);
+         gain.gain.setValueAtTime(0, time);
+         gain.gain.linearRampToValueAtTime(0.3, time + 0.05);
+         gain.gain.exponentialRampToValueAtTime(0.001, time + 0.14);
+         osc.connect(gain);
+         gain.connect(ctx.destination);
+         osc.start(time);
+         osc.stop(time + 0.14);
+     });
+  }, []);
+
+  const playTankBirdCue = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    
+    // Heavy mechanical clunk - Dragged out
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(50, now); // Lower pitch for weight
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
+    g.gain.setValueAtTime(1.2, now); // Increased from 0.7
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.4);
+    
+    // Low rumble during clunk
+    const lowOsc = ctx.createOscillator();
+    const lowGain = ctx.createGain();
+    lowOsc.type = 'sine';
+    lowOsc.frequency.setValueAtTime(40, now);
+    lowGain.gain.setValueAtTime(0.8, now); // Increased from 0.4
+    lowGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    lowOsc.connect(lowGain);
+    lowGain.connect(ctx.destination);
+    lowOsc.start(now);
+    lowOsc.stop(now + 0.6);
+    
+    // Dragged Hydraulic hiss
+    const bufferSize = ctx.sampleRate * 0.6;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.value = 800;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0, now + 0.4);
+    noiseGain.gain.linearRampToValueAtTime(0.7, now + 0.5); // Increased from 0.4
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start(now + 0.4);
+    noise.stop(now + 1.0);
   }, []);
 
   const playFireDiverCue = useCallback(() => {
@@ -913,7 +1015,7 @@ export default function App() {
       osc2.frequency.exponentialRampToValueAtTime(baseFreq * 0.5, endTime);
 
       pulseGain.gain.setValueAtTime(0.001, startTime);
-      pulseGain.gain.exponentialRampToValueAtTime(0.6, startTime + 0.05);
+      pulseGain.gain.exponentialRampToValueAtTime(0.9, startTime + 0.05);
       pulseGain.gain.exponentialRampToValueAtTime(0.001, endTime);
 
       osc1.connect(pulseGain);
@@ -1203,6 +1305,8 @@ export default function App() {
     let oscAmp = 15 + Math.random() * 15;
 
     const createBird = (t: BirdType, h: number, v: number, s: number, os: number, oa: number) => {
+      if (gameStateRef.current !== 'PLAYING') return;
+
       const bird: Bird = {
         id: birdIdCounter.current++,
         x: dimensions.current.width + 100,
@@ -1223,6 +1327,7 @@ export default function App() {
         oscAmp: oa,
         oscPhase: Math.random() * Math.PI * 2
       };
+
       birds.current.push(bird);
     };
 
@@ -1233,29 +1338,39 @@ export default function App() {
       size = 45;
       oscSpeed = 0.05;
       oscAmp = 30;
+      playTankBirdCue();
     } else if (rand > 0.8) {
       type = 'DIVER';
       vx = -6;
       size = 20;
       oscSpeed = 0.2;
       oscAmp = 45;
-      
-      // Play cue and delay spawn
       playFireDiverCue();
-      setTimeout(() => {
-        createBird('DIVER', 1, -6, 20, 0.2, 45);
-      }, 500);
-      return;
     } else if (rand > 0.65) {
       type = 'SNIPER';
       vx = -2.5;
       size = 25;
       oscSpeed = 0.08;
       oscAmp = 10;
+      playSniperBirdCue();
+    } else {
+      type = 'NORMAL';
+      playNormalBirdCue();
     }
 
-    createBird(type, health, vx, size, oscSpeed, oscAmp);
-  }, [playFireDiverCue]);
+    const t = type;
+    const h = health;
+    const v = vx;
+    const s = size;
+    const os = oscSpeed;
+    const oa = oscAmp;
+
+    const spawnDelay = t === 'TANK' ? 1000 : 500;
+
+    setTimeout(() => {
+      createBird(t, h, v, s, os, oa);
+    }, spawnDelay);
+  }, [playFireDiverCue, playNormalBirdCue, playSniperBirdCue, playTankBirdCue]);
 
   const playMilestoneSound = () => {
     const ctx = audioCtxRef.current;
@@ -1409,8 +1524,9 @@ export default function App() {
                 createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', '+2 HP');
               }
               playSquashSound();
-              createParticles(bird.x, bird.y, COLORS.CYAN, 30, 'SPARK');
-              createParticles(bird.x, bird.y, COLORS.YELLOW, 20, 'FEATHER');
+              // Reduced particle counts for Divine Strike to prevent lag spikes
+              createParticles(bird.x, bird.y, COLORS.CYAN, 12, 'SPARK'); 
+              createParticles(bird.x, bird.y, COLORS.YELLOW, 8, 'FEATHER');
             }
           });
         } else {
@@ -1494,7 +1610,6 @@ export default function App() {
       spawnBird();
     }
 
-    // Update birds
     birds.current.forEach(bird => {
       if (bird.state === 'FLYING') {
         bird.x += bird.vx;
@@ -1592,7 +1707,7 @@ export default function App() {
     });
 
     // Update bullets
-    bullets.current.forEach((bullet, bIdx) => {
+    bullets.current.forEach(bullet => {
       bullet.x += bullet.vx;
       bullet.y += bullet.vy;
 
@@ -1604,14 +1719,14 @@ export default function App() {
         
         if (!isGap) {
           if (!isSlamming.current) {
-            integrityRef.current = Math.max(0, integrityRef.current - 10); // Increased bullet damage to 10
+            integrityRef.current = Math.max(0, integrityRef.current - 10);
             setLastDamageTime(Date.now());
             if (bullet.type === 'FIRE') {
               playFireHitSound();
             } else {
               playBulletHitSound();
             }
-            killStreakRef.current = 0; // Reset streak on damage
+            killStreakRef.current = 0;
           }
           if (bullet.type === 'FIRE') {
             createParticles(bullet.x, bullet.y, '#FF4500', 10, 'SPARK');
@@ -1619,23 +1734,24 @@ export default function App() {
           } else {
             createParticles(bullet.x, bullet.y, COLORS.WHITE, 5, 'SPARK');
           }
-          bullets.current.splice(bIdx, 1);
+          bullet.life = 0; // Mark for removal
         }
       }
     });
+    bullets.current = bullets.current.filter(b => b.x > -100 && (b.life === undefined || b.life > 0));
 
     // Update particles
-    particles.current.forEach((p, i) => {
+    particles.current.forEach(p => {
       p.x += p.vx;
       p.y += p.vy;
       if (p.type !== 'TEXT') {
-        p.vy += 0.4; // Gravity for feathers/sparks
+        p.vy += 0.4;
       }
-      p.life -= p.type === 'TEXT' ? 0.01 : 0.025; // Text lasts longer
-      if (p.life <= 0) particles.current.splice(i, 1);
+      p.life -= p.type === 'TEXT' ? 0.01 : 0.025;
     });
+    particles.current = particles.current.filter(p => p.life > 0);
 
-    birds.current = birds.current.filter(b => b.x > -200);
+    birds.current = birds.current.filter(b => b.x > -200 && b.state !== 'CRUSHED');
     bullets.current = bullets.current.filter(b => b.x > -100);
 
     // Sync state for UI
@@ -1716,7 +1832,7 @@ export default function App() {
         ctx.save();
         ctx.globalAlpha = layer.opacity;
 
-        // Left Face
+        // Left Face (Light Side)
         ctx.fillStyle = layer.color;
         ctx.beginPath();
         ctx.moveTo(xStart, yBase);
@@ -1724,8 +1840,8 @@ export default function App() {
         ctx.lineTo(xBaseMid, yBase);
         ctx.fill();
 
-        // Right Face (Darker)
-        ctx.fillStyle = '#1a0500'; // Even darker shadow
+        // Right Face (Shadow Side - Now less dark)
+        ctx.fillStyle = '#2d0c00'; // Lightened from #1a0500 for better visibility
         ctx.beginPath();
         ctx.moveTo(xBaseMid, yBase);
         ctx.lineTo(xPeak, yPeak);
@@ -1865,11 +1981,21 @@ export default function App() {
       const isThunderActive = isThunderReadyRef.current && isSlamming.current;
       
       if (isThunderActive || isDivineRef.current) {
+        ctx.save();
         pipeX += (Math.random() - 0.5) * 25; 
         pipeYOffset = (Math.random() - 0.5) * 25;
-        ctx.shadowBlur = isDivineRef.current ? 80 : 40;
+        ctx.shadowBlur = isDivineRef.current ? 30 : 20; 
         ctx.shadowColor = isDivineRef.current ? COLORS.CYAN : COLORS.YELLOW;
+        
+        // Draw glow as a separate pass behind the pipes to keep it isolated
+        ctx.fillStyle = isDivineRef.current ? COLORS.CYAN : COLORS.YELLOW;
+        ctx.globalAlpha = 0.3;
+        ctx.fillRect(pipeX - 10, -20, PIPE_WIDTH + 20, height + 40);
+        ctx.restore();
       }
+
+      ctx.save();
+      ctx.shadowBlur = 0; // CRITICAL: Disable shadow for the heavy metallic rectangles
 
       const isPepperZone = score >= 50;
       const basePipeColor = isPepperZone ? '#8b0000' : (isThunderReadyRef.current ? '#8b8b00' : '#004d00');
@@ -1901,24 +2027,27 @@ export default function App() {
       const bottomPipeHeight = height - bottomPipeY;
       ctx.fillRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 20);
       ctx.strokeRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 20);
+      ctx.restore(); // Restore from shadowBlur = 0
 
       // Internal Lightning for Pipes
       if (isSlamming.current || isDivineRef.current) {
         ctx.save();
         const isSupercharged = isThunderReadyRef.current || isDivineRef.current;
         ctx.strokeStyle = isSupercharged ? COLORS.WHITE : 'rgba(255, 255, 255, 0.8)';
-        ctx.lineWidth = isSupercharged ? 6 : 2; // Thicker lightning
-        ctx.shadowBlur = isSupercharged ? 30 : 8; // More glow
-        ctx.shadowColor = isSupercharged ? COLORS.CYAN : COLORS.WHITE;
+        ctx.lineWidth = isSupercharged ? 6 : 2; 
+        ctx.shadowBlur = isSupercharged ? 20 : 0; // Only glow if supercharged
+        ctx.shadowColor = COLORS.CYAN;
         
         const drawPipeLightning = (y1: number, y2: number) => {
-          const boltCount = isDivineRef.current ? 4 : (isSupercharged ? 2 : 1);
+          const boltCount = isDivineRef.current ? 3 : (isSupercharged ? 2 : 1);
           for (let bIdx = 0; bIdx < boltCount; bIdx++) {
             ctx.beginPath();
             let curY = y1;
             ctx.moveTo(pipeX + Math.random() * PIPE_WIDTH, curY);
+            // Use larger steps for better performance
+            const stepY = isDivineRef.current ? 40 : 25;
             while (curY < y2) {
-              curY += 15 + Math.random() * 25; // More jagged
+              curY += stepY + Math.random() * 20;
               ctx.lineTo(pipeX + Math.random() * PIPE_WIDTH, Math.min(curY, y2));
             }
             ctx.stroke();
@@ -1930,85 +2059,71 @@ export default function App() {
         ctx.restore();
       }
 
-      // Pipe Details (3D Recessed Rivets)
-      const drawRivet = (x: number, y: number) => {
-        ctx.save();
-        ctx.shadowBlur = 0;
-        
+      // Pre-calculate gradient once for all rivets
+      const rivetGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 5);
+      rivetGrad.addColorStop(0, '#e0e0e0');
+      rivetGrad.addColorStop(1, '#606060');
+
+      const renderRivet = (x: number, y: number) => {
         // Rivet Outer Ring (Shadow)
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.beginPath();
         ctx.arc(x, y, 6, 0, Math.PI * 2);
         ctx.fill();
 
-        // Rivet Head Gradient (Convex)
-        const rivetGrad = ctx.createRadialGradient(x - 2, y - 2, 0, x, y, 5);
-        rivetGrad.addColorStop(0, '#e0e0e0');
-        rivetGrad.addColorStop(1, '#606060');
+        // Rivet Head
+        ctx.save();
+        ctx.translate(x, y);
         ctx.fillStyle = rivetGrad;
         ctx.beginPath();
-        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.arc(0, 0, 5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Specular Highlight
+        // Highlight
         ctx.fillStyle = COLORS.WHITE;
         ctx.beginPath();
-        ctx.arc(x - 2, y - 2, 1.5, 0, Math.PI * 2);
+        ctx.arc(-2, -2, 1.5, 0, Math.PI * 2);
         ctx.fill();
-        
         ctx.restore();
       };
 
+      ctx.shadowBlur = 0; // Ensure no shadow for rivets
       for (let y = 40; y < height; y += 70) {
         if (y < topPipeHeight - 20 || y > bottomPipeY + 20) {
-          drawRivet(pipeX + 15, y);
-          drawRivet(pipeX + PIPE_WIDTH - 15, y);
+          renderRivet(pipeX + 15, y);
+          renderRivet(pipeX + PIPE_WIDTH - 15, y);
         }
       }
     }
 
-    // Draw Screen-Wide Lightning Storm during Divine Wrath (Optimized for performance)
+    // Draw Screen-Wide Lightning Storm during Divine Wrath (Ultra-Optimized)
     if (isDivineRef.current) {
       ctx.save();
-      const boltCount = 4; // Reduced from 12 for smoother performance
+      const boltCount = 3; // Reduced further for maximum speed
+      ctx.lineCap = 'round';
+      
       for (let b = 0; b < boltCount; b++) {
-        const segments: { x1: number, y1: number, x2: number, y2: number }[] = [];
         let curY = 0;
         let lastX = Math.random() * width;
         
-        while (curY < height) {
-          const nextY = curY + Math.random() * 40 + 20;
-          const nextX = lastX + (Math.random() - 0.5) * 300; // Wide spread
-          segments.push({ x1: lastX, y1: curY, x2: nextX, y2: nextY });
-          
-          if (Math.random() > 0.7) {
-            const branchX = nextX + (Math.random() - 0.5) * 200;
-            const branchY = nextY + Math.random() * 60;
-            segments.push({ x1: nextX, y1: nextY, x2: branchX, y2: branchY });
-          }
-          
-          lastX = nextX;
-          curY = nextY;
-        }
-
-        // Draw the bolt path once to reuse for glow and core
         ctx.beginPath();
-        segments.forEach(seg => {
-          ctx.moveTo(seg.x1, seg.y1);
-          ctx.lineTo(seg.x2, seg.y2);
-        });
+        while (curY < height) {
+          curY += 60 + Math.random() * 40; // Fewer segments
+          const nextX = lastX + (Math.random() - 0.5) * 400;
+          ctx.lineTo(nextX, curY);
+          lastX = nextX;
+        }
 
         // Outer Glow
         ctx.strokeStyle = COLORS.CYAN;
-        ctx.lineWidth = 12;
-        ctx.lineCap = 'round';
-        ctx.shadowBlur = 15; // Much faster than 40
+        ctx.lineWidth = 10;
+        ctx.shadowBlur = 10; 
         ctx.shadowColor = COLORS.CYAN;
         ctx.stroke();
         
         // Inner Core
         ctx.strokeStyle = COLORS.WHITE;
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 3;
         ctx.shadowBlur = 0;
         ctx.stroke();
       }
