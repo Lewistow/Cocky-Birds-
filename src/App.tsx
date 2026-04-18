@@ -1338,7 +1338,7 @@ export default function App() {
       birds.current.push(bird);
     };
 
-    if (rand > 0.92) {
+    if (rand > 0.88) {
       type = 'TANK';
       health = 3;
       vx = -1.8;
@@ -1346,14 +1346,14 @@ export default function App() {
       oscSpeed = 0.05;
       oscAmp = 30;
       playTankBirdCue();
-    } else if (rand > 0.8) {
+    } else if (rand > 0.73) {
       type = 'DIVER';
       vx = -6;
       size = 20;
       oscSpeed = 0.2;
       oscAmp = 45;
       playFireDiverCue();
-    } else if (rand > 0.65) {
+    } else if (rand > 0.48) {
       type = 'SNIPER';
       vx = -2.5;
       size = 25;
