@@ -60,7 +60,7 @@ interface Particle {
   life: number;
   color: string;
   size: number;
-  type: 'FEATHER' | 'SPARK' | 'TEXT';
+  type: 'FEATHER' | 'SPARK' | 'TEXT' | 'FIRE_TRAIL';
   text?: string;
 }
 
@@ -1346,8 +1346,8 @@ export default function App() {
 
     let vx = -(BIRD_BASE_SPEED + Math.random() * 2) * speedMultiplier;
     let size = 25;
-    let oscSpeed = 0.1 + Math.random() * 0.05;
-    let oscAmp = 15 + Math.random() * 15;
+    let oscSpeed = 0.15 + Math.random() * 0.08;
+    let oscAmp = 25 + Math.random() * 25;
 
     const createBird = (t: BirdType, h: number, v: number, s: number, os: number, oa: number) => {
       if (gameStateRef.current !== 'PLAYING') return;
@@ -1381,22 +1381,22 @@ export default function App() {
       health = 3;
       vx = -1.8;
       size = 45;
-      oscSpeed = 0.05;
-      oscAmp = 30;
+      oscSpeed = 0.08;
+      oscAmp = 50;
       playTankBirdCue();
     } else if (rand > 0.73) {
       type = 'DIVER';
       vx = -6;
       size = 20;
-      oscSpeed = 0.2;
-      oscAmp = 45;
+      oscSpeed = 0.3;
+      oscAmp = 70;
       playFireDiverCue();
     } else if (rand > 0.48) {
       type = 'SNIPER';
       vx = -2.5;
       size = 25;
-      oscSpeed = 0.08;
-      oscAmp = 10;
+      oscSpeed = 0.12;
+      oscAmp = 20;
       playSniperBirdCue();
     } else {
       type = 'NORMAL';
@@ -1677,6 +1677,23 @@ export default function App() {
         // Calculate vy for squash/stretch
         bird.vy = Math.cos(oscTime) * bird.oscAmp * bird.oscSpeed;
 
+        // --- TURBO SOUL EMISSION ---
+        if (bird.type === 'DIVER') {
+          const particleCount = 1 + Math.floor(Math.abs(bird.vy) * 0.2);
+          for (let i = 0; i < particleCount; i++) {
+            particles.current.push({
+              x: bird.x,
+              y: bird.y + (Math.random() - 0.5) * 20,
+              vx: (Math.random() * 2 + 1), // Drift right
+              vy: (Math.random() - 0.5) * 2,
+              life: 1.0,
+              color: Math.random() > 0.4 ? '#FF4500' : (Math.random() > 0.5 ? '#FFA500' : '#FFFF00'),
+              size: Math.random() * 8 + 4,
+              type: 'FIRE_TRAIL'
+            });
+          }
+        }
+
         const warmupFactor = isWarmupActiveRef.current ? Math.min(1, frameCount.current / WARMUP_FRAMES) : 1;
         const shootRate = bird.type === 'SNIPER' ? 50 : 100;
         const canShoot = isWarmupActiveRef.current ? (frameCount.current > WARMUP_FRAMES) : true;
@@ -1743,10 +1760,35 @@ export default function App() {
         if (bird.x > -100 && bird.x < -50) { // Just passed
           killStreakRef.current = 0; // Reset streak on pass
         }
-        bird.x += bird.vx * 1.5;
-        // Still bobbing while passing
+        
+        bird.x += bird.vx;
+        bird.flapFrame += 0.25; // RESCUE THE FLUIDITY! Keep flapping!
+        
+        // --- FLUIDITY SURGERY ---
+        // Ensure the water-like oscillation continues after passing
         const oscTime = frameCount.current * bird.oscSpeed + bird.oscPhase;
         bird.y = bird.baseY + Math.sin(oscTime) * bird.oscAmp;
+        
+        // CRITICAL: Update vy so the squash/stretch in draw() keeps working
+        bird.vy = Math.cos(oscTime) * bird.oscAmp * bird.oscSpeed;
+        
+        // --- TURBO SOUL EMISSION (PASSED) ---
+        if (bird.type === 'DIVER') {
+          const particleCount = 1 + Math.floor(Math.abs(bird.vy) * 0.2);
+          for (let i = 0; i < particleCount; i++) {
+            particles.current.push({
+              x: bird.x,
+              y: bird.y + (Math.random() - 0.5) * 20,
+              vx: (Math.random() * 2 + 1), 
+              vy: (Math.random() - 0.5) * 2,
+              life: 1.0,
+              color: Math.random() > 0.4 ? '#FF4500' : (Math.random() > 0.5 ? '#FFA500' : '#FFFF00'),
+              size: Math.random() * 8 + 4,
+              type: 'FIRE_TRAIL'
+            });
+          }
+        }
+
         if (bird.tauntTime > 0) bird.tauntTime--;
       }
     });
@@ -1789,12 +1831,20 @@ export default function App() {
     particles.current.forEach(p => {
       p.x += p.vx;
       p.y += p.vy;
-      if (p.type !== 'TEXT') {
+      if (p.type === 'FIRE_TRAIL') {
+        p.vy -= 0.15; // Fire drifts UP
+        p.vx *= 0.98; // Slow down drift
+        p.size *= 0.95; // Shrink fire
+      } else if (p.type !== 'TEXT') {
         p.vy += 0.4;
       }
       p.life -= p.type === 'TEXT' ? 0.01 : 0.025;
     });
     particles.current = particles.current.filter(p => p.life > 0);
+    // Hard cap for performance
+    if (particles.current.length > 400) {
+      particles.current = particles.current.slice(-400);
+    }
 
     birds.current = birds.current.filter(b => b.x > -200 && b.state !== 'CRUSHED');
     bullets.current = bullets.current.filter(b => b.x > -100);
@@ -1897,10 +1947,57 @@ export default function App() {
       }
     });
 
-    // Scanning Line
+    // Draw Scanning Line
     const scanY = (frameCount.current * 1.5) % height;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
     ctx.fillRect(0, scanY, width, 2);
+
+    // Draw Visual Particles (Trailing behind birds)
+    ctx.save();
+    
+    // Group fire particles to use 'screen' blending once
+    const fireParticles = particles.current.filter(p => p.type === 'FIRE_TRAIL');
+    const otherParticles = particles.current.filter(p => p.type !== 'FIRE_TRAIL' && p.type !== 'TEXT');
+
+    // Draw regular particles
+    otherParticles.forEach(p => {
+      ctx.save();
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.strokeStyle = COLORS.BLACK;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (p.type === 'FEATHER') {
+        ctx.ellipse(p.x, p.y, p.size, p.size/2, frameCount.current * 0.1, 0, Math.PI * 2);
+      } else {
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      }
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // Draw fire particles with high performance "soul" additive blending
+    if (fireParticles.length > 0) {
+      ctx.globalCompositeOperation = 'screen';
+      fireParticles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.life * 0.7; // Softer fire
+        
+        // Use a simple radial gradient for "deep" glow
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
+        grad.addColorStop(0, p.color);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    ctx.restore();
 
     // Draw Birds
     birds.current.forEach(bird => {
@@ -1939,8 +2036,8 @@ export default function App() {
 
       // Squash & Stretch synced with movement
       // User requested birds face forward (they move left, so we flip X)
-      const flap = Math.sin(bird.flapFrame) * 0.1;
-      const velocityStretch = Math.abs(bird.vy) * 0.02;
+      const flap = Math.sin(bird.flapFrame) * 0.2;
+      const velocityStretch = Math.abs(bird.vy) * 0.06;
       ctx.scale(-(1 + flap - velocityStretch), 1 - flap + velocityStretch);
 
       // Bird Body - Graphic Style
@@ -2188,51 +2285,36 @@ export default function App() {
       ctx.restore();
     });
 
-    // Draw Particles
+    // Draw Text Callouts (On top of everything)
     particles.current.forEach(p => {
+      if (p.type !== 'TEXT') return;
       ctx.save();
       ctx.globalAlpha = p.life;
-      if (p.type === 'TEXT') {
-        ctx.fillStyle = p.color;
-        ctx.strokeStyle = COLORS.BLACK;
-        ctx.lineWidth = 8;
-        let fontSize = 48;
-        if (p.text === 'THUNDER!!!' || p.text === 'DIVINE WRATH!!!') fontSize = 100;
-        else if (p.text?.includes('POINTS!')) fontSize = 80;
-        
-        ctx.font = `900 ${fontSize}px Bangers`;
-        ctx.textAlign = 'center';
-        
-        // Add a slight shake to the text itself
-        const tx = p.x + (Math.random() - 0.5) * 5;
-        const ty = p.y + (Math.random() - 0.5) * 5;
-        
-        const words = p.text!.split(' ');
-        let lines = [p.text!];
-        // Only split if it's long and has spaces, but don't split special big messages
-        if (p.text!.length > 12 && words.length > 1 && !p.text!.includes('!!!') && !p.text!.includes('POINTS!')) {
-          const mid = Math.ceil(words.length / 2);
-          lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
-        }
-
-        lines.forEach((line, i) => {
-          const lineY = ty + (i - (lines.length - 1) / 2) * (fontSize * 0.9);
-          ctx.strokeText(line, tx, lineY);
-          ctx.fillText(line, tx, lineY);
-        });
-      } else {
-        ctx.fillStyle = p.color;
-        ctx.strokeStyle = COLORS.BLACK;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        if (p.type === 'FEATHER') {
-          ctx.ellipse(p.x, p.y, p.size, p.size/2, frameCount.current * 0.1, 0, Math.PI * 2);
-        } else {
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        }
-        ctx.fill();
-        ctx.stroke();
+      ctx.fillStyle = p.color;
+      ctx.strokeStyle = COLORS.BLACK;
+      ctx.lineWidth = 8;
+      let fontSize = 48;
+      if (p.text === 'THUNDER!!!' || p.text === 'DIVINE WRATH!!!') fontSize = 100;
+      else if (p.text?.includes('POINTS!')) fontSize = 80;
+      
+      ctx.font = `900 ${fontSize}px Bangers`;
+      ctx.textAlign = 'center';
+      
+      const tx = p.x + (Math.random() - 0.5) * 5;
+      const ty = p.y + (Math.random() - 0.5) * 5;
+      
+      const words = p.text!.split(' ');
+      let lines = [p.text!];
+      if (p.text!.length > 12 && words.length > 1 && !p.text!.includes('!!!') && !p.text!.includes('POINTS!')) {
+        const mid = Math.ceil(words.length / 2);
+        lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
       }
+
+      lines.forEach((line, i) => {
+        const lineY = ty + (i - (lines.length - 1) / 2) * (fontSize * 0.9);
+        ctx.strokeText(line, tx, lineY);
+        ctx.fillText(line, tx, lineY);
+      });
       ctx.restore();
     });
   }, [gameState, score]); // Added score dependency
