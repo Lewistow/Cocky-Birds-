@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, RotateCcw, Shield, Zap, Skull, Target, Flame, Share2 } from 'lucide-react';
+import { initGA, trackSlam, trackClout, trackPageView } from './lib/analytics';
 
 // Constants
 const PIPE_WIDTH = 60;
@@ -220,6 +221,11 @@ export default function App() {
   const [integrity, setIntegrity] = useState(MAX_INTEGRITY);
   const gameStateRef = useRef<GameState>(gameState);
   const [chaos, setChaos] = useState(0);
+
+  useEffect(() => {
+    initGA();
+    trackPageView(window.location.pathname);
+  }, []);
 
   useEffect(() => {
     gameStateRef.current = gameState;
@@ -2275,6 +2281,7 @@ export default function App() {
   }, [loop]);
 
   const handleShare = async () => {
+    trackClout();
     const shareData = {
       title: 'Cocky Birds',
       text: `I just squashed ${score} birds in Cocky Birds! Can you beat my score? 🐦🕶️`,
@@ -2289,6 +2296,10 @@ export default function App() {
         createParticles(dimensions.current.width / 2, dimensions.current.height / 2, COLORS.GREEN, 1, 'TEXT', 'LINK COPIED!');
       }
     } catch (err) {
+      // Ignore AbortError (user canceled)
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
       console.error('Error sharing:', err);
     }
   };
@@ -2500,6 +2511,7 @@ export default function App() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
+                  trackSlam();
                   startAudio();
                   initGame();
                   setGameState('PLAYING');
