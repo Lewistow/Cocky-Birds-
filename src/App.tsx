@@ -1908,7 +1908,7 @@ export default function App() {
             y: bird.y,
             vx: bulletSpeed,
             vy: bulletVy * (bulletType === 'SLUDGE' ? 0.4 : 1),
-            color: bird.type === 'SNIPER' ? COLORS.CYAN : bird.type === 'DIVER' ? '#FF4500' : (bird.type === 'TANK' ? '#5d3a1a' : COLORS.PURPLE),
+            color: bird.type === 'SNIPER' ? COLORS.CYAN : bird.type === 'DIVER' ? '#FF4500' : (bird.type === 'TANK' ? '#2b1b0b' : COLORS.PURPLE),
             type: bulletType
           });
         }
@@ -2344,18 +2344,18 @@ export default function App() {
         
         ctx.restore();
       } else if (b.type === 'SLUDGE') {
-        // The "Real Deal" Faceless 3-Tier Stack (The Brown Payload) - TWICE BIGGER
+        // The "Real Deal" Faceless 3-Tier Stack (The Brown Payload) - EVEN CHUNKIER
         ctx.save();
         ctx.translate(b.x, b.y);
         ctx.rotate(frameCount.current * 0.05); // Slow tumble
-        ctx.scale(2.0, 2.0); // THE ULTIMATE CHUNK
+        ctx.scale(2.2, 2.2); // THE MEGA CHUNK
         
-        ctx.strokeStyle = '#3e2711';
+        ctx.strokeStyle = '#1f140a';
         ctx.lineWidth = 1;
         
         const brownGrad = ctx.createLinearGradient(0, -10, 0, 10);
         brownGrad.addColorStop(0, '#7b4c2b');
-        brownGrad.addColorStop(1, '#3e2711');
+        brownGrad.addColorStop(1, '#1f140a');
         ctx.fillStyle = brownGrad;
 
         // Bottom Tier
