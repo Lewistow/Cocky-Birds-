@@ -49,7 +49,7 @@ interface Bullet {
   vx: number;
   vy: number;
   color: string;
-  type?: 'NORMAL' | 'FIRE';
+  type?: 'NORMAL' | 'FIRE' | 'ICE' | 'SLUDGE';
 }
 
 interface Particle {
@@ -60,7 +60,7 @@ interface Particle {
   life: number;
   color: string;
   size: number;
-  type: 'FEATHER' | 'SPARK' | 'TEXT' | 'FIRE_TRAIL';
+  type: 'FEATHER' | 'SPARK' | 'TEXT' | 'FIRE_TRAIL' | 'ICE_SHARD' | 'MUD_SPLAT';
   text?: string;
 }
 
@@ -1083,6 +1083,72 @@ export default function App() {
     }, (numPulses * pulseGap + 1) * 1000);
   }, []);
 
+  const playIceShatterSound = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    
+    // High-pitched "clink"
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(2500, now);
+    osc.frequency.exponentialRampToValueAtTime(2000, now + 0.05);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.1);
+
+    // Crackle noise
+    const noise = ctx.createBufferSource();
+    const bufferSize = ctx.sampleRate * 0.2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    }
+    noise.buffer = buffer;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.05, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    noise.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start(now);
+  }, []);
+
+  const playSquelchSound = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+
+    const noise = ctx.createBufferSource();
+    const bufferSize = ctx.sampleRate * 0.3;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    }
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(400, now);
+    filter.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    noise.start(now);
+  }, []);
+
   const playShootSound = useCallback(() => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
@@ -1446,7 +1512,7 @@ export default function App() {
     });
   };
 
-  const createParticles = (x: number, y: number, color: string, count: number, type: 'FEATHER' | 'SPARK' | 'TEXT' = 'FEATHER', text?: string) => {
+  const createParticles = (x: number, y: number, color: string, count: number, type: 'FEATHER' | 'SPARK' | 'TEXT' | 'ICE_SHARD' | 'MUD_SPLAT' = 'FEATHER', text?: string) => {
     for (let i = 0; i < count; i++) {
       const isText = type === 'TEXT';
       particles.current.push({
@@ -1732,13 +1798,16 @@ export default function App() {
             }
           }
 
+          const bulletType = bird.type === 'SNIPER' ? 'ICE' : (bird.type === 'DIVER' ? 'FIRE' : (bird.type === 'TANK' ? 'SLUDGE' : 'NORMAL'));
+          const bulletSpeed = bulletType === 'SLUDGE' ? -4 : -10;
+          
           bullets.current.push({
             x: bird.x - bird.size/2,
             y: bird.y,
-            vx: -10,
-            vy: bulletVy,
-            color: bird.type === 'SNIPER' ? COLORS.CYAN : bird.type === 'DIVER' ? '#FF4500' : COLORS.PURPLE,
-            type: bird.type === 'DIVER' ? 'FIRE' : 'NORMAL'
+            vx: bulletSpeed,
+            vy: bulletVy * (bulletType === 'SLUDGE' ? 0.4 : 1),
+            color: bird.type === 'SNIPER' ? COLORS.CYAN : bird.type === 'DIVER' ? '#FF4500' : (bird.type === 'TANK' ? '#5d3a1a' : COLORS.PURPLE),
+            type: bulletType
           });
         }
 
@@ -1810,6 +1879,10 @@ export default function App() {
             setLastDamageTime(Date.now());
             if (bullet.type === 'FIRE') {
               playFireHitSound();
+            } else if (bullet.type === 'ICE') {
+              playIceShatterSound();
+            } else if (bullet.type === 'SLUDGE') {
+              playSquelchSound();
             } else {
               playBulletHitSound();
             }
@@ -1818,6 +1891,11 @@ export default function App() {
           if (bullet.type === 'FIRE') {
             createParticles(bullet.x, bullet.y, '#FF4500', 10, 'SPARK');
             createParticles(bullet.x, bullet.y, '#FFA500', 5, 'SPARK');
+          } else if (bullet.type === 'ICE') {
+            createParticles(bullet.x, bullet.y, '#00FFFF', 15, 'ICE_SHARD');
+            createParticles(bullet.x, bullet.y, '#FFFFFF', 10, 'ICE_SHARD');
+          } else if (bullet.type === 'SLUDGE') {
+            createParticles(bullet.x, bullet.y, '#5d3a1a', 12, 'MUD_SPLAT');
           } else {
             createParticles(bullet.x, bullet.y, COLORS.WHITE, 5, 'SPARK');
           }
@@ -1835,6 +1913,10 @@ export default function App() {
         p.vy -= 0.15; // Fire drifts UP
         p.vx *= 0.98; // Slow down drift
         p.size *= 0.95; // Shrink fire
+      } else if (p.type === 'MUD_SPLAT') {
+        p.vy = Math.min(2, p.vy + 0.1); // Slow slide down
+        p.vx *= 0.5; // Stop horizontal movement fast
+        p.size *= 0.99; 
       } else if (p.type !== 'TEXT') {
         p.vy += 0.4;
       }
@@ -1969,11 +2051,38 @@ export default function App() {
       ctx.beginPath();
       if (p.type === 'FEATHER') {
         ctx.ellipse(p.x, p.y, p.size, p.size/2, frameCount.current * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else if (p.type === 'ICE_SHARD') {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(frameCount.current * 0.2 + p.vx * 0.1);
+        ctx.fillStyle = p.color;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // Crystalline triangle
+        ctx.moveTo(0, -p.size);
+        ctx.lineTo(p.size * 0.8, p.size * 0.5);
+        ctx.lineTo(-p.size * 0.8, p.size * 0.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      } else if (p.type === 'MUD_SPLAT') {
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        // Slushy blob
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
       } else {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
       }
-      ctx.fill();
-      ctx.stroke();
       ctx.restore();
     });
 
@@ -2100,11 +2209,74 @@ export default function App() {
         for (let i = 0; i < 3; i++) {
           const tx = b.x + Math.random() * 10;
           const ty = b.y + (Math.random() - 0.5) * 10;
-          ctx.fillStyle = Math.random() > 0.5 ? '#FF4500' : '#FFA500';
+          ctx.fillStyle = Math.random() > 0.4 ? '#FF4500' : '#FFA500';
           ctx.beginPath();
           ctx.arc(tx, ty, Math.random() * 4, 0, Math.PI * 2);
           ctx.fill();
         }
+      } else if (b.type === 'ICE') {
+        // Frosty Cube effect
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(frameCount.current * 0.1);
+        
+        const iceGrad = ctx.createLinearGradient(-8, -8, 8, 8);
+        iceGrad.addColorStop(0, '#FFFFFF');
+        iceGrad.addColorStop(0.5, '#00FFFF');
+        iceGrad.addColorStop(1, '#008b8b');
+        
+        ctx.fillStyle = iceGrad;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+        ctx.fillRect(-8, -8, 16, 16);
+        ctx.strokeRect(-8, -8, 16, 16);
+        
+        // Internal glint
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.beginPath();
+        ctx.moveTo(-6, -6);
+        ctx.lineTo(2, -6);
+        ctx.lineTo(-6, 2);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.restore();
+      } else if (b.type === 'SLUDGE') {
+        // The "Real Deal" Faceless 3-Tier Stack (The Brown Payload) - TWICE BIGGER
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(frameCount.current * 0.05); // Slow tumble
+        ctx.scale(2.0, 2.0); // THE ULTIMATE CHUNK
+        
+        ctx.strokeStyle = '#3e2711';
+        ctx.lineWidth = 1;
+        
+        const brownGrad = ctx.createLinearGradient(0, -10, 0, 10);
+        brownGrad.addColorStop(0, '#7b4c2b');
+        brownGrad.addColorStop(1, '#3e2711');
+        ctx.fillStyle = brownGrad;
+
+        // Bottom Tier
+        ctx.beginPath();
+        ctx.ellipse(0, 4, 10, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Middle Tier
+        ctx.beginPath();
+        ctx.ellipse(0, -1, 8, 4.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Top Tier + Curly Tip
+        ctx.beginPath();
+        ctx.ellipse(0, -5, 5, 3.5, 0, 0, Math.PI * 2);
+        ctx.moveTo(-2, -7);
+        ctx.quadraticCurveTo(0, -12, 4, -8);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.restore();
       } else {
         ctx.fillStyle = b.color;
         ctx.strokeStyle = COLORS.BLACK;
