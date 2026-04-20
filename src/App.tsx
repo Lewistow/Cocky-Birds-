@@ -33,6 +33,7 @@ interface Bird {
   vy: number;
   size: number;
   state: 'FLYING' | 'CRUSHED' | 'PASSED';
+  mood: 'SMUG' | 'MOCKING' | 'PANIC';
   lastShot: number;
   shotsFired: number;
   taunt?: string;
@@ -1532,6 +1533,7 @@ export default function App() {
         vy: 0,
         size: s,
         state: 'FLYING',
+        mood: 'SMUG',
         lastShot: 0,
         shotsFired: 0,
         tauntTime: 0,
@@ -1824,9 +1826,23 @@ export default function App() {
     }
 
     birds.current.forEach(bird => {
+      // Logic for expressions
+      const pipeX = dimensions.current.width / 2;
+      const pipeLeft = pipeX - PIPE_WIDTH / 2;
+      const pipeRight = pipeX + PIPE_WIDTH / 2;
+
       if (bird.state === 'FLYING') {
         bird.x += bird.vx;
         bird.flapFrame += 0.2;
+
+        // Transition expressions
+        if (bird.x < pipeLeft - 20) {
+          bird.mood = 'MOCKING';
+        } else if (isSlamming.current && bird.x > pipeLeft - 50 && bird.x < pipeRight + 50) {
+          bird.mood = 'PANIC';
+        } else if (bird.mood === 'PANIC' && !isSlamming.current) {
+          bird.mood = 'SMUG';
+        }
         
         // Erratic Bouncy Flight Path
         const oscTime = frameCount.current * bird.oscSpeed + bird.oscPhase;
@@ -1915,6 +1931,7 @@ export default function App() {
 
         if (bird.x < dimensions.current.width / 2 - PIPE_WIDTH) {
           bird.state = 'PASSED';
+          bird.mood = 'MOCKING';
           bird.taunt = getNextTaunt();
           bird.tauntTime = 120;
           integrityRef.current = Math.max(0, integrityRef.current - 10); // Increased breach damage to 10
@@ -2251,6 +2268,11 @@ export default function App() {
       const velocityStretch = Math.abs(bird.vy) * 0.06;
       ctx.scale(-(1 + flap - velocityStretch), 1 - flap + velocityStretch);
 
+      // MOCKING Jiggle
+      if (bird.mood === 'MOCKING') {
+        ctx.translate(0, Math.sin(frameCount.current * 0.8) * 5);
+      }
+
       // Bird Body - Graphic Style
       const color = bird.type === 'TANK' ? COLORS.PURPLE : bird.type === 'SNIPER' ? COLORS.CYAN : bird.type === 'DIVER' ? '#FF0000' : COLORS.YELLOW;
       ctx.fillStyle = color;
@@ -2263,31 +2285,70 @@ export default function App() {
       ctx.fill();
       ctx.stroke();
 
-      // Eye - Angry
-      ctx.fillStyle = COLORS.WHITE;
-      ctx.beginPath();
-      ctx.arc(bird.size/4, -bird.size/6, bird.size/4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      
-      ctx.fillStyle = COLORS.BLACK;
-      ctx.beginPath();
-      ctx.arc(bird.size/3, -bird.size/6, bird.size/8, 0, Math.PI * 2);
-      ctx.fill();
+      // Expressions Layer
+      if (bird.mood === 'PANIC') {
+        // Massive panicked eyes
+        ctx.fillStyle = COLORS.WHITE;
+        ctx.beginPath();
+        ctx.arc(-bird.size/4, -bird.size/6, bird.size/3.5, 0, Math.PI * 2);
+        ctx.arc(bird.size/4, -bird.size/6, bird.size/3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.fillStyle = COLORS.BLACK;
+        ctx.beginPath();
+        ctx.arc(-bird.size/4, -bird.size/6, 4, 0, Math.PI * 2);
+        ctx.arc(bird.size/4, -bird.size/6, 4, 0, Math.PI * 2);
+        ctx.fill();
 
-      // Sunglasses
-      ctx.fillStyle = COLORS.BLACK;
-      ctx.fillRect(-bird.size/2, -bird.size/3, bird.size, bird.size/3);
-      
-      // Beak
-      ctx.fillStyle = COLORS.ORANGE;
-      ctx.beginPath();
-      ctx.moveTo(bird.size/3, 0);
-      ctx.lineTo(bird.size/1.5, bird.size/6);
-      ctx.lineTo(bird.size/3, bird.size/3);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+        // Small "O" mouth
+        ctx.fillStyle = COLORS.BLACK;
+        ctx.beginPath();
+        ctx.arc(bird.size/2, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Eye - Base
+        ctx.fillStyle = COLORS.WHITE;
+        ctx.beginPath();
+        ctx.arc(bird.size/4, -bird.size/6, bird.size/4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.fillStyle = COLORS.BLACK;
+        ctx.beginPath();
+        ctx.arc(bird.size/3, -bird.size/6, bird.size/8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sunglasses
+        ctx.save();
+        ctx.fillStyle = COLORS.BLACK;
+        if (bird.mood === 'MOCKING') {
+          ctx.rotate(-0.15); // Cocky tilt
+        }
+        ctx.fillRect(-bird.size/2, -bird.size/3, bird.size, bird.size/3);
+        ctx.restore();
+        
+        // Beak
+        ctx.fillStyle = COLORS.ORANGE;
+        ctx.beginPath();
+        if (bird.mood === 'MOCKING') {
+          // Open laugh beak
+          ctx.moveTo(bird.size/3, -2);
+          ctx.lineTo(bird.size/1.5, bird.size/6 - 5);
+          ctx.lineTo(bird.size/3, 2);
+          
+          ctx.moveTo(bird.size/3, 5);
+          ctx.lineTo(bird.size/1.5, bird.size/6 + 10);
+          ctx.lineTo(bird.size/3, 12);
+        } else {
+          ctx.moveTo(bird.size/3, 0);
+          ctx.lineTo(bird.size/1.5, bird.size/6);
+          ctx.lineTo(bird.size/3, bird.size/3);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
 
       ctx.restore();
     });
