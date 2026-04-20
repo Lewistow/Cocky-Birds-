@@ -10,7 +10,7 @@ import { initGA, trackSlam, trackClout, trackPageView } from './lib/analytics';
 
 // Constants
 const PIPE_WIDTH = 60;
-const DEFAULT_GAP_SIZE = 150;
+const DEFAULT_GAP_SIZE = 200;
 const SLAM_SPEED = 45;
 const OPEN_SPEED = 15;
 const BIRD_BASE_SPEED = 3.5;
