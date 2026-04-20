@@ -2234,31 +2234,90 @@ export default function App() {
       ctx.save();
       ctx.translate(bird.x, bird.y);
       
-      // Taunt Bubble - Moved outside scale block for crispness
+      // Taunt Bubble - Slick Comic Style with Centered Tail
       if (bird.taunt && bird.tauntTime > 0) {
         ctx.save();
-        ctx.fillStyle = COLORS.BLACK;
-        ctx.font = '900 32px Bangers';
+        
+        ctx.font = '900 28px Bangers'; 
         ctx.textAlign = 'center';
-        ctx.strokeStyle = COLORS.WHITE;
-        ctx.lineWidth = 6;
+        ctx.textBaseline = 'middle';
+        
+        // Split text into lines if too long
+        const words = bird.taunt.split(' ');
+        let lines = [bird.taunt];
+        if (bird.taunt.length > 12 && words.length > 1) {
+          const mid = Math.ceil(words.length / 2);
+          lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
+        }
+
+        // Measure text for bubble sizing
+        let maxWidth = 0;
+        lines.forEach(line => {
+          const metrics = ctx.measureText(line);
+          maxWidth = Math.max(maxWidth, metrics.width);
+        });
+
+        const paddingHorizontal = 24;
+        const paddingVertical = 16;
+        const bubbleWidth = Math.max(80, maxWidth + paddingHorizontal * 2);
+        const lineHeight = 30;
+        const bubbleHeight = lines.length * lineHeight + paddingVertical;
+        
+        // Position bubble above bird head
+        const bubbleY = -bird.size - bubbleHeight/2 - 20;
         
         // Add a slight "shout" shake
         const shakeX = (Math.random() - 0.5) * 4;
         const shakeY = (Math.random() - 0.5) * 4;
         
-        const words = bird.taunt.split(' ');
-        let lines = [bird.taunt];
-        if (bird.taunt.length > 10 && words.length > 1) {
-          const mid = Math.ceil(words.length / 2);
-          lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
-        }
+        ctx.translate(shakeX, bubbleY + shakeY);
 
+        // Draw The "Slick" Bubble Body (White with sharp black outline)
+        ctx.fillStyle = COLORS.WHITE;
+        ctx.strokeStyle = COLORS.BLACK;
+        ctx.lineWidth = 4;
+        
+        const r = 15; // Slick Rounded Corners
+        const x = -bubbleWidth / 2;
+        const y = -bubbleHeight / 2;
+        
+        // Rounded Rect Path with Centered "V" Tail
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + bubbleWidth - r, y);
+        ctx.quadraticCurveTo(x + bubbleWidth, y, x + bubbleWidth, y + r);
+        ctx.lineTo(x + bubbleWidth, y + bubbleHeight - r);
+        ctx.quadraticCurveTo(x + bubbleWidth, y + bubbleHeight, x + bubbleWidth - r, y + bubbleHeight);
+        
+        // THE "V" TAIL (Centered Bottom)
+        const tailWidth = 12;
+        const tailHeight = 15;
+        ctx.lineTo(tailWidth, y + bubbleHeight);
+        ctx.lineTo(0, y + bubbleHeight + tailHeight);
+        ctx.lineTo(-tailWidth, y + bubbleHeight);
+        
+        ctx.lineTo(x + r, y + bubbleHeight);
+        ctx.quadraticCurveTo(x, y + bubbleHeight, x, y + bubbleHeight - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+        
+        // Subtle depth shadow
+        ctx.shadowColor = 'rgba(0,0,0,0.15)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 4;
+        ctx.fill();
+        
+        ctx.shadowColor = 'transparent'; 
+        ctx.stroke();
+
+        // Draw Text
+        ctx.fillStyle = COLORS.BLACK;
         lines.forEach((line, i) => {
-          const yOffset = -bird.size - 20 + shakeY - (lines.length - 1 - i) * 35;
-          ctx.strokeText(line, shakeX, yOffset);
-          ctx.fillText(line, shakeX, yOffset);
+          const ty = (i - (lines.length - 1) / 2) * lineHeight;
+          ctx.fillText(line, 0, ty);
         });
+
         ctx.restore();
       }
 
