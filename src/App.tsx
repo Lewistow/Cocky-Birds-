@@ -14,7 +14,7 @@ const DEFAULT_GAP_SIZE = 200;
 const SLAM_SPEED = 45;
 const OPEN_SPEED = 15;
 const BIRD_BASE_SPEED = 3.5;
-const WARMUP_FRAMES = 600; // ~10 seconds at 60fps
+const WARMUP_FRAMES = 300; // ~5 seconds at 60fps
 const MAX_INTEGRITY = 100;
 const CHAOS_LIMIT = 100;
 
@@ -340,6 +340,10 @@ export default function App() {
   const [isFlashing, setIsFlashing] = useState(false);
   const [isDivine, setIsDivine] = useState(false);
   const [isWarmup, setIsWarmup] = useState(false);
+  const isWarmupRef = useRef(false);
+  useEffect(() => {
+    isWarmupRef.current = isWarmup;
+  }, [isWarmup]);
   const [isFirstTime, setIsFirstTime] = useState(() => {
     return localStorage.getItem('cocky-birds-tutorial-done') !== 'true';
   });
@@ -448,7 +452,7 @@ export default function App() {
     const tutorialDone = localStorage.getItem('cocky-birds-tutorial-done') === 'true';
     if (!tutorialDone) {
       setIsWarmup(true);
-      isWarmupActiveRef.current = true;
+      isWarmupActiveRef.current = false; // Start inactive, button will activate
     } else {
       isWarmupActiveRef.current = false;
     }
@@ -1635,6 +1639,7 @@ export default function App() {
 
   const update = useCallback(() => {
     if (gameState !== 'PLAYING' && !isCrumbling.current) return;
+    if (isWarmupRef.current) return; // THE PAUSE ⏸️
 
     frameCount.current++;
 
@@ -2870,23 +2875,34 @@ export default function App() {
       {/* Warmup Indicator */}
       {gameState === 'PLAYING' && isWarmup && (
         <motion.div 
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1, 1, 1.2] }}
-          transition={{ duration: 5, times: [0, 0.1, 0.8, 1] }}
-          onAnimationComplete={() => {
-            setIsWarmup(false);
-            localStorage.setItem('cocky-birds-tutorial-done', 'true');
-            setIsFirstTime(false);
-          }}
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          initial={{ opacity: 0, scale: 0.5, y: -20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="absolute inset-0 flex items-center justify-center z-[200]"
         >
-          <div className="bg-white border-4 border-black p-4 md:p-8 shadow-[8px_8px_0px_#000] -rotate-3 max-w-md text-center">
-            <h2 className="text-4xl md:text-8xl font-black text-black italic leading-none">WARMUP</h2>
-            <p className="text-black font-black uppercase text-xs md:text-xl tracking-widest mt-2">Birds are slow & peaceful...</p>
-            <div className="mt-4 pt-4 border-t-2 border-black/10">
-              <p className="text-orange-600 font-black text-lg md:text-2xl animate-bounce">
+          <div className="bg-white border-[6px] border-black p-6 md:p-10 shadow-[12px_12px_0px_#000] -rotate-3 max-w-md text-center relative pointer-events-auto">
+            {/* Slick Black Cancel Button */}
+            <button 
+              onClick={() => {
+                setIsWarmup(false);
+                isWarmupActiveRef.current = true;
+                frameCount.current = 0; // Reset countdown for the 5s warmup
+                localStorage.setItem('cocky-birds-tutorial-done', 'true');
+                setIsFirstTime(false);
+              }}
+              className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 border-[4px] border-black flex items-center justify-center hover:bg-zinc-800 transition-all shadow-[6px_6px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none group"
+              title="Dismiss Warmup"
+            >
+              <span className="font-black text-2xl group-hover:scale-110 transition-transform">❌</span>
+            </button>
+            <h2 className="text-5xl md:text-8xl font-black text-black italic leading-none tracking-tighter">WARMUP</h2>
+            <p className="text-black font-black uppercase text-sm md:text-xl tracking-widest mt-2 border-b-4 border-black/10 pb-4">Birds are slow & peaceful...</p>
+            <div className="mt-6 space-y-4">
+              <p className="text-orange-600 font-black text-xl md:text-3xl animate-bounce">
                 MOVE THE PIPE TO CRUSH BIRDS!
               </p>
+              <div className="bg-black text-white p-2 text-xs md:text-sm font-black uppercase tracking-tighter rotate-1">
+                CLICK THE ❌ TO ENGAGE THE GRIND
+              </div>
             </div>
           </div>
         </motion.div>
