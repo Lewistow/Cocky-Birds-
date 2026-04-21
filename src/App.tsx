@@ -14,7 +14,7 @@ const DEFAULT_GAP_SIZE = 200;
 const SLAM_SPEED = 45;
 const OPEN_SPEED = 15;
 const BIRD_BASE_SPEED = 3.5;
-const WARMUP_FRAMES = 300; // ~5 seconds at 60fps
+const WARMUP_FRAMES = 600; // ~10 seconds at 60fps
 const MAX_INTEGRITY = 100;
 const CHAOS_LIMIT = 100;
 
