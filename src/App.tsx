@@ -2879,7 +2879,7 @@ export default function App() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           className="absolute inset-0 flex items-center justify-center z-[200]"
         >
-          <div className="bg-white border-[6px] border-black p-6 md:p-10 shadow-[12px_12px_0px_#000] -rotate-3 max-w-md text-center relative pointer-events-auto">
+          <div className="bg-white border-[4px] border-black p-4 md:p-6 shadow-[8px_8px_0px_#000] -rotate-2 max-w-[280px] md:max-w-sm text-center relative pointer-events-auto">
             {/* Slick Black Cancel Button */}
             <button 
               onClick={() => {
@@ -2889,18 +2889,18 @@ export default function App() {
                 localStorage.setItem('cocky-birds-tutorial-done', 'true');
                 setIsFirstTime(false);
               }}
-              className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 border-[4px] border-black flex items-center justify-center hover:bg-zinc-800 transition-all shadow-[6px_6px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none group"
+              className="absolute -top-4 -right-4 bg-black text-white w-10 h-10 border-[3px] border-black flex items-center justify-center hover:bg-zinc-800 transition-all shadow-[4px_4px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none group"
               title="Dismiss Warmup"
             >
-              <span className="font-black text-2xl group-hover:scale-110 transition-transform">❌</span>
+              <span className="font-black text-xl group-hover:scale-110 transition-transform">❌</span>
             </button>
-            <h2 className="text-5xl md:text-8xl font-black text-black italic leading-none tracking-tighter">WARMUP</h2>
-            <p className="text-black font-black uppercase text-sm md:text-xl tracking-widest mt-2 border-b-4 border-black/10 pb-4">Birds are slow & peaceful...</p>
-            <div className="mt-6 space-y-4">
-              <p className="text-orange-600 font-black text-xl md:text-3xl animate-bounce">
+            <h2 className="text-4xl md:text-6xl font-black text-black italic leading-none tracking-tighter">WARMUP</h2>
+            <p className="text-black font-black uppercase text-xs md:text-lg tracking-widest mt-1 border-b-[3px] border-black/10 pb-2">Birds are slow & peaceful...</p>
+            <div className="mt-4 space-y-2">
+              <p className="text-orange-600 font-black text-lg md:text-2xl animate-bounce leading-tight">
                 MOVE THE PIPE TO CRUSH BIRDS!
               </p>
-              <div className="bg-black text-white p-2 text-xs md:text-sm font-black uppercase tracking-tighter rotate-1">
+              <div className="bg-black text-white p-1 text-[10px] md:text-xs font-black uppercase tracking-tighter rotate-1">
                 CLICK THE ❌ TO ENGAGE THE GRIND
               </div>
             </div>
