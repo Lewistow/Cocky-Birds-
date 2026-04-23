@@ -2329,7 +2329,7 @@ export default function App() {
       // Squash & Stretch synced with movement
       // User requested birds face forward (they move left, so we flip X)
       const flap = Math.sin(bird.flapFrame) * 0.2;
-      const velocityStretch = Math.abs(bird.vy) * 0.06;
+      const velocityStretch = Math.min(0.5, Math.abs(bird.vy) * 0.03); // Capped and softened to prevent flipping
       ctx.scale(-(1 + flap - velocityStretch), 1 - flap + velocityStretch);
 
       // MOCKING Jiggle
@@ -2348,6 +2348,46 @@ export default function App() {
       ctx.arc(0, 0, bird.size / 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+
+      // --- INDUSTRIAL SKINS ---
+      if (bird.type === 'TANK') {
+        // Bolted Steel Helmet (Top Half)
+        ctx.fillStyle = '#b0b0b0'; // Silver Steel
+        ctx.beginPath();
+        ctx.arc(0, 0, bird.size / 2, Math.PI, 0); // Top semicircle
+        ctx.fill();
+        ctx.stroke();
+
+        // Industrial Rivets
+        ctx.fillStyle = '#7a7a7a';
+        [[-bird.size / 3, -bird.size / 4], [0, -bird.size / 2.5], [bird.size / 3, -bird.size / 4]].forEach(([rx, ry]) => {
+          ctx.beginPath();
+          ctx.arc(rx, ry, 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Red Cooling Core (Energy Line)
+        const coreGradient = ctx.createLinearGradient(-bird.size / 3, 0, bird.size / 3, 0);
+        coreGradient.addColorStop(0, 'transparent');
+        coreGradient.addColorStop(0.5, '#FF0000');
+        coreGradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = coreGradient;
+        ctx.globalAlpha = 0.6 + Math.sin(frameCount.current * 0.2) * 0.3; // Pulsing
+        ctx.fillRect(-bird.size / 3, bird.size / 8, bird.size / 1.5, 4);
+        ctx.globalAlpha = 1.0;
+      } else if (bird.type === 'DIVER') {
+        // High-Speed Aerodynamic Streaks
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-bird.size / 3, -bird.size / 5);
+        ctx.lineTo(0, -bird.size / 5);
+        ctx.moveTo(-bird.size / 2, 0);
+        ctx.lineTo(-bird.size / 4, 0);
+        ctx.moveTo(-bird.size / 3, bird.size / 5);
+        ctx.lineTo(0, bird.size / 5);
+        ctx.stroke();
+      }
 
       // Expressions Layer
       if (bird.mood === 'PANIC') {
@@ -2389,21 +2429,32 @@ export default function App() {
         if (bird.mood === 'MOCKING') {
           ctx.rotate(-0.15); // Cocky tilt
         }
-        ctx.fillRect(-bird.size/2, -bird.size/3, bird.size, bird.size/3);
+        ctx.fillRect(-bird.size / 2, -bird.size / 3, bird.size, bird.size / 3);
+
+        // --- SNIPER SCOPE ENHANCEMENT ---
+        if (bird.type === 'SNIPER') {
+          ctx.fillStyle = '#4a0000'; // Dark lens recess
+          ctx.fillRect(bird.size / 8, -bird.size / 3 + 4, bird.size / 3, bird.size / 3 - 8);
+          ctx.fillStyle = '#ff0000'; // Targeter Dot
+          ctx.beginPath();
+          ctx.arc(bird.size / 8 + bird.size / 6, -bird.size / 6, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
         ctx.restore();
         
         // Beak
-        ctx.fillStyle = COLORS.ORANGE;
+        ctx.fillStyle = bird.type === 'TANK' ? '#C0C0C0' : COLORS.ORANGE;
         ctx.beginPath();
         if (bird.mood === 'MOCKING') {
-          // Open laugh beak
-          ctx.moveTo(bird.size/3, -2);
-          ctx.lineTo(bird.size/1.5, bird.size/6 - 5);
-          ctx.lineTo(bird.size/3, 2);
+          // Open laugh beak - Scaled to bird size to prevent "breaking" on larger birds
+          const bSize = bird.size;
+          ctx.moveTo(bSize / 3, -bSize / 15);
+          ctx.lineTo(bSize / 1.5, -bSize / 15);
+          ctx.lineTo(bSize / 3, bSize / 15);
           
-          ctx.moveTo(bird.size/3, 5);
-          ctx.lineTo(bird.size/1.5, bird.size/6 + 10);
-          ctx.lineTo(bird.size/3, 12);
+          ctx.moveTo(bSize / 3, bSize / 8);
+          ctx.lineTo(bSize / 1.5, bSize / 4);
+          ctx.lineTo(bSize / 3, bSize / 3);
         } else {
           ctx.moveTo(bird.size/3, 0);
           ctx.lineTo(bird.size/1.5, bird.size/6);
