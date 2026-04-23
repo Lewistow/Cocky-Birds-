@@ -2387,6 +2387,7 @@ export default function App() {
         ctx.moveTo(-bird.size / 3, bird.size / 5);
         ctx.lineTo(0, bird.size / 5);
         ctx.stroke();
+        ctx.strokeStyle = COLORS.BLACK; // RESET STROKE TO BLACK IMMEDIATELY
       }
 
       // Expressions Layer
@@ -2443,7 +2444,10 @@ export default function App() {
         ctx.restore();
         
         // Beak
-        ctx.fillStyle = bird.type === 'TANK' ? '#C0C0C0' : COLORS.ORANGE;
+        ctx.fillStyle = '#FF3E00';
+        if (bird.type === 'DIVER') ctx.fillStyle = '#000000';
+        if (bird.type === 'TANK') ctx.fillStyle = '#C0C0C0';
+        
         ctx.beginPath();
         if (bird.mood === 'MOCKING') {
           // Open laugh beak - Scaled to bird size to prevent "breaking" on larger birds
