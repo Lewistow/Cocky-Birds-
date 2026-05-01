@@ -33,7 +33,7 @@ interface Bird {
   vy: number;
   size: number;
   state: 'FLYING' | 'CRUSHED' | 'PASSED';
-  mood: 'SMUG' | 'MOCKING' | 'PANIC';
+  mood: 'SMUG' | 'MOCKING';
   lastShot: number;
   shotsFired: number;
   taunt?: string;
@@ -1525,11 +1525,14 @@ export default function App() {
     const createBird = (t: BirdType, h: number, v: number, s: number, os: number, oa: number) => {
       if (gameStateRef.current !== 'PLAYING') return;
 
+      const minY = dimensions.current.height * 0.2 + 50; // Start at sun level, accounting for oscillation
+      const maxY = dimensions.current.height * 0.85; // Avoid hitting ground
+      
       const bird: Bird = {
         id: birdIdCounter.current++,
         x: dimensions.current.width + 100,
         y: 0,
-        baseY: Math.random() * (dimensions.current.height - 300) + 150,
+        baseY: Math.random() * (maxY - minY) + minY,
         type: t,
         health: h,
         maxHealth: h,
@@ -1843,25 +1846,13 @@ export default function App() {
         // Transition expressions
         if (bird.x < pipeLeft - 20) {
           bird.mood = 'MOCKING';
-        } else if (isSlamming.current && bird.x > pipeLeft - 50 && bird.x < pipeRight + 50) {
-          bird.mood = 'PANIC';
-        } else if (bird.mood === 'PANIC' && !isSlamming.current) {
-          bird.mood = 'SMUG';
         }
         
-        // Erratic Bouncy Flight Path
+        // Flight Path
         const oscTime = frameCount.current * bird.oscSpeed + bird.oscPhase;
         const targetY = bird.baseY + Math.sin(oscTime) * bird.oscAmp;
         
-        // Frantic flapping when close to pipes
-        const distToPipe = Math.abs(bird.x - dimensions.current.width / 2);
-        if (distToPipe < 300) {
-          bird.flapFrame += 0.1;
-          // Add some panic jitter
-          bird.y = targetY + (Math.random() - 0.5) * 10;
-        } else {
-          bird.y = targetY;
-        }
+        bird.y = targetY;
 
         // Calculate vy for squash/stretch
         bird.vy = Math.cos(oscTime) * bird.oscAmp * bird.oscSpeed;
@@ -2391,27 +2382,8 @@ export default function App() {
       }
 
       // Expressions Layer
-      if (bird.mood === 'PANIC') {
-        // Massive panicked eyes
-        ctx.fillStyle = COLORS.WHITE;
-        ctx.beginPath();
-        ctx.arc(-bird.size/4, -bird.size/6, bird.size/3.5, 0, Math.PI * 2);
-        ctx.arc(bird.size/4, -bird.size/6, bird.size/3.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        
-        ctx.fillStyle = COLORS.BLACK;
-        ctx.beginPath();
-        ctx.arc(-bird.size/4, -bird.size/6, 4, 0, Math.PI * 2);
-        ctx.arc(bird.size/4, -bird.size/6, 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Small "O" mouth
-        ctx.fillStyle = COLORS.BLACK;
-        ctx.beginPath();
-        ctx.arc(bird.size/2, 0, 4, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
+      // Removed PANIC branch for maximum disrespect
+      if (true) {
         // Eye - Base
         ctx.fillStyle = COLORS.WHITE;
         ctx.beginPath();
