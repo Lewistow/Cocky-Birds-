@@ -10,7 +10,7 @@ import { initGA, trackSlam, trackClout, trackPageView } from './lib/analytics';
 
 // Constants
 const PIPE_WIDTH = 60;
-const DEFAULT_GAP_SIZE = 160;
+const DEFAULT_GAP_SIZE = 200;
 const SLAM_SPEED = 45;
 const OPEN_SPEED = 15;
 const BIRD_BASE_SPEED = 3.5;
@@ -1683,7 +1683,7 @@ export default function App() {
 
     // Gap logic
     const targetGapY = mousePos.current.y;
-    gapY.current += (targetGapY - gapY.current) * 0.8;
+    gapY.current += (targetGapY - gapY.current) * 0.5;
 
     if (isSlamming.current) {
       currentGapSize.current -= SLAM_SPEED;
