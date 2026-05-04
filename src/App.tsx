@@ -1702,7 +1702,7 @@ export default function App() {
 
     // Gap logic
     const targetGapY = mousePos.current.y;
-    gapY.current += (targetGapY - gapY.current) * 0.5;
+    gapY.current += (targetGapY - gapY.current) * 0.85;
 
     if (isSlamming.current) {
       currentGapSize.current -= SLAM_SPEED;
@@ -1776,13 +1776,13 @@ export default function App() {
           if (!isDivineRef.current) {
             let hitAny = false;
             birds.current.forEach(bird => {
-              const horizontalTolerance = 80 + bird.size;
+              const horizontalTolerance = 60 + bird.size * 0.8;
               if (bird.state === 'FLYING' && 
                   bird.x > dimensions.current.width / 2 - horizontalTolerance && 
                   bird.x < dimensions.current.width / 2 + horizontalTolerance) {
                 
                 // Precise vertical collision based on bird size
-                const collisionRange = bird.size * 1.6; // Much more generous hitbox for better feel
+                const collisionRange = bird.size * 1.2; // Slightly more balanced hitbox
                 if (Math.abs(bird.y - gapY.current) < collisionRange) {
                   hitAny = true;
                   bird.health--;
