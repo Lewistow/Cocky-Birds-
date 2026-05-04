@@ -1537,7 +1537,7 @@ export default function App() {
     const speedMultiplier = 0.5 + 0.5 * warmupFactor;
 
     let vx = -(BIRD_BASE_SPEED + Math.random() * 2) * speedMultiplier;
-    let size = 42;
+    let size = 52;
     let oscSpeed = 0.15 + Math.random() * 0.08;
     let oscAmp = 25 + Math.random() * 25;
 
@@ -1576,21 +1576,21 @@ export default function App() {
       type = 'TANK';
       health = 3;
       vx = -1.8;
-      size = 85; // Massive Presence
+      size = 125; // Massive Presence
       oscSpeed = 0.08;
       oscAmp = 50;
       playTankBirdCue();
     } else if (rand > 0.73) {
       type = 'DIVER';
       vx = -6;
-      size = 55;
+      size = 65;
       oscSpeed = 0.3;
       oscAmp = 70;
       playFireDiverCue();
     } else if (rand > 0.48) {
       type = 'SNIPER';
       vx = -2.5;
-      size = 36;
+      size = 46;
       oscSpeed = 0.12;
       oscAmp = 20;
       playSniperBirdCue();
@@ -2440,7 +2440,7 @@ export default function App() {
         ctx.save();
         ctx.translate(b.x, b.y);
         ctx.rotate(frameCount.current * 0.05); // Slow tumble
-        ctx.scale(2.2, 2.2); // THE MEGA CHUNK
+        ctx.scale(3.2, 3.2); // THE MEGA CHUNK
         
         ctx.strokeStyle = '#1f140a';
         ctx.lineWidth = 1;
