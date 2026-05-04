@@ -299,6 +299,25 @@ interface PipeFragment {
 }
 
 export default function App() {
+  const birdImagesRef = useRef<Record<string, HTMLImageElement>>({});
+
+  useEffect(() => {
+    const assets = {
+      TANK: 'purple_tank.png',
+      SNIPER: 'blue_sniper.png',
+      DIVER: 'fire_diver.png',
+      NORMAL: 'yellow_diver.png'
+    };
+
+    Object.entries(assets).forEach(([type, filename]) => {
+      const img = new Image();
+      img.src = filename;
+      img.onload = () => {
+        birdImagesRef.current[type] = img;
+      };
+    });
+  }, []);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState>('START');
   const [score, setScore] = useState(0);
@@ -1518,7 +1537,7 @@ export default function App() {
     const speedMultiplier = 0.5 + 0.5 * warmupFactor;
 
     let vx = -(BIRD_BASE_SPEED + Math.random() * 2) * speedMultiplier;
-    let size = 35;
+    let size = 42;
     let oscSpeed = 0.15 + Math.random() * 0.08;
     let oscAmp = 25 + Math.random() * 25;
 
@@ -1557,14 +1576,14 @@ export default function App() {
       type = 'TANK';
       health = 3;
       vx = -1.8;
-      size = 62;
+      size = 85; // Massive Presence
       oscSpeed = 0.08;
       oscAmp = 50;
       playTankBirdCue();
     } else if (rand > 0.73) {
       type = 'DIVER';
       vx = -6;
-      size = 30;
+      size = 55;
       oscSpeed = 0.3;
       oscAmp = 70;
       playFireDiverCue();
@@ -1757,11 +1776,14 @@ export default function App() {
           if (!isDivineRef.current) {
             let hitAny = false;
             birds.current.forEach(bird => {
+              const horizontalTolerance = 80 + bird.size;
               if (bird.state === 'FLYING' && 
-                  bird.x > dimensions.current.width / 2 - PIPE_WIDTH / 2 - 20 && 
-                  bird.x < dimensions.current.width / 2 + PIPE_WIDTH / 2 + 20) {
+                  bird.x > dimensions.current.width / 2 - horizontalTolerance && 
+                  bird.x < dimensions.current.width / 2 + horizontalTolerance) {
                 
-                if (bird.y > gapY.current - DEFAULT_GAP_SIZE/2 && bird.y < gapY.current + DEFAULT_GAP_SIZE/2) {
+                // Precise vertical collision based on bird size
+                const collisionRange = bird.size * 1.6; // Much more generous hitbox for better feel
+                if (Math.abs(bird.y - gapY.current) < collisionRange) {
                   hitAny = true;
                   bird.health--;
                   if (bird.health <= 0) {
@@ -2230,15 +2252,13 @@ export default function App() {
       ctx.save();
       ctx.translate(bird.x, bird.y);
       
-      // Taunt Bubble - Slick Comic Style with Centered Tail
+      // Taunt Bubble
       if (bird.taunt && bird.tauntTime > 0) {
         ctx.save();
-        
         ctx.font = '900 28px Bangers'; 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        // Split text into lines if too long
         const words = bird.taunt.split(' ');
         let lines = [bird.taunt];
         if (bird.taunt.length > 12 && words.length > 1) {
@@ -2246,199 +2266,119 @@ export default function App() {
           lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
         }
 
-        // Measure text for bubble sizing
         let maxWidth = 0;
         lines.forEach(line => {
-          const metrics = ctx.measureText(line);
-          maxWidth = Math.max(maxWidth, metrics.width);
+          maxWidth = Math.max(maxWidth, ctx.measureText(line).width);
         });
 
-        const paddingHorizontal = 24;
-        const paddingVertical = 16;
-        const bubbleWidth = Math.max(80, maxWidth + paddingHorizontal * 2);
-        const lineHeight = 30;
-        const bubbleHeight = lines.length * lineHeight + paddingVertical;
+        const paddingH = 24;
+        const paddingV = 16;
+        const bW = Math.max(80, maxWidth + paddingH * 2);
+        const lH = 30;
+        const bH = lines.length * lH + paddingV;
+        const bY = -bird.size - bH/2 - 20;
         
-        // Position bubble above bird head
-        const bubbleY = -bird.size - bubbleHeight/2 - 20;
-        
-        // Add a slight "shout" shake
-        const shakeX = (Math.random() - 0.5) * 4;
-        const shakeY = (Math.random() - 0.5) * 4;
-        
-        ctx.translate(shakeX, bubbleY + shakeY);
-
-        // Draw The "Slick" Bubble Body (White with sharp black outline)
+        ctx.translate((Math.random()-0.5)*4, bY + (Math.random()-0.5)*4);
         ctx.fillStyle = COLORS.WHITE;
         ctx.strokeStyle = COLORS.BLACK;
         ctx.lineWidth = 4;
         
-        const r = 15; // Slick Rounded Corners
-        const x = -bubbleWidth / 2;
-        const y = -bubbleHeight / 2;
+        const r = 15;
+        const bx = -bW / 2;
+        const by = -bH / 2;
         
-        // Rounded Rect Path with Centered "V" Tail
         ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + bubbleWidth - r, y);
-        ctx.quadraticCurveTo(x + bubbleWidth, y, x + bubbleWidth, y + r);
-        ctx.lineTo(x + bubbleWidth, y + bubbleHeight - r);
-        ctx.quadraticCurveTo(x + bubbleWidth, y + bubbleHeight, x + bubbleWidth - r, y + bubbleHeight);
-        
-        // THE "V" TAIL (Centered Bottom)
-        const tailWidth = 12;
-        const tailHeight = 15;
-        ctx.lineTo(tailWidth, y + bubbleHeight);
-        ctx.lineTo(0, y + bubbleHeight + tailHeight);
-        ctx.lineTo(-tailWidth, y + bubbleHeight);
-        
-        ctx.lineTo(x + r, y + bubbleHeight);
-        ctx.quadraticCurveTo(x, y + bubbleHeight, x, y + bubbleHeight - r);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.moveTo(bx + r, by);
+        ctx.lineTo(bx + bW - r, by);
+        ctx.quadraticCurveTo(bx + bW, by, bx + bW, by + r);
+        ctx.lineTo(bx + bW, by + bH - r);
+        ctx.quadraticCurveTo(bx + bW, by + bH, bx + bW - r, by + bH);
+        ctx.lineTo(12, by + bH);
+        ctx.lineTo(0, by + bH + 15);
+        ctx.lineTo(-12, by + bH);
+        ctx.lineTo(bx + r, by + bH);
+        ctx.quadraticCurveTo(bx, by + bH, bx, by + bH - r);
+        ctx.lineTo(bx, by + r);
+        ctx.quadraticCurveTo(bx, by, bx + r, by);
         ctx.closePath();
-        
-        // Subtle depth shadow
-        ctx.shadowColor = 'rgba(0,0,0,0.15)';
-        ctx.shadowBlur = 8;
-        ctx.shadowOffsetY = 4;
         ctx.fill();
-        
-        ctx.shadowColor = 'transparent'; 
         ctx.stroke();
 
-        // Draw Text
         ctx.fillStyle = COLORS.BLACK;
         lines.forEach((line, i) => {
-          const ty = (i - (lines.length - 1) / 2) * lineHeight;
-          ctx.fillText(line, 0, ty);
+          ctx.fillText(line, 0, (i - (lines.length - 1) / 2) * lH);
         });
-
         ctx.restore();
       }
 
-      // Squash & Stretch synced with movement
-      // User requested birds face forward (they move left, so we flip X)
+      // Squash & Stretch
       const flap = Math.sin(bird.flapFrame) * 0.2;
-      const velocityStretch = Math.min(0.5, Math.abs(bird.vy) * 0.03); // Capped and softened to prevent flipping
-      ctx.scale(-(1 + flap - velocityStretch), 1 - flap + velocityStretch);
+      const vStretch = Math.min(0.5, Math.abs(bird.vy) * 0.03);
+      ctx.scale(-(1 + flap - vStretch), 1 - flap + vStretch);
 
-      // MOCKING Jiggle
       if (bird.mood === 'MOCKING') {
         ctx.translate(0, Math.sin(frameCount.current * 0.8) * 5);
       }
 
-      // Bird Body - Graphic Style
-      const color = bird.type === 'TANK' ? COLORS.PURPLE : bird.type === 'SNIPER' ? COLORS.CYAN : bird.type === 'DIVER' ? '#FF0000' : COLORS.YELLOW;
-      ctx.fillStyle = color;
-      ctx.strokeStyle = COLORS.BLACK;
-      ctx.lineWidth = 6;
+      // --- COCKY BIRDS DESIGN ---
+      const img = birdImagesRef.current[bird.type];
       
-      // Body
-      ctx.beginPath();
-      ctx.arc(0, 0, bird.size / 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      if (img) {
+        // Render at natural aspect ratio
+        const aspect = img.width / img.height;
+        const drawW = bird.size * 1.1; // Slightly larger for visual weight
+        const drawH = drawW / aspect;
+        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+      } else {
+        // Fallback procedural drawing
+        const isTank = bird.type === 'TANK';
+        const isSniper = bird.type === 'SNIPER';
+        const isFire = bird.type === 'DIVER';
 
-      // --- INDUSTRIAL SKINS ---
-      if (bird.type === 'TANK') {
-        // Bolted Steel Helmet (Top Half)
-        ctx.fillStyle = '#b0b0b0'; // Silver Steel
+        // Body
+        ctx.fillStyle = isTank ? COLORS.PURPLE : isSniper ? COLORS.CYAN : isFire ? '#FF0000' : COLORS.YELLOW;
+        ctx.strokeStyle = COLORS.BLACK;
+        ctx.lineWidth = 5;
         ctx.beginPath();
-        ctx.arc(0, 0, bird.size / 2, Math.PI, 0); // Top semicircle
+        ctx.arc(0, 0, bird.size / 2, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
-        // Industrial Rivets
-        ctx.fillStyle = '#7a7a7a';
-        [[-bird.size / 3, -bird.size / 4], [0, -bird.size / 2.5], [bird.size / 3, -bird.size / 4]].forEach(([rx, ry]) => {
-          ctx.beginPath();
-          ctx.arc(rx, ry, 3, 0, Math.PI * 2);
-          ctx.fill();
-        });
-
-        // Red Cooling Core (Energy Line)
-        const coreGradient = ctx.createLinearGradient(-bird.size / 3, 0, bird.size / 3, 0);
-        coreGradient.addColorStop(0, 'transparent');
-        coreGradient.addColorStop(0.5, '#FF0000');
-        coreGradient.addColorStop(1, 'transparent');
-        ctx.fillStyle = coreGradient;
-        ctx.globalAlpha = 0.6 + Math.sin(frameCount.current * 0.2) * 0.3; // Pulsing
-        ctx.fillRect(-bird.size / 3, bird.size / 8, bird.size / 1.5, 4);
-        ctx.globalAlpha = 1.0;
-      } else if (bird.type === 'DIVER') {
-        // High-Speed Aerodynamic Streaks
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(-bird.size / 3, -bird.size / 5);
-        ctx.lineTo(0, -bird.size / 5);
-        ctx.moveTo(-bird.size / 2, 0);
-        ctx.lineTo(-bird.size / 4, 0);
-        ctx.moveTo(-bird.size / 3, bird.size / 5);
-        ctx.lineTo(0, bird.size / 5);
-        ctx.stroke();
-        ctx.strokeStyle = COLORS.BLACK; // RESET STROKE TO BLACK IMMEDIATELY
-      }
-
-      // Expressions Layer
-      // Removed PANIC branch for maximum disrespect
-      if (true) {
-        // Eye - Base
+        // Eye & Eyepatch (Minimal fallback)
+        ctx.save();
+        ctx.rotate(0.1); 
         ctx.fillStyle = COLORS.WHITE;
         ctx.beginPath();
-        ctx.arc(bird.size/4, -bird.size/6, bird.size/4, 0, Math.PI * 2);
+        ctx.arc(bird.size/4.5, -bird.size/10, bird.size/5, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-        
         ctx.fillStyle = COLORS.BLACK;
         ctx.beginPath();
-        ctx.arc(bird.size/3, -bird.size/6, bird.size/8, 0, Math.PI * 2);
+        ctx.arc(bird.size/4, -bird.size/10, bird.size/10, 0, Math.PI * 2);
         ctx.fill();
-
-        // Sunglasses
-        ctx.save();
-        ctx.fillStyle = COLORS.BLACK;
-        if (bird.mood === 'MOCKING') {
-          ctx.rotate(-0.15); // Cocky tilt
-        }
-        ctx.fillRect(-bird.size / 2, -bird.size / 3, bird.size, bird.size / 3);
-
-        // --- SNIPER SCOPE ENHANCEMENT ---
-        if (bird.type === 'SNIPER') {
-          ctx.fillStyle = '#4a0000'; // Dark lens recess
-          ctx.fillRect(bird.size / 8, -bird.size / 3 + 4, bird.size / 3, bird.size / 3 - 8);
-          ctx.fillStyle = '#ff0000'; // Targeter Dot
-          ctx.beginPath();
-          ctx.arc(bird.size / 8 + bird.size / 6, -bird.size / 6, 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        ctx.beginPath();
+        ctx.lineWidth = 3;
+        ctx.moveTo(-bird.size/2, -bird.size/3);
+        ctx.lineTo(bird.size/2, bird.size/8);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(-bird.size/8, -bird.size/6, bird.size/3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
         ctx.restore();
-        
+
         // Beak
-        ctx.fillStyle = '#FF3E00';
-        if (bird.type === 'DIVER') ctx.fillStyle = '#000000';
-        if (bird.type === 'TANK') ctx.fillStyle = '#C0C0C0';
-        
+        ctx.fillStyle = COLORS.BLACK;
         ctx.beginPath();
+        const bxX = bird.size / 2.5;
+        const bxY = bird.size / 15;
         if (bird.mood === 'MOCKING') {
-          // Open laugh beak - Scaled to bird size to prevent "breaking" on larger birds
-          const bSize = bird.size;
-          ctx.moveTo(bSize / 3, -bSize / 15);
-          ctx.lineTo(bSize / 1.5, -bSize / 15);
-          ctx.lineTo(bSize / 3, bSize / 15);
-          
-          ctx.moveTo(bSize / 3, bSize / 8);
-          ctx.lineTo(bSize / 1.5, bSize / 4);
-          ctx.lineTo(bSize / 3, bSize / 3);
+          ctx.moveTo(bxX, bxY); ctx.lineTo(bxX+bird.size/6, bxY-bird.size/12); ctx.lineTo(bxX, bxY-bird.size/6);
+          ctx.moveTo(bxX, bxY+bird.size/12); ctx.lineTo(bxX+bird.size/6, bxY+bird.size/6); ctx.lineTo(bxX, bxY+bird.size/4);
         } else {
-          ctx.moveTo(bird.size/3, 0);
-          ctx.lineTo(bird.size/1.5, bird.size/6);
-          ctx.lineTo(bird.size/3, bird.size/3);
+          ctx.moveTo(bxX, bxY); ctx.lineTo(bxX+bird.size/4, bxY+bird.size/10); ctx.lineTo(bxX, bxY+bird.size/5);
         }
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+        ctx.closePath(); ctx.fill(); ctx.stroke();
       }
 
       ctx.restore();
