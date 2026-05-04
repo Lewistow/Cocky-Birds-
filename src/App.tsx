@@ -303,10 +303,10 @@ export default function App() {
 
   useEffect(() => {
     const assets = {
-      TANK: 'purple_tank.png',
-      SNIPER: 'blue_sniper.png',
-      DIVER: 'fire_diver.png',
-      NORMAL: 'yellow_diver.png'
+      TANK: 'https://files.catbox.moe/iraoh9.png',
+      SNIPER: 'https://files.catbox.moe/fkhr97.png',
+      DIVER: 'https://files.catbox.moe/bmi71p.png',
+      NORMAL: 'https://files.catbox.moe/d6byed.png'
     };
 
     Object.entries(assets).forEach(([type, filename]) => {
@@ -2955,7 +2955,7 @@ export default function App() {
                 className="mb-3 md:mb-8"
               >
                 <div className="w-16 h-16 md:w-32 md:h-32 bg-[#FFF000] rounded-full border-4 md:border-8 border-black flex items-center justify-center shadow-[4px_4px_0px_#000] md:shadow-[8px_8px_0px_#000] overflow-hidden">
-                  <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
+                  <img src="https://files.catbox.moe/ylwdma.png" alt="Logo" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
                 </div>
               </motion.div>
               
