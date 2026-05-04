@@ -2954,8 +2954,8 @@ export default function App() {
                 transition={{ repeat: Infinity, duration: 2 }}
                 className="mb-3 md:mb-8"
               >
-                <div className="w-16 h-16 md:w-32 md:h-32 bg-[#FFF000] rounded-full border-4 md:border-8 border-black flex items-center justify-center shadow-[4px_4px_0px_#000] md:shadow-[8px_8px_0px_#000]">
-                  <Skull size={32} md:size={72} className="text-black" />
+                <div className="w-16 h-16 md:w-32 md:h-32 bg-[#FFF000] rounded-full border-4 md:border-8 border-black flex items-center justify-center shadow-[4px_4px_0px_#000] md:shadow-[8px_8px_0px_#000] overflow-hidden">
+                  <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
                 </div>
               </motion.div>
               
