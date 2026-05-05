@@ -389,6 +389,7 @@ export default function App() {
   const scoreRef = useRef(0);
   const integrityRef = useRef(MAX_INTEGRITY);
   const animationFrameId = useRef<number>(0);
+  const lastTimeRef = useRef<number>(0);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dimensions = useRef({ width: 0, height: 0 });
   const mousePos = useRef({ x: 0, y: 0 });
@@ -462,6 +463,7 @@ export default function App() {
     divineEndTimeRef.current = 0;
     flashEndTimeRef.current = 0;
     shakeEndTimeRef.current = 0;
+    lastTimeRef.current = 0;
     stopThunderRumble();
     if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     setIsFlashing(false);
@@ -1659,18 +1661,18 @@ export default function App() {
     }
   };
 
-  const update = useCallback(() => {
+  const update = useCallback((dt: number) => {
     if (gameState !== 'PLAYING' && !isCrumbling.current) return;
     if (isWarmupRef.current) return; // THE PAUSE ⏸️
 
-    frameCount.current++;
+    frameCount.current += dt;
 
     // Update Fragments
     pipeFragments.current.forEach(f => {
-      f.x += f.vx;
-      f.y += f.vy;
-      f.vy += 0.5; // Gravity
-      f.rotation += f.vRotation;
+      f.x += f.vx * dt;
+      f.y += f.vy * dt;
+      f.vy += 0.5 * dt; // Gravity
+      f.rotation += f.vRotation * dt;
     });
 
     // Update Visual Effect States based on timestamps
@@ -1702,10 +1704,12 @@ export default function App() {
 
     // Gap logic
     const targetGapY = mousePos.current.y;
-    gapY.current += (targetGapY - gapY.current) * 0.85;
+    // Normalized lerp for dt: 1 - (1 - lerp)^dt
+    const lerpFactor = 1 - Math.pow(1 - 0.85, dt);
+    gapY.current += (targetGapY - gapY.current) * lerpFactor;
 
     if (isSlamming.current) {
-      currentGapSize.current -= SLAM_SPEED;
+      currentGapSize.current -= SLAM_SPEED * dt;
       if (currentGapSize.current <= 0) {
         currentGapSize.current = 0;
         isSlamming.current = false;
@@ -1843,7 +1847,7 @@ export default function App() {
         }
       }
     } else {
-      currentGapSize.current += OPEN_SPEED;
+      currentGapSize.current += OPEN_SPEED * dt;
       if (currentGapSize.current >= DEFAULT_GAP_SIZE) {
         currentGapSize.current = DEFAULT_GAP_SIZE;
       }
@@ -1851,7 +1855,7 @@ export default function App() {
 
     // Spawn birds
     const spawnRate = Math.max(15, 80 - Math.floor(scoreRef.current / 5) * 4);
-    if (frameCount.current % spawnRate === 0) {
+    if (Math.floor(frameCount.current / spawnRate) > Math.floor((frameCount.current - dt) / spawnRate)) {
       spawnBird();
     }
 
@@ -1862,8 +1866,8 @@ export default function App() {
       const pipeRight = pipeX + PIPE_WIDTH / 2;
 
       if (bird.state === 'FLYING') {
-        bird.x += bird.vx;
-        bird.flapFrame += 0.2;
+        bird.x += bird.vx * dt;
+        bird.flapFrame += 0.2 * dt;
 
         // Transition expressions
         if (bird.x < pipeLeft - 20) {
@@ -1967,8 +1971,8 @@ export default function App() {
           killStreakRef.current = 0; // Reset streak on pass
         }
         
-        bird.x += bird.vx;
-        bird.flapFrame += 0.25; // RESCUE THE FLUIDITY! Keep flapping!
+        bird.x += bird.vx * dt;
+        bird.flapFrame += 0.25 * dt; // RESCUE THE FLUIDITY! Keep flapping!
         
         // --- FLUIDITY SURGERY ---
         // Ensure the water-like oscillation continues after passing
@@ -1995,14 +1999,14 @@ export default function App() {
           }
         }
 
-        if (bird.tauntTime > 0) bird.tauntTime--;
+        if (bird.tauntTime > 0) bird.tauntTime -= dt;
       }
     });
 
     // Update bullets
     bullets.current.forEach(bullet => {
-      bullet.x += bullet.vx;
-      bullet.y += bullet.vy;
+      bullet.x += bullet.vx * dt;
+      bullet.y += bullet.vy * dt;
 
       if (bullet.x < dimensions.current.width / 2 + PIPE_WIDTH / 2 && 
           bullet.x > dimensions.current.width / 2 - PIPE_WIDTH / 2) {
@@ -2044,20 +2048,20 @@ export default function App() {
 
     // Update particles
     particles.current.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
       if (p.type === 'FIRE_TRAIL') {
-        p.vy -= 0.15; // Fire drifts UP
-        p.vx *= 0.98; // Slow down drift
-        p.size *= 0.95; // Shrink fire
+        p.vy -= 0.15 * dt; // Fire drifts UP
+        p.vx *= Math.pow(0.98, dt); // Slow down drift
+        p.size *= Math.pow(0.95, dt); // Shrink fire
       } else if (p.type === 'MUD_SPLAT') {
-        p.vy = Math.min(2, p.vy + 0.1); // Slow slide down
-        p.vx *= 0.5; // Stop horizontal movement fast
-        p.size *= 0.99; 
+        p.vy = Math.min(2, p.vy + 0.1 * dt); // Slow slide down
+        p.vx *= Math.pow(0.5, dt); // Stop horizontal movement fast
+        p.size *= Math.pow(0.99, dt); 
       } else if (p.type !== 'TEXT') {
-        p.vy += 0.4;
+        p.vy += 0.4 * dt;
       }
-      p.life -= p.type === 'TEXT' ? 0.01 : 0.025;
+      p.life -= (p.type === 'TEXT' ? 0.01 : 0.025) * dt;
     });
     particles.current = particles.current.filter(p => p.life > 0);
     // Hard cap for performance
@@ -2685,9 +2689,13 @@ export default function App() {
     });
   }, [gameState, score]); // Added score dependency
 
-  const loop = useCallback(() => {
+  const loop = useCallback((time: number) => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
+    
+    if (!lastTimeRef.current) lastTimeRef.current = time;
+    const dt = Math.min(2, (time - lastTimeRef.current) / (1000 / 60));
+    lastTimeRef.current = time;
     
     // Handle Audio Fading in Game Loop
     const menuGain = menuGainNodeRef.current;
@@ -2703,7 +2711,7 @@ export default function App() {
       if (Math.abs(mDiff) < 0.005) {
         menuGain.gain.value = menuTarget;
       } else {
-        menuGain.gain.value = Math.max(0, Math.min(1, mCurrent + mDiff * 0.05));
+        menuGain.gain.value = Math.max(0, Math.min(1, mCurrent + (mDiff * 0.05 * dt)));
       }
 
       // Fade Play
@@ -2712,12 +2720,12 @@ export default function App() {
       if (Math.abs(pDiff) < 0.005) {
         playGain.gain.value = playTarget;
       } else {
-        playGain.gain.value = Math.max(0, Math.min(1, pCurrent + pDiff * 0.05));
+        playGain.gain.value = Math.max(0, Math.min(1, pCurrent + (pDiff * 0.05 * dt)));
       }
     }
 
     if (ctx) {
-      update();
+      update(dt);
       draw(ctx);
     }
     animationFrameId.current = requestAnimationFrame(loop);
