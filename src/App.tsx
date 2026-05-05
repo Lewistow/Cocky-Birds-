@@ -11,12 +11,13 @@ import { initGA, trackSlam, trackClout, trackPageView } from './lib/analytics';
 // Constants
 const PIPE_WIDTH = 60;
 const DEFAULT_GAP_SIZE = 200;
-const SLAM_SPEED = 14;
-const OPEN_SPEED = 6;
-const BIRD_BASE_SPEED = 1.8;
-const WARMUP_FRAMES = 600; // ~10 seconds at 60fps
+const SLAM_SPEED = 3300; // Pixels per second
+const OPEN_SPEED = 1080;
+const BIRD_BASE_SPEED = 85;
+const WARMUP_SECONDS = 10;
 const MAX_INTEGRITY = 100;
 const CHAOS_LIMIT = 100;
+const GRAVITY = 1400; // Pixels per second squared
 
 type GameState = 'START' | 'PLAYING' | 'GAME_OVER';
 type BirdType = 'NORMAL' | 'SNIPER' | 'DIVER' | 'TANK';
@@ -319,12 +320,6 @@ export default function App() {
   }, []);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    // Pre-fetch the logo to prevent flicker
-    const img = new Image();
-    img.src = "https://files.catbox.moe/ylwdma.png";
-  }, []);
-
   const [gameState, setGameState] = useState<GameState>('START');
   const [score, setScore] = useState(0);
   const totalSmashedRef = useRef(0);
@@ -332,6 +327,14 @@ export default function App() {
     const saved = localStorage.getItem('cocky-birds-high-score');
     return saved ? parseInt(saved, 10) : 0;
   });
+  const [logoLoaded, setLogoLoaded] = useState(false);
+
+  useEffect(() => {
+    // Pre-fetch the logo to prevent flicker
+    const img = new Image();
+    img.src = "https://files.catbox.moe/ylwdma.png";
+    img.onload = () => setLogoLoaded(true);
+  }, []);
   const [totalBirdsSmashed, setTotalBirdsSmashed] = useState(() => {
     const saved = localStorage.getItem('cocky-birds-total-smashed');
     const val = saved ? parseInt(saved, 10) : 0;
@@ -398,6 +401,7 @@ export default function App() {
   const highScoreRef = useRef(highScore);
   const totalBirdsSmashedRef = useRef(totalBirdsSmashed);
   const lastTimeRef = useRef<number | null>(null);
+  const spawnTimerRef = useRef(0);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dimensions = useRef({ width: 0, height: 0 });
   const mousePos = useRef({ x: 0, y: 0 });
@@ -442,6 +446,7 @@ export default function App() {
     isSlamming.current = false;
     thunderActiveForSlam.current = false;
     frameCount.current = 0;
+    spawnTimerRef.current = 0;
     setScore(0);
     scoreRef.current = 0;
     
@@ -1514,10 +1519,10 @@ export default function App() {
             y: y + r * (h / rows),
             w: w / cols,
             h: h / rows,
-            vx: (Math.random() - 0.5) * 10,
-            vy: (Math.random() - 2) * 5,
+            vx: (Math.random() - 0.5) * 600,
+            vy: (Math.random() - 2) * 300,
             rotation: Math.random() * Math.PI * 2,
-            vRotation: (Math.random() - 0.5) * 0.2,
+            vRotation: (Math.random() - 0.5) * 12,
             color: isThunderReadyRef.current ? COLORS.YELLOW : COLORS.GREEN
           });
         }
@@ -1543,19 +1548,19 @@ export default function App() {
     const rand = Math.random();
     let type: BirdType = 'NORMAL';
     let health = 1;
-    const warmupFactor = isWarmupActiveRef.current ? Math.min(1, frameCount.current / WARMUP_FRAMES) : 1;
+    const warmupFactor = isWarmupActiveRef.current ? Math.min(1, frameCount.current / WARMUP_SECONDS) : 1;
     const speedMultiplier = 0.5 + 0.5 * warmupFactor;
 
-    let vx = -(BIRD_BASE_SPEED + Math.random() * 2) * speedMultiplier;
+    let vx = -(BIRD_BASE_SPEED + Math.random() * 60) * speedMultiplier;
     let size = 52;
-    let oscSpeed = 0.15 + Math.random() * 0.08;
+    let oscSpeed = 9 + Math.random() * 5;
     let oscAmp = 25 + Math.random() * 25;
 
     const createBird = (t: BirdType, h: number, v: number, s: number, os: number, oa: number) => {
       if (gameStateRef.current !== 'PLAYING') return;
 
-      const minY = dimensions.current.height * 0.2 + 50; // Start at sun level, accounting for oscillation
-      const maxY = dimensions.current.height * 0.85; // Avoid hitting ground
+      const minY = dimensions.current.height * 0.2 + 50; 
+      const maxY = dimensions.current.height * 0.85; 
       
       const bird: Bird = {
         id: birdIdCounter.current++,
@@ -1585,23 +1590,23 @@ export default function App() {
     if (rand > 0.88) {
       type = 'TANK';
       health = 3;
-      vx = -0.9;
-      size = 125; // Massive Presence
-      oscSpeed = 0.08;
+      vx = -60;
+      size = 105; 
+      oscSpeed = 4.8;
       oscAmp = 50;
       playTankBirdCue();
     } else if (rand > 0.73) {
       type = 'DIVER';
-      vx = -3.0;
+      vx = -220;
       size = 65;
-      oscSpeed = 0.3;
+      oscSpeed = 18;
       oscAmp = 70;
       playFireDiverCue();
     } else if (rand > 0.48) {
       type = 'SNIPER';
-      vx = -1.4;
+      vx = -110;
       size = 46;
-      oscSpeed = 0.12;
+      oscSpeed = 7.2;
       oscAmp = 20;
       playSniperBirdCue();
     } else {
@@ -1616,11 +1621,7 @@ export default function App() {
     const os = oscSpeed;
     const oa = oscAmp;
 
-    const spawnDelay = t === 'TANK' ? 1000 : 500;
-
-    setTimeout(() => {
-      createBird(t, h, v, s, os, oa);
-    }, spawnDelay);
+    createBird(t, h, v, s, os, oa);
   }, [playFireDiverCue, playNormalBirdCue, playSniperBirdCue, playTankBirdCue]);
 
   const playMilestoneSound = () => {
@@ -1658,8 +1659,8 @@ export default function App() {
       particles.current.push({
         x,
         y,
-        vx: isText ? 0 : (Math.random() - 0.5) * 15,
-        vy: isText ? (text === 'DIVINE WRATH!!!' ? 0 : -2) : (Math.random() - 0.5) * 15,
+        vx: isText ? 0 : (Math.random() - 0.5) * 900,
+        vy: isText ? (text === 'DIVINE WRATH!!!' ? 0 : -120) : (Math.random() - 0.5) * 900,
         life: 1,
         color,
         size: isText ? 40 : Math.random() * 8 + 2,
@@ -1679,7 +1680,7 @@ export default function App() {
     pipeFragments.current.forEach(f => {
       f.x += f.vx * dt;
       f.y += f.vy * dt;
-      f.vy += 0.5 * dt; // Gravity
+      f.vy += GRAVITY * dt; // Gravity
       f.rotation += f.vRotation * dt;
     });
 
@@ -1712,8 +1713,9 @@ export default function App() {
 
     // Gap logic
     const targetGapY = mousePos.current.y;
-    // Normalized lerp for dt: 1 - (1 - lerp)^dt
-    const lerpFactor = 1 - Math.pow(Math.max(0, 1 - 0.7), dt);
+    // Normalized lerp for dt: 1 - (1 - lerp)^dt_frames
+    // Increased to 0.75 for tight, non-sliding movement
+    const lerpFactor = 1 - Math.pow(Math.max(0, 1 - 0.75), dt * 60);
     gapY.current += (targetGapY - gapY.current) * lerpFactor;
 
     if (isSlamming.current) {
@@ -1863,9 +1865,15 @@ export default function App() {
       }
     }
 
-    // Spawn birds
-    const spawnRate = Math.max(15, 80 - Math.floor(scoreRef.current / 5) * 4);
-    if (Math.floor(frameCount.current / spawnRate) > Math.floor((frameCount.current - dt) / spawnRate)) {
+    // Spawn birds logic using a dedicated timer Ref
+    // Slowed down: base interval starts larger, minimum is 40 frames (0.66s), curve is much flatter
+    const spawnRateBase = Math.max(40, 120 - Math.floor(scoreRef.current / 10) * 8);
+    const spawnInterval = spawnRateBase / 60; // seconds per spawn
+    
+    spawnTimerRef.current += dt;
+    if (spawnTimerRef.current >= spawnInterval) {
+      // Reset with random jitter to prevent birds from stacking perfectly
+      spawnTimerRef.current = -(Math.random() * 0.3);
       spawnBird();
     }
 
@@ -1877,7 +1885,7 @@ export default function App() {
 
       if (bird.state === 'FLYING') {
         bird.x += bird.vx * dt;
-        bird.flapFrame += 0.2 * dt;
+        bird.flapFrame += 12 * dt;
 
         // Transition expressions
         if (bird.x < pipeLeft - 20) {
@@ -1890,18 +1898,18 @@ export default function App() {
         
         bird.y = targetY;
 
-        // Calculate vy for squash/stretch
+        // Calculate vy for squash/stretch (in pixels per second)
         bird.vy = Math.cos(oscTime) * bird.oscAmp * bird.oscSpeed;
 
         // --- TURBO SOUL EMISSION ---
         if (bird.type === 'DIVER') {
-          const particleCount = 1 + Math.floor(Math.abs(bird.vy) * 0.2);
+          const particleCount = 1 + Math.floor(Math.abs(bird.vy) * 0.003);
           for (let i = 0; i < particleCount; i++) {
             particles.current.push({
               x: bird.x,
               y: bird.y + (Math.random() - 0.5) * 20,
-              vx: (Math.random() * 2 + 1), // Drift right
-              vy: (Math.random() - 0.5) * 2,
+              vx: (Math.random() * 120 + 60), // Drift right
+              vy: (Math.random() - 0.5) * 120,
               life: 1.0,
               color: Math.random() > 0.4 ? '#FF4500' : (Math.random() > 0.5 ? '#FFA500' : '#FFFF00'),
               size: Math.random() * 8 + 4,
@@ -1910,9 +1918,8 @@ export default function App() {
           }
         }
 
-        const warmupFactor = isWarmupActiveRef.current ? Math.min(1, frameCount.current / WARMUP_FRAMES) : 1;
-        const shootRate = bird.type === 'SNIPER' ? 50 : 100;
-        const canShoot = isWarmupActiveRef.current ? (frameCount.current > WARMUP_FRAMES) : true;
+        const shootRate = bird.type === 'SNIPER' ? 0.8 : 1.6;
+        const canShoot = isWarmupActiveRef.current ? (frameCount.current > WARMUP_SECONDS) : true;
         const maxShots = bird.type === 'SNIPER' ? 2 : 1;
 
         if (canShoot && bird.shotsFired < maxShots && frameCount.current - bird.lastShot > shootRate && bird.x > dimensions.current.width / 2) {
@@ -1925,31 +1932,29 @@ export default function App() {
           }
           
           const dx = bird.x - dimensions.current.width / 2;
-          const timeToReach = dx / 10;
-          let bulletVy = (gapY.current - bird.y) * 0.015;
+          const bulletSpeed = bird.type === 'TANK' ? -240 : -600;
+          const timeToReach = dx / (-bulletSpeed);
+          let bulletVy = (gapY.current - bird.y) * 0.9; // Base fallback
 
           if (timeToReach > 0) {
             // Aim for the pipes (above or below the gap)
-            // If we aim for the gap center, we miss the pipes!
-            // So we target a point slightly offset from the gap center
             const pipeTargetOffset = (currentGapSize.current / 2) + 30 + (Math.random() * 40);
             const targetY = gapY.current + (Math.random() > 0.5 ? pipeTargetOffset : -pipeTargetOffset);
             
-            const perfectVy = (targetY - bird.y) / timeToReach;
+            bulletVy = (targetY - bird.y) / timeToReach;
             
             if (bird.type === 'SNIPER') {
               // Snipers are very accurate at hitting the pipe edges
-              const spread = (Math.random() - 0.5) * 0.2; 
-              bulletVy = perfectVy + spread;
+              const spread = (Math.random() - 0.5) * 12; 
+              bulletVy += spread;
             } else {
               // Other birds have more spread but still target the pipes
-              const spread = (Math.random() - 0.5) * 1.2;
-              bulletVy = perfectVy + spread;
+              const spread = (Math.random() - 0.5) * 72;
+              bulletVy += spread;
             }
           }
 
           const bulletType = bird.type === 'SNIPER' ? 'ICE' : (bird.type === 'DIVER' ? 'FIRE' : (bird.type === 'TANK' ? 'SLUDGE' : 'NORMAL'));
-          const bulletSpeed = bulletType === 'SLUDGE' ? -3 : -7;
           
           bullets.current.push({
             x: bird.x - bird.size/2,
@@ -1965,7 +1970,7 @@ export default function App() {
           bird.state = 'PASSED';
           bird.mood = 'MOCKING';
           bird.taunt = getNextTaunt();
-          bird.tauntTime = 120;
+          bird.tauntTime = 2.0;
           integrityRef.current = Math.max(0, integrityRef.current - 10); // Increased breach damage to 10
           setLastDamageTime(Date.now());
           killStreakRef.current = 0; // Reset streak on breach
@@ -1982,25 +1987,20 @@ export default function App() {
         }
         
         bird.x += bird.vx * dt;
-        bird.flapFrame += 0.25 * dt; // RESCUE THE FLUIDITY! Keep flapping!
+        bird.flapFrame += 15 * dt; 
         
-        // --- FLUIDITY SURGERY ---
-        // Ensure the water-like oscillation continues after passing
         const oscTime = frameCount.current * bird.oscSpeed + bird.oscPhase;
         bird.y = bird.baseY + Math.sin(oscTime) * bird.oscAmp;
-        
-        // CRITICAL: Update vy so the squash/stretch in draw() keeps working
         bird.vy = Math.cos(oscTime) * bird.oscAmp * bird.oscSpeed;
         
-        // --- TURBO SOUL EMISSION (PASSED) ---
         if (bird.type === 'DIVER') {
-          const particleCount = 1 + Math.floor(Math.abs(bird.vy) * 0.2);
+          const particleCount = 1 + Math.floor(Math.abs(bird.vy) * 0.003);
           for (let i = 0; i < particleCount; i++) {
             particles.current.push({
               x: bird.x,
               y: bird.y + (Math.random() - 0.5) * 20,
-              vx: (Math.random() * 2 + 1), 
-              vy: (Math.random() - 0.5) * 2,
+              vx: (Math.random() * 120 + 60), 
+              vy: (Math.random() - 0.5) * 120,
               life: 1.0,
               color: Math.random() > 0.4 ? '#FF4500' : (Math.random() > 0.5 ? '#FFA500' : '#FFFF00'),
               size: Math.random() * 8 + 4,
@@ -2061,17 +2061,17 @@ export default function App() {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       if (p.type === 'FIRE_TRAIL') {
-        p.vy -= 0.15 * dt; // Fire drifts UP
-        p.vx *= Math.pow(0.98, dt); // Slow down drift
-        p.size *= Math.pow(0.95, dt); // Shrink fire
+        p.vy -= 540 * dt; // Fire drifts UP
+        p.vx *= Math.pow(0.3, dt); // Slow down drift
+        p.size *= Math.pow(0.1, dt); // Shrink fire
       } else if (p.type === 'MUD_SPLAT') {
-        p.vy = Math.min(2, p.vy + 0.1 * dt); // Slow slide down
-        p.vx *= Math.pow(0.5, dt); // Stop horizontal movement fast
-        p.size *= Math.pow(0.99, dt); 
+        p.vy = Math.min(120, p.vy + 360 * dt); // Slow slide down
+        p.vx *= Math.pow(0.0001, dt); // Stop horizontal movement fast
+        p.size *= Math.pow(0.5, dt); 
       } else if (p.type !== 'TEXT') {
-        p.vy += 0.4 * dt;
+        p.vy += 1440 * dt;
       }
-      p.life -= (p.type === 'TEXT' ? 0.01 : 0.025) * dt;
+      p.life -= (p.type === 'TEXT' ? 0.6 : 1.5) * dt;
     });
     particles.current = particles.current.filter(p => p.life > 0);
     // Hard cap for performance
@@ -2182,7 +2182,7 @@ export default function App() {
     });
 
     // Draw Scanning Line
-    const scanY = (frameCount.current * 1.5) % height;
+    const scanY = (frameCount.current * 90) % height;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
     ctx.fillRect(0, scanY, width, 2);
 
@@ -2520,7 +2520,7 @@ export default function App() {
       ctx.save();
       ctx.shadowBlur = 0; // CRITICAL: Disable shadow for the heavy metallic rectangles
 
-      const isPepperZone = score >= 50;
+      const isPepperZone = scoreRef.current >= 50;
       const basePipeColor = isPepperZone ? '#8b0000' : (isThunderReadyRef.current ? '#8b8b00' : '#004d00');
       const lightPipeColor = isPepperZone ? '#ff4d4d' : (isThunderReadyRef.current ? '#ffff4d' : '#00cc00');
       
@@ -2698,7 +2698,7 @@ export default function App() {
       });
       ctx.restore();
     });
-  }, [gameState, score]); // Added score dependency
+  }, [gameState, isThunderReady]); // gameState is okay, but score is not needed here
 
   const loop = useCallback((time: number) => {
     const canvas = canvasRef.current;
@@ -2710,7 +2710,7 @@ export default function App() {
       return;
     }
 
-    const dt = Math.min(2, Math.max(0, (time - lastTimeRef.current) / (1000 / 60)));
+    const dt = Math.min(0.1, Math.max(0, (time - lastTimeRef.current) / 1000));
     lastTimeRef.current = time;
     
     if (Number.isNaN(dt)) {
@@ -2732,7 +2732,7 @@ export default function App() {
       if (Math.abs(mDiff) < 0.005) {
         menuGain.gain.value = menuTarget;
       } else {
-        menuGain.gain.value = Math.max(0, Math.min(1, mCurrent + (mDiff * 0.05 * dt)));
+        menuGain.gain.value = Math.max(0, Math.min(1, mCurrent + (mDiff * 3 * dt)));
       }
 
       // Fade Play
@@ -2741,7 +2741,7 @@ export default function App() {
       if (Math.abs(pDiff) < 0.005) {
         playGain.gain.value = playTarget;
       } else {
-        playGain.gain.value = Math.max(0, Math.min(1, pCurrent + (pDiff * 0.05 * dt)));
+        playGain.gain.value = Math.max(0, Math.min(1, pCurrent + (pDiff * 3 * dt)));
       }
     }
 
@@ -2973,11 +2973,12 @@ export default function App() {
         {gameState === 'START' && (
           <motion.div 
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: logoLoaded ? 1 : 0 }}
+            transition={{ duration: 0.5 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           >
-            <div className="brutalist-card p-4 md:p-12 flex flex-col items-center max-w-[280px] md:max-w-md w-full">
+            <div className="brutalist-card p-4 md:p-12 flex flex-col items-center max-w-[280px] md:max-w-md w-full relative">
               <motion.div 
                 animate={{ rotate: [-5, 5, -5], scale: [1, 1.1, 1] }}
                 transition={{ repeat: Infinity, duration: 2 }}
