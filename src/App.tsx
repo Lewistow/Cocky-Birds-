@@ -389,7 +389,9 @@ export default function App() {
   const scoreRef = useRef(0);
   const integrityRef = useRef(MAX_INTEGRITY);
   const animationFrameId = useRef<number>(0);
-  const lastTimeRef = useRef<number>(0);
+  const highScoreRef = useRef(highScore);
+  const totalBirdsSmashedRef = useRef(totalBirdsSmashed);
+  const lastTimeRef = useRef<number | null>(null);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dimensions = useRef({ width: 0, height: 0 });
   const mousePos = useRef({ x: 0, y: 0 });
@@ -463,7 +465,7 @@ export default function App() {
     divineEndTimeRef.current = 0;
     flashEndTimeRef.current = 0;
     shakeEndTimeRef.current = 0;
-    lastTimeRef.current = 0;
+    lastTimeRef.current = null;
     stopThunderRumble();
     if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     setIsFlashing(false);
@@ -1662,7 +1664,7 @@ export default function App() {
   };
 
   const update = useCallback((dt: number) => {
-    if (gameState !== 'PLAYING' && !isCrumbling.current) return;
+    if (gameStateRef.current !== 'PLAYING' && !isCrumbling.current) return;
     if (isWarmupRef.current) return; // THE PAUSE ⏸️
 
     frameCount.current += dt;
@@ -1691,7 +1693,7 @@ export default function App() {
       setIsShaking(false);
     }
 
-    if (gameState !== 'PLAYING') return;
+    if (gameStateRef.current !== 'PLAYING') return;
 
     // Thunder Ready logic - Use Ref for logic, State for UI
     if (chaosRef.current >= CHAOS_LIMIT && !isThunderReadyRef.current) {
@@ -1705,7 +1707,7 @@ export default function App() {
     // Gap logic
     const targetGapY = mousePos.current.y;
     // Normalized lerp for dt: 1 - (1 - lerp)^dt
-    const lerpFactor = 1 - Math.pow(1 - 0.85, dt);
+    const lerpFactor = 1 - Math.pow(Math.max(0, 1 - 0.85), dt);
     gapY.current += (targetGapY - gapY.current) * lerpFactor;
 
     if (isSlamming.current) {
@@ -1746,7 +1748,8 @@ export default function App() {
               const next = scoreRef.current;
               
               // Update high score immediately
-              if (next > highScore) {
+              if (next > highScoreRef.current) {
+                highScoreRef.current = next;
                 setHighScore(next);
                 localStorage.setItem('cocky-birds-high-score', next.toString());
               }
@@ -1797,7 +1800,8 @@ export default function App() {
                     const next = scoreRef.current;
 
                     // Update high score immediately
-                    if (next > highScore) {
+                    if (next > highScoreRef.current) {
+                      highScoreRef.current = next;
                       setHighScore(next);
                       localStorage.setItem('cocky-birds-high-score', next.toString());
                     }
@@ -2077,11 +2081,12 @@ export default function App() {
     setIntegrity(integrityRef.current);
     
     // Sync total smashed to state and localStorage
-    if (totalBirdsSmashed !== totalSmashedRef.current) {
-      setTotalBirdsSmashed(totalSmashedRef.current);
-      localStorage.setItem('cocky-birds-total-smashed', totalSmashedRef.current.toString());
+    if (totalBirdsSmashedRef.current !== totalSmashedRef.current) {
+        totalBirdsSmashedRef.current = totalSmashedRef.current;
+        setTotalBirdsSmashed(totalSmashedRef.current);
+        localStorage.setItem('cocky-birds-total-smashed', totalSmashedRef.current.toString());
     }
-  }, [gameState, spawnBird, totalBirdsSmashed, highScore]);
+  }, [spawnBird]);
 
   const draw = useCallback((ctx: CanvasRenderingContext2D) => {
     const { width, height } = dimensions.current;
@@ -2693,16 +2698,26 @@ export default function App() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     
-    if (!lastTimeRef.current) lastTimeRef.current = time;
-    const dt = Math.min(2, (time - lastTimeRef.current) / (1000 / 60));
+    if (lastTimeRef.current === null) {
+      lastTimeRef.current = time;
+      animationFrameId.current = requestAnimationFrame(loop);
+      return;
+    }
+
+    const dt = Math.min(2, Math.max(0, (time - lastTimeRef.current) / (1000 / 60)));
     lastTimeRef.current = time;
     
+    if (Number.isNaN(dt)) {
+        animationFrameId.current = requestAnimationFrame(loop);
+        return;
+    }
+
     // Handle Audio Fading in Game Loop
     const menuGain = menuGainNodeRef.current;
     const playGain = playGainNodeRef.current;
     if (menuGain && playGain) {
-      const isPlaying = gameState === 'PLAYING';
-      const menuTarget = isPlaying ? 0 : (gameState === 'GAME_OVER' ? 0.7 : 0.3);
+      const isPlaying = gameStateRef.current === 'PLAYING';
+      const menuTarget = isPlaying ? 0 : (gameStateRef.current === 'GAME_OVER' ? 0.7 : 0.3);
       const playTarget = isPlaying ? 0.01 : 0;
 
       // Fade Menu
@@ -2729,7 +2744,7 @@ export default function App() {
       draw(ctx);
     }
     animationFrameId.current = requestAnimationFrame(loop);
-  }, [gameState, update, draw]); // Added update and draw to dependencies
+  }, [update, draw]); 
 
   useEffect(() => {
     animationFrameId.current = requestAnimationFrame(loop);
