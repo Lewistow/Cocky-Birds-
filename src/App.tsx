@@ -11,9 +11,9 @@ import { initGA, trackSlam, trackClout, trackPageView } from './lib/analytics';
 // Constants
 const PIPE_WIDTH = 60;
 const DEFAULT_GAP_SIZE = 200;
-const SLAM_SPEED = 45;
-const OPEN_SPEED = 15;
-const BIRD_BASE_SPEED = 3.5;
+const SLAM_SPEED = 14;
+const OPEN_SPEED = 6;
+const BIRD_BASE_SPEED = 1.8;
 const WARMUP_FRAMES = 600; // ~10 seconds at 60fps
 const MAX_INTEGRITY = 100;
 const CHAOS_LIMIT = 100;
@@ -1579,21 +1579,21 @@ export default function App() {
     if (rand > 0.88) {
       type = 'TANK';
       health = 3;
-      vx = -1.8;
+      vx = -0.9;
       size = 125; // Massive Presence
       oscSpeed = 0.08;
       oscAmp = 50;
       playTankBirdCue();
     } else if (rand > 0.73) {
       type = 'DIVER';
-      vx = -6;
+      vx = -3.0;
       size = 65;
       oscSpeed = 0.3;
       oscAmp = 70;
       playFireDiverCue();
     } else if (rand > 0.48) {
       type = 'SNIPER';
-      vx = -2.5;
+      vx = -1.4;
       size = 46;
       oscSpeed = 0.12;
       oscAmp = 20;
@@ -1707,7 +1707,7 @@ export default function App() {
     // Gap logic
     const targetGapY = mousePos.current.y;
     // Normalized lerp for dt: 1 - (1 - lerp)^dt
-    const lerpFactor = 1 - Math.pow(Math.max(0, 1 - 0.85), dt);
+    const lerpFactor = 1 - Math.pow(Math.max(0, 1 - 0.7), dt);
     gapY.current += (targetGapY - gapY.current) * lerpFactor;
 
     if (isSlamming.current) {
@@ -1943,7 +1943,7 @@ export default function App() {
           }
 
           const bulletType = bird.type === 'SNIPER' ? 'ICE' : (bird.type === 'DIVER' ? 'FIRE' : (bird.type === 'TANK' ? 'SLUDGE' : 'NORMAL'));
-          const bulletSpeed = bulletType === 'SLUDGE' ? -4 : -10;
+          const bulletSpeed = bulletType === 'SLUDGE' ? -3 : -7;
           
           bullets.current.push({
             x: bird.x - bird.size/2,
@@ -2978,7 +2978,7 @@ export default function App() {
                 className="mb-3 md:mb-8"
               >
                 <div className="w-16 h-16 md:w-32 md:h-32 bg-[#FFF000] rounded-full border-4 md:border-8 border-black flex items-center justify-center shadow-[4px_4px_0px_#000] md:shadow-[8px_8px_0px_#000] overflow-hidden">
-                  <img src="https://files.catbox.moe/ylwdma.png" alt="Logo" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
+                  <img src="data:image/png;base64,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" alt="Logo" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
                 </div>
               </motion.div>
               
