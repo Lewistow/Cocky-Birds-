@@ -315,6 +315,29 @@ const PLANETS = [
   },
 ];
 
+const CHARACTER_INFO = [
+  { 
+    id: 'TANK', 
+    img: 'https://i.ibb.co/wNVzWX6R/purple-tank.png', 
+    text: 'https://i.ibb.co/Wvnc3S3g/purple-tanktext.png' 
+  },
+  { 
+    id: 'SNIPER', 
+    img: 'https://i.ibb.co/Ld2Q2zsr/blue-sniper.png', 
+    text: 'https://i.ibb.co/ksfCNnqG/blue-snipertext.png' 
+  },
+  { 
+    id: 'NORMAL', 
+    img: 'https://i.ibb.co/8gtLm9qB/yellow-diver.png', 
+    text: 'https://i.ibb.co/3Jjds2K/yellow-divertext.png' 
+  },
+  { 
+    id: 'DIVER', 
+    img: 'https://i.ibb.co/pjNspj7Q/fire-diver.png', 
+    text: 'https://i.ibb.co/qLXCR6Nv/fire-divertext.png' 
+  },
+];
+
 interface PipeFragment {
   x: number;
   y: number;
@@ -356,6 +379,19 @@ export default function App() {
       };
     });
   }, []);
+
+  const [isBirdsCharactersOpen, setIsBirdsCharactersOpen] = useState(false);
+  const [currentCharacterIndex, setCurrentCharacterIndex] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isBirdsCharactersOpen) {
+      interval = setInterval(() => {
+        setCurrentCharacterIndex(prev => (prev + 1) % CHARACTER_INFO.length);
+      }, 4000); 
+    }
+    return () => clearInterval(interval);
+  }, [isBirdsCharactersOpen]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState>('START');
@@ -1699,13 +1735,14 @@ export default function App() {
       particles.current.push({
         x,
         y,
-        vx: isText ? 0 : (Math.random() - 0.5) * 900,
-        vy: isText ? (text === 'DIVINE WRATH!!!' ? 0 : -120) : (Math.random() - 0.5) * 900,
+        vx: isText ? 0 : (Math.random() - 0.5) * 600,
+        vy: isText ? (text === 'DIVINE WRATH!!!' ? 0 : -120) : (Math.random() - 0.7) * 800,
         life: 1,
         color,
-        size: isText ? 40 : Math.random() * 8 + 2,
+        size: isText ? 40 : Math.random() * 6 + 2,
         type,
-        text
+        text,
+        rotation: Math.random() * Math.PI * 2
       });
     }
   };
@@ -1822,10 +1859,9 @@ export default function App() {
               }
               playSquashSound();
               // Reduced particle counts for Divine Strike to prevent lag spikes
-              const birdColor = bird.type === 'SNIPER' ? '#A855F7' : 
-                                bird.type === 'DIVER' ? '#3B82F6' : 
-                                bird.type === 'SPEEDER' ? '#EAB308' : 
-                                bird.type === 'TANK' ? '#EF4444' : COLORS.YELLOW;
+              const birdColor = bird.type === 'SNIPER' ? '#3B82F6' : 
+                                bird.type === 'DIVER' ? COLORS.YELLOW : 
+                                bird.type === 'TANK' ? '#BC00FF' : '#FF3E00';
               createParticles(bird.x, bird.y, COLORS.CYAN, 12, 'SPARK'); 
               createParticles(bird.x, bird.y, birdColor, 8, 'FEATHER');
             }
@@ -1835,13 +1871,13 @@ export default function App() {
           if (!isDivineRef.current) {
             let hitAny = false;
             birds.current.forEach(bird => {
-              const horizontalTolerance = 60 + bird.size * 0.8;
+              const horizontalTolerance = 52 + bird.size * 0.65;
               if (bird.state === 'FLYING' && 
                   bird.x > dimensions.current.width / 2 - horizontalTolerance && 
                   bird.x < dimensions.current.width / 2 + horizontalTolerance) {
                 
                 // Precise vertical collision based on bird size
-                const collisionRange = bird.size * 1.2; // Slightly more balanced hitbox
+                const collisionRange = bird.size * 0.95; // Slightly more balanced hitbox
                 if (Math.abs(bird.y - gapY.current) < collisionRange) {
                   hitAny = true;
                   bird.health--;
@@ -1883,10 +1919,9 @@ export default function App() {
                     setLastKillTime(Date.now());
                     
                     // Graphic Effects
-                    const birdColor = bird.type === 'SNIPER' ? '#A855F7' : 
-                                    bird.type === 'DIVER' ? '#3B82F6' : 
-                                    bird.type === 'SPEEDER' ? '#EAB308' : 
-                                    bird.type === 'TANK' ? '#EF4444' : COLORS.YELLOW;
+                    const birdColor = bird.type === 'SNIPER' ? '#3B82F6' : 
+                                    bird.type === 'DIVER' ? COLORS.YELLOW : 
+                                    bird.type === 'TANK' ? '#BC00FF' : '#FF3E00';
                     createParticles(bird.x, bird.y, birdColor, 12, 'FEATHER');
                     createParticles(bird.x, bird.y, COLORS.WHITE, 1, 'TEXT', 'SQUASH!');
                     setIsShaking(true);
@@ -1932,14 +1967,6 @@ export default function App() {
       const pipeRight = pipeX + PIPE_WIDTH / 2;
 
       if (bird.state === 'FLYING') {
-        // Ambient feather shedding - very rare 🤏
-        if (Math.random() < 0.005) {
-          const birdColor = bird.type === 'SNIPER' ? '#A855F7' : 
-                          bird.type === 'DIVER' ? '#3B82F6' : 
-                          bird.type === 'SPEEDER' ? '#EAB308' : 
-                          bird.type === 'TANK' ? '#EF4444' : COLORS.YELLOW;
-          createParticles(bird.x, bird.y, birdColor, 1, 'FEATHER');
-        }
         bird.x += bird.vx * dt;
         bird.flapFrame += 12 * dt;
 
@@ -2264,21 +2291,14 @@ export default function App() {
       if (p.type === 'FEATHER') {
         ctx.save();
         ctx.translate(p.x, p.y);
-        ctx.rotate(p.rotation || frameCount.current * 0.1);
+        ctx.rotate((p.rotation || 0) + frameCount.current * 0.05);
         ctx.beginPath();
-        // Stylized feather shape: Tapered teardrop with a slight bend
-        ctx.moveTo(0, -p.size);
-        ctx.quadraticCurveTo(p.size * 0.8, -p.size * 0.5, p.size * 0.2, p.size);
-        ctx.lineTo(-p.size * 0.2, p.size);
-        ctx.quadraticCurveTo(-p.size * 0.8, -p.size * 0.5, 0, -p.size);
+        // A more "classic" feathery shape with a curve
+        ctx.moveTo(0, -p.size * 1.5);
+        ctx.quadraticCurveTo(p.size * 0.8, -p.size * 0.5, p.size * 0.2, p.size * 1.5);
+        ctx.lineTo(-p.size * 0.2, p.size * 1.5);
+        ctx.quadraticCurveTo(-p.size * 0.8, -p.size * 0.5, 0, -p.size * 1.5);
         ctx.fill();
-        // Thin quill line
-        ctx.beginPath();
-        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-        ctx.lineWidth = 1;
-        ctx.moveTo(0, -p.size);
-        ctx.lineTo(0, p.size);
-        ctx.stroke();
         ctx.restore();
       } else if (p.type === 'ICE_SHARD') {
         ctx.save();
@@ -2907,16 +2927,18 @@ export default function App() {
   };
 
   return (
-    <div 
-      className={`relative w-full h-full overflow-hidden font-sans touch-none ${isShaking ? 'shake' : ''}`}
-      onPointerDown={handleInteraction}
-      onPointerMove={handleMove}
-    >
-      <div className="absolute inset-0 halftone" />
+    <div className="fixed inset-0 bg-[#070707] flex items-center justify-center p-0 md:p-4 selection:bg-[#FFF000] selection:text-black">
+      <div 
+        className={`relative w-full h-full md:aspect-[600/1300] md:h-auto md:max-h-[95vh] md:max-w-[440px] md:rounded-[2rem] md:border-8 md:border-[#1a1a1a] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden font-sans touch-none ${isShaking ? 'shake' : ''}`}
+        onPointerDown={handleInteraction}
+        onPointerMove={handleMove}
+        style={{ background: '#000' }}
+      >
+        <div className="absolute inset-0 halftone" />
 
       {/* Global Sector Selection (Top Right) */}
       <AnimatePresence>
-        {gameState !== 'PLAYING' && !isPlanetSelectorOpen && !showShareBanner && (
+        {gameState === 'START' && !isPlanetSelectorOpen && !showShareBanner && (
           <motion.div 
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -2942,6 +2964,41 @@ export default function App() {
               </div>
               <div className="mt-1 text-[#FFF000] text-[10px] md:text-sm font-black uppercase tracking-[0.2em] drop-shadow-[2px_2px_0px_#000]">
                 WORLDS
+              </div>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Birds Characters Button (Top Left) */}
+      <AnimatePresence>
+        {(gameState === 'START' || gameState === 'GAME_OVER') && !isPlanetSelectorOpen && !showShareBanner && !isBirdsCharactersOpen && (
+          <motion.div 
+            initial={{ x: -100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -100, opacity: 0 }}
+            className="absolute top-4 left-4 z-[400] flex flex-col items-center gap-1 pointer-events-auto"
+          >
+            <motion.button
+              whileHover={{ scale: 1.1, rotate: -5 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsBirdsCharactersOpen(true);
+                setCurrentCharacterIndex(0);
+              }}
+              className="relative group"
+            >
+              <div className="w-12 h-12 md:w-20 md:h-20 drop-shadow-[4px_4px_0px_#000]">
+                <img 
+                  src="https://i.ibb.co/5gLtCnP6/birds-charactersicon.png" 
+                  alt="Birds" 
+                  className="w-full h-full object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <div className="mt-1 text-[#FFF000] text-[10px] md:text-sm font-black uppercase tracking-[0.2em] drop-shadow-[2px_2px_0px_#000]">
+                BIRDS
               </div>
             </motion.button>
           </motion.div>
@@ -3281,6 +3338,83 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Birds Characters Showcase Popup */}
+      <AnimatePresence>
+        {isBirdsCharactersOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[500] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl"
+          >
+            <div className="relative w-full h-full flex flex-col items-center justify-center max-w-md mx-auto">
+              <button 
+                onClick={() => setIsBirdsCharactersOpen(false)}
+                className="absolute top-4 right-4 z-50 w-12 h-12 bg-white text-black font-black text-2xl flex items-center justify-center border-4 border-black shadow-[4px_4px_0px_#000] hover:bg-yellow-400 transition-colors"
+                title="Close"
+              >
+                X
+              </button>
+
+              <div className="relative h-[60%] w-full flex items-center justify-center overflow-visible">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={CHARACTER_INFO[currentCharacterIndex].id}
+                    initial={{ y: 500, rotate: 20, scale: 0.5 }}
+                    animate={{ y: 0, rotate: 0, scale: 1.2 }}
+                    exit={{ y: 500, rotate: -20, scale: 0.5 }}
+                    transition={{ 
+                      type: "spring", 
+                      damping: 12, 
+                      stiffness: 100,
+                      duration: 0.8
+                    }}
+                    className="flex flex-col items-center gap-8"
+                  >
+                    <motion.div
+                      animate={{ y: [0, -20, 0], scale: [1, 1.05, 1] }}
+                      transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                      className="w-48 h-48 md:w-64 md:h-64"
+                    >
+                      <img 
+                        src={CHARACTER_INFO[currentCharacterIndex].img} 
+                        alt="Bird"
+                        className="w-full h-full object-contain filter drop-shadow-[0_20px_20px_rgba(255,240,0,0.4)]"
+                        referrerPolicy="no-referrer"
+                      />
+                    </motion.div>
+                    
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="w-full max-w-[280px] md:max-w-[340px]"
+                    >
+                      <img 
+                        src={CHARACTER_INFO[currentCharacterIndex].text} 
+                        alt="Bird Name"
+                        className="w-full h-auto filter drop-shadow-[4px_4px_0px_#000]"
+                        referrerPolicy="no-referrer"
+                      />
+                    </motion.div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              <div className="absolute bottom-12 flex gap-4">
+                {CHARACTER_INFO.map((_, idx) => (
+                  <div 
+                    key={idx}
+                    className={`w-3 h-3 rounded-full border-2 border-white transition-all duration-300 ${idx === currentCharacterIndex ? 'bg-yellow-400 w-8' : 'bg-transparent'}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Planet Selector Popup */}
       <AnimatePresence>
         {isPlanetSelectorOpen && (
@@ -3384,6 +3518,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }
