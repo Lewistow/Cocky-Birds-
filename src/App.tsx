@@ -353,6 +353,7 @@ interface PipeFragment {
 export default function App() {
   const birdImagesRef = useRef<Record<string, HTMLImageElement>>({});
   const planetImagesRef = useRef<Record<string, HTMLImageElement>>({});
+  const featherImagesRef = useRef<{ blue?: HTMLImageElement; yellow?: HTMLImageElement }>({});
 
   useEffect(() => {
     const birdAssets = {
@@ -378,6 +379,17 @@ export default function App() {
         planetImagesRef.current[planet.id] = img;
       };
     });
+
+    // Preload custom feathers
+    const blueFeather = new Image();
+    blueFeather.src = 'https://i.ibb.co/R4v3ZxnC/blue-birdfeather.png';
+    blueFeather.referrerPolicy = 'no-referrer';
+    blueFeather.onload = () => { featherImagesRef.current.blue = blueFeather; };
+
+    const yellowFeather = new Image();
+    yellowFeather.src = 'https://i.ibb.co/99DCvMLF/yellow-birdfeather.png';
+    yellowFeather.referrerPolicy = 'no-referrer';
+    yellowFeather.onload = () => { featherImagesRef.current.yellow = yellowFeather; };
   }, []);
 
   const [isBirdsCharactersOpen, setIsBirdsCharactersOpen] = useState(false);
@@ -1732,14 +1744,19 @@ export default function App() {
   const createParticles = (x: number, y: number, color: string, count: number, type: 'FEATHER' | 'SPARK' | 'TEXT' | 'ICE_SHARD' | 'MUD_SPLAT' = 'FEATHER', text?: string) => {
     for (let i = 0; i < count; i++) {
       const isText = type === 'TEXT';
+      let finalColor = color;
+      if (type === 'FEATHER') {
+        finalColor = Math.random() > 0.5 ? '#3B82F6' : COLORS.YELLOW;
+      }
+      
       particles.current.push({
         x,
         y,
-        vx: isText ? 0 : (Math.random() - 0.5) * 600,
-        vy: isText ? (text === 'DIVINE WRATH!!!' ? 0 : -120) : (Math.random() - 0.7) * 800,
+        vx: isText ? 0 : (Math.random() - 0.5) * 800,
+        vy: isText ? (text === 'DIVINE WRATH!!!' ? 0 : -120) : (Math.random() - 0.75) * 1000,
         life: 1,
-        color,
-        size: isText ? 40 : Math.random() * 6 + 2,
+        color: finalColor,
+        size: isText ? 40 : Math.random() * 8 + 3,
         type,
         text,
         rotation: Math.random() * Math.PI * 2
@@ -1922,7 +1939,7 @@ export default function App() {
                     const birdColor = bird.type === 'SNIPER' ? '#3B82F6' : 
                                     bird.type === 'DIVER' ? COLORS.YELLOW : 
                                     bird.type === 'TANK' ? '#BC00FF' : '#FF3E00';
-                    createParticles(bird.x, bird.y, birdColor, 12, 'FEATHER');
+                    createParticles(bird.x, bird.y, birdColor, 20, 'FEATHER');
                     createParticles(bird.x, bird.y, COLORS.WHITE, 1, 'TEXT', 'SQUASH!');
                     setIsShaking(true);
                     shakeEndTimeRef.current = now + 300;
@@ -2291,14 +2308,23 @@ export default function App() {
       if (p.type === 'FEATHER') {
         ctx.save();
         ctx.translate(p.x, p.y);
-        ctx.rotate((p.rotation || 0) + frameCount.current * 0.05);
-        ctx.beginPath();
-        // A more "classic" feathery shape with a curve
-        ctx.moveTo(0, -p.size * 1.5);
-        ctx.quadraticCurveTo(p.size * 0.8, -p.size * 0.5, p.size * 0.2, p.size * 1.5);
-        ctx.lineTo(-p.size * 0.2, p.size * 1.5);
-        ctx.quadraticCurveTo(-p.size * 0.8, -p.size * 0.5, 0, -p.size * 1.5);
-        ctx.fill();
+        ctx.rotate((p.rotation || 0) + frameCount.current * 0.1);
+        ctx.globalAlpha = p.life;
+        
+        // Use the color assigned at creation to pick the asset
+        const asset = p.color === '#3B82F6' ? featherImagesRef.current.blue : featherImagesRef.current.yellow;
+        
+        if (asset) {
+          const drawSize = p.size * 8; 
+          ctx.drawImage(asset, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(0, -p.size * 1.5);
+          ctx.quadraticCurveTo(p.size * 0.8, -p.size * 0.5, p.size * 0.2, p.size * 1.5);
+          ctx.lineTo(-p.size * 0.2, p.size * 1.5);
+          ctx.quadraticCurveTo(-p.size * 0.8, -p.size * 0.5, 0, -p.size * 1.5);
+          ctx.fill();
+        }
         ctx.restore();
       } else if (p.type === 'ICE_SHARD') {
         ctx.save();
@@ -2938,7 +2964,7 @@ export default function App() {
 
       {/* Global Sector Selection (Top Right) */}
       <AnimatePresence>
-        {gameState === 'START' && !isPlanetSelectorOpen && !showShareBanner && (
+        {(gameState === 'START' || gameState === 'GAME_OVER') && !isPlanetSelectorOpen && (
           <motion.div 
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -2954,7 +2980,7 @@ export default function App() {
               }}
               className="relative group"
             >
-              <div className="w-12 h-12 md:w-20 md:h-20 drop-shadow-[4px_4px_0px_#000]">
+              <div className="w-16 h-16 md:w-24 md:h-24 drop-shadow-[4px_4px_0px_#000]">
                 <img 
                   src="https://i.ibb.co/n8rnRQCd/map.png" 
                   alt="Map" 
@@ -2962,7 +2988,7 @@ export default function App() {
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <div className="mt-1 text-[#FFF000] text-[10px] md:text-sm font-black uppercase tracking-[0.2em] drop-shadow-[2px_2px_0px_#000]">
+              <div className="mt-2 text-[#FFF000] text-[10px] md:text-sm font-black uppercase tracking-[0.2em] drop-shadow-[2px_2px_0px_#000]">
                 WORLDS
               </div>
             </motion.button>
@@ -2972,7 +2998,7 @@ export default function App() {
 
       {/* Birds Characters Button (Top Left) */}
       <AnimatePresence>
-        {(gameState === 'START' || gameState === 'GAME_OVER') && !isPlanetSelectorOpen && !showShareBanner && !isBirdsCharactersOpen && (
+        {(gameState === 'START' || gameState === 'GAME_OVER') && !isPlanetSelectorOpen && !isBirdsCharactersOpen && (
           <motion.div 
             initial={{ x: -100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -2989,7 +3015,7 @@ export default function App() {
               }}
               className="relative group"
             >
-              <div className="w-12 h-12 md:w-20 md:h-20 drop-shadow-[4px_4px_0px_#000]">
+              <div className="w-16 h-16 md:w-24 md:h-24 drop-shadow-[4px_4px_0px_#000]">
                 <img 
                   src="https://i.ibb.co/5gLtCnP6/birds-charactersicon.png" 
                   alt="Birds" 
@@ -2997,7 +3023,7 @@ export default function App() {
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <div className="mt-1 text-[#FFF000] text-[10px] md:text-sm font-black uppercase tracking-[0.2em] drop-shadow-[2px_2px_0px_#000]">
+              <div className="mt-0 text-[#FFF000] text-[10px] md:text-sm font-black uppercase tracking-[0.2em] drop-shadow-[2px_2px_0px_#000]">
                 BIRDS
               </div>
             </motion.button>
