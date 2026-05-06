@@ -2980,7 +2980,7 @@ export default function App() {
               }}
               className="relative group"
             >
-              <div className="w-16 h-16 md:w-24 md:h-24 drop-shadow-[4px_4px_0px_#000]">
+              <div className="w-14 h-14 md:w-20 md:h-20 drop-shadow-[4px_4px_0px_#000]">
                 <img 
                   src="https://i.ibb.co/n8rnRQCd/map.png" 
                   alt="Map" 
@@ -2988,7 +2988,7 @@ export default function App() {
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <div className="mt-2 text-[#FFF000] text-[10px] md:text-sm font-black uppercase tracking-[0.2em] drop-shadow-[2px_2px_0px_#000]">
+              <div className="mt-2 text-[#FFF000] text-[9px] md:text-xs font-black uppercase tracking-[0.2em] drop-shadow-[2px_2px_0px_#000]">
                 WORLDS
               </div>
             </motion.button>
