@@ -101,6 +101,32 @@ canvas {
   box-shadow: 4px 4px 0px #000;
 }
 
+.bent-button {
+  position: relative;
+  border-radius: 12px;
+  border: 4px solid #000;
+  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.4);
+  transition: all 0.1s;
+  overflow: hidden;
+}
+
+.bent-button::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  height: 45%;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 8px 8px 2px 2px;
+  pointer-events: none;
+}
+
+.bent-button:active {
+  transform: translate(4px, 4px);
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.4);
+}
+
 .brutalist-card {
   background: white;
   border: 6px solid #000;

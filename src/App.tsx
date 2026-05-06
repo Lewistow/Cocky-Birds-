@@ -5,12 +5,12 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, RotateCcw, Shield, Zap, Skull, Target, Flame, Share2 } from 'lucide-react';
+import { Play, RotateCcw, Shield, Zap, Skull, Target, Flame, Share2, Globe } from 'lucide-react';
 import { initGA, trackSlam, trackClout, trackPageView } from './lib/analytics';
 
 // Constants
-const PIPE_WIDTH = 60;
-const DEFAULT_GAP_SIZE = 200;
+const PIPE_WIDTH = 80;
+const DEFAULT_GAP_SIZE = 240;
 const SLAM_SPEED = 3300; // Pixels per second
 const OPEN_SPEED = 1080;
 const BIRD_BASE_SPEED = 85;
@@ -18,6 +18,7 @@ const WARMUP_SECONDS = 10;
 const MAX_INTEGRITY = 100;
 const CHAOS_LIMIT = 100;
 const GRAVITY = 1400; // Pixels per second squared
+const GROUND_HEIGHT = 80;
 
 type GameState = 'START' | 'PLAYING' | 'GAME_OVER';
 type BirdType = 'NORMAL' | 'SNIPER' | 'DIVER' | 'TANK';
@@ -287,6 +288,33 @@ const COLORS = {
   DARK_ACCENT: '#141419'
 };
 
+const PLANETS = [
+  { 
+    id: 'mars', 
+    name: 'MARS', 
+    url: 'https://files.catbox.moe/6rkuba.png', 
+    primaryColor: '#FF3E00',
+    mountainColor: '#300a00',
+    description: 'THE RED WASTELAND'
+  },
+  { 
+    id: 'saturn', 
+    name: 'SATURN', 
+    url: 'https://files.catbox.moe/p9o7z9.png', 
+    primaryColor: '#ffcc33',
+    mountainColor: '#4a3c00',
+    description: 'JEWEL OF THE RINGS'
+  },
+  { 
+    id: 'neptune', 
+    name: 'NEPTUNE', 
+    url: 'https://files.catbox.moe/becc63.png', 
+    primaryColor: '#00e5ff',
+    mountainColor: '#002b4a',
+    description: 'THE DISTANT GALE'
+  },
+];
+
 interface PipeFragment {
   x: number;
   y: number;
@@ -301,40 +329,52 @@ interface PipeFragment {
 
 export default function App() {
   const birdImagesRef = useRef<Record<string, HTMLImageElement>>({});
+  const planetImagesRef = useRef<Record<string, HTMLImageElement>>({});
 
   useEffect(() => {
-    const assets = {
+    const birdAssets = {
       TANK: 'https://files.catbox.moe/iraoh9.png',
       SNIPER: 'https://files.catbox.moe/fkhr97.png',
       DIVER: 'https://files.catbox.moe/bmi71p.png',
-      NORMAL: 'https://files.catbox.moe/d6byed.png'
+      NORMAL: 'https://files.catbox.moe/d6byed.png',
+      PIPE: 'https://files.catbox.moe/lchvzz.png'
     };
 
-    Object.entries(assets).forEach(([type, filename]) => {
+    Object.entries(birdAssets).forEach(([type, filename]) => {
       const img = new Image();
       img.src = filename;
       img.onload = () => {
         birdImagesRef.current[type] = img;
       };
     });
+
+    PLANETS.forEach(planet => {
+      const img = new Image();
+      img.src = planet.url;
+      img.onload = () => {
+        planetImagesRef.current[planet.id] = img;
+      };
+    });
   }, []);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState>('START');
+  const [currentPlanetIndex, setCurrentPlanetIndex] = useState(() => {
+    const saved = localStorage.getItem('cocky-birds-current-planet');
+    return saved ? Math.min(PLANETS.length - 1, parseInt(saved, 10)) : 0;
+  });
+  const [isPlanetSelectorOpen, setIsPlanetSelectorOpen] = useState(false);
   const [score, setScore] = useState(0);
   const totalSmashedRef = useRef(0);
   const [highScore, setHighScore] = useState(() => {
     const saved = localStorage.getItem('cocky-birds-high-score');
     return saved ? parseInt(saved, 10) : 0;
   });
-  const [logoLoaded, setLogoLoaded] = useState(false);
-
   useEffect(() => {
-    // Pre-fetch the logo to prevent flicker
-    const img = new Image();
-    img.src = "https://files.catbox.moe/ylwdma.png";
-    img.onload = () => setLogoLoaded(true);
-  }, []);
+    // Analytics
+    initGA();
+    trackPageView(PLANETS[currentPlanetIndex].name);
+  }, [currentPlanetIndex]);
   const [totalBirdsSmashed, setTotalBirdsSmashed] = useState(() => {
     const saved = localStorage.getItem('cocky-birds-total-smashed');
     const val = saved ? parseInt(saved, 10) : 0;
@@ -1507,7 +1547,7 @@ export default function App() {
     const pipeX = width / 2 - PIPE_WIDTH / 2;
     const topPipeHeight = gapY.current - currentGapSize.current / 2;
     const bottomPipeY = gapY.current + currentGapSize.current / 2;
-    const bottomPipeHeight = height - bottomPipeY;
+    const bottomPipeHeight = height - bottomPipeY - GROUND_HEIGHT;
 
     const createFragments = (x: number, y: number, w: number, h: number) => {
       const rows = Math.ceil(h / 30);
@@ -1712,7 +1752,7 @@ export default function App() {
     }
 
     // Gap logic
-    const targetGapY = mousePos.current.y;
+    const targetGapY = Math.min(dimensions.current.height - GROUND_HEIGHT - 40, Math.max(40, mousePos.current.y));
     // Normalized lerp for dt: 1 - (1 - lerp)^dt_frames
     // Increased to 0.75 for tight, non-sliding movement
     const lerpFactor = 1 - Math.pow(Math.max(0, 1 - 0.75), dt * 60);
@@ -1782,8 +1822,12 @@ export default function App() {
               }
               playSquashSound();
               // Reduced particle counts for Divine Strike to prevent lag spikes
+              const birdColor = bird.type === 'SNIPER' ? '#A855F7' : 
+                                bird.type === 'DIVER' ? '#3B82F6' : 
+                                bird.type === 'SPEEDER' ? '#EAB308' : 
+                                bird.type === 'TANK' ? '#EF4444' : COLORS.YELLOW;
               createParticles(bird.x, bird.y, COLORS.CYAN, 12, 'SPARK'); 
-              createParticles(bird.x, bird.y, COLORS.YELLOW, 8, 'FEATHER');
+              createParticles(bird.x, bird.y, birdColor, 8, 'FEATHER');
             }
           });
         } else {
@@ -1839,7 +1883,11 @@ export default function App() {
                     setLastKillTime(Date.now());
                     
                     // Graphic Effects
-                    createParticles(bird.x, bird.y, COLORS.YELLOW, 25, 'FEATHER');
+                    const birdColor = bird.type === 'SNIPER' ? '#A855F7' : 
+                                    bird.type === 'DIVER' ? '#3B82F6' : 
+                                    bird.type === 'SPEEDER' ? '#EAB308' : 
+                                    bird.type === 'TANK' ? '#EF4444' : COLORS.YELLOW;
+                    createParticles(bird.x, bird.y, birdColor, 12, 'FEATHER');
                     createParticles(bird.x, bird.y, COLORS.WHITE, 1, 'TEXT', 'SQUASH!');
                     setIsShaking(true);
                     shakeEndTimeRef.current = now + 300;
@@ -1884,6 +1932,14 @@ export default function App() {
       const pipeRight = pipeX + PIPE_WIDTH / 2;
 
       if (bird.state === 'FLYING') {
+        // Ambient feather shedding - very rare 🤏
+        if (Math.random() < 0.005) {
+          const birdColor = bird.type === 'SNIPER' ? '#A855F7' : 
+                          bird.type === 'DIVER' ? '#3B82F6' : 
+                          bird.type === 'SPEEDER' ? '#EAB308' : 
+                          bird.type === 'TANK' ? '#EF4444' : COLORS.YELLOW;
+          createParticles(bird.x, bird.y, birdColor, 1, 'FEATHER');
+        }
         bird.x += bird.vx * dt;
         bird.flapFrame += 12 * dt;
 
@@ -2098,51 +2154,56 @@ export default function App() {
     const { width, height } = dimensions.current;
     ctx.clearRect(0, 0, width, height);
 
-    // Background - Industrial Atmosphere
+    // Background - Planetary Atmosphere
     const isPowerSurge = isSlamming.current && Math.random() > 0.7;
+    const currentPlanet = PLANETS[currentPlanetIndex];
+    const planetImage = planetImagesRef.current[currentPlanet.id];
     
     if (isPowerSurge) {
       ctx.fillStyle = COLORS.WHITE;
       ctx.fillRect(0, 0, width, height);
     } else {
-      const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
-      bgGradient.addColorStop(0, '#4a1400'); // Deep dark top
-      bgGradient.addColorStop(0.5, COLORS.ORANGE); // Radiant center
-      bgGradient.addColorStop(1, '#6b2000'); // Dusty bottom
-      ctx.fillStyle = bgGradient;
+      ctx.save();
+      // Draw a base color fill first
+      ctx.fillStyle = currentPlanet.primaryColor + '22'; // Very subtle tint
       ctx.fillRect(0, 0, width, height);
+
+      if (planetImage) {
+        // Draw the planet background image
+        // We want to fill the background while maintaining aspect ratio (cover)
+        const imgAspect = planetImage.width / planetImage.height;
+        const canvasAspect = width / height;
+        let drawW, drawH, drawX, drawY;
+
+        if (canvasAspect > imgAspect) {
+          drawW = width;
+          drawH = width / imgAspect;
+          drawX = 0;
+          drawY = (height - drawH) / 2;
+        } else {
+          drawH = height;
+          drawW = height * imgAspect;
+          drawX = (width - drawW) / 2;
+          drawY = 0;
+        }
+        ctx.drawImage(planetImage, drawX, drawY, drawW, drawH);
+      } else {
+        // Fallback to gradient if image not loaded
+        const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+        bgGradient.addColorStop(0, '#000000');
+        bgGradient.addColorStop(0.5, currentPlanet.primaryColor);
+        bgGradient.addColorStop(1, '#000000');
+        ctx.fillStyle = bgGradient;
+        ctx.fillRect(0, 0, width, height);
+      }
+      ctx.restore();
     }
     
-    // Draw Sun with Heat Glow
-    const sunX = width * 0.75;
-    const sunY = height * 0.2;
-    const sunR = 70;
-    
-    // Massive Hazy Glow
-    const sunGlow = ctx.createRadialGradient(sunX, sunY, sunR * 0.2, sunX, sunY, sunR * 3);
-    sunGlow.addColorStop(0, 'rgba(255, 180, 0, 0.4)');
-    sunGlow.addColorStop(0.6, 'rgba(255, 60, 0, 0.1)');
-    sunGlow.addColorStop(1, 'rgba(255, 40, 0, 0)');
-    ctx.fillStyle = sunGlow;
-    ctx.fillRect(sunX - sunR * 3, sunY - sunR * 3, sunR * 6, sunR * 6);
-    
-    // Sun Core - Slightly Textured
-    ctx.fillStyle = COLORS.YELLOW;
-    ctx.beginPath();
-    ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Subtle internal sun highlight
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.beginPath();
-    ctx.arc(sunX - sunR/3, sunY - sunR/3, sunR/3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Parallax Mountains - Receding into haze
+    // Draw Parallax Mountains - Receding into haze
     const layers = [
-      { width: 800, speed: 0.15, opacity: 0.2, peakShift: 120, heightMult: 0.25, color: '#300a00' }, // Far
-      { width: 600, speed: 0.45, opacity: 0.4, peakShift: 80, heightMult: 0.4, color: '#5a1200' },  // Middle
-      { width: 900, speed: 1.2, opacity: 0.8, peakShift: 200, heightMult: 0.55, color: '#8a2500' }   // Close
+      { width: 800, speed: 0.15, opacity: 0.2, peakShift: 120, heightMult: 0.25, color: currentPlanet.mountainColor }, 
+      { width: 600, speed: 0.45, opacity: 0.4, peakShift: 80, heightMult: 0.4, color: currentPlanet.mountainColor },  
+      { width: 900, speed: 1.2, opacity: 0.8, peakShift: 200, heightMult: 0.55, color: currentPlanet.mountainColor }   
     ];
 
     layers.forEach((layer, lIdx) => {
@@ -2157,7 +2218,6 @@ export default function App() {
         const yBase = height;
         const yPeak = height - pyramidHeight;
 
-        // Apply distance haze by blending with background color
         ctx.save();
         ctx.globalAlpha = layer.opacity;
 
@@ -2169,8 +2229,8 @@ export default function App() {
         ctx.lineTo(xBaseMid, yBase);
         ctx.fill();
 
-        // Right Face (Shadow Side - Now less dark)
-        ctx.fillStyle = '#2d0c00'; // Lightened from #1a0500 for better visibility
+        // Right Face (Shadow Side)
+        ctx.fillStyle = 'rgba(0,0,0,0.4)'; 
         ctx.beginPath();
         ctx.moveTo(xBaseMid, yBase);
         ctx.lineTo(xPeak, yPeak);
@@ -2202,9 +2262,24 @@ export default function App() {
       ctx.lineWidth = 2;
       ctx.beginPath();
       if (p.type === 'FEATHER') {
-        ctx.ellipse(p.x, p.y, p.size, p.size/2, frameCount.current * 0.1, 0, Math.PI * 2);
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation || frameCount.current * 0.1);
+        ctx.beginPath();
+        // Stylized feather shape: Tapered teardrop with a slight bend
+        ctx.moveTo(0, -p.size);
+        ctx.quadraticCurveTo(p.size * 0.8, -p.size * 0.5, p.size * 0.2, p.size);
+        ctx.lineTo(-p.size * 0.2, p.size);
+        ctx.quadraticCurveTo(-p.size * 0.8, -p.size * 0.5, 0, -p.size);
         ctx.fill();
+        // Thin quill line
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.lineWidth = 1;
+        ctx.moveTo(0, -p.size);
+        ctx.lineTo(0, p.size);
         ctx.stroke();
+        ctx.restore();
       } else if (p.type === 'ICE_SHARD') {
         ctx.save();
         ctx.translate(p.x, p.y);
@@ -2542,14 +2617,42 @@ export default function App() {
 
       // Top Pipe
       const topPipeHeight = gapY.current - currentGapSize.current / 2 + pipeYOffset;
-      ctx.fillRect(pipeX, -20, PIPE_WIDTH, topPipeHeight + 20);
-      ctx.strokeRect(pipeX, -20, PIPE_WIDTH, topPipeHeight + 20);
+      const pipeImg = birdImagesRef.current['PIPE'];
+
+      if (pipeImg) {
+        // Draw top pipe - flip vertically so cap is at the bottom
+        ctx.save();
+        ctx.translate(pipeX + PIPE_WIDTH / 2, topPipeHeight / 2);
+        ctx.scale(1, -1);
+        ctx.drawImage(
+          pipeImg, 
+          -PIPE_WIDTH / 2, 
+          -topPipeHeight / 2 - 20, // Add some overflow for safety
+          PIPE_WIDTH, 
+          topPipeHeight + 20
+        );
+        ctx.restore();
+      } else {
+        ctx.fillRect(pipeX, -20, PIPE_WIDTH, topPipeHeight + 20);
+        ctx.strokeRect(pipeX, -20, PIPE_WIDTH, topPipeHeight + 20);
+      }
       
       // Bottom Pipe
       const bottomPipeY = gapY.current + currentGapSize.current / 2 + pipeYOffset;
-      const bottomPipeHeight = height - bottomPipeY;
-      ctx.fillRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 20);
-      ctx.strokeRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 20);
+      const bottomPipeHeight = height - bottomPipeY - GROUND_HEIGHT;
+      
+      if (pipeImg) {
+        ctx.drawImage(
+          pipeImg,
+          pipeX,
+          bottomPipeY,
+          PIPE_WIDTH,
+          bottomPipeHeight + 20
+        );
+      } else {
+        ctx.fillRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 20);
+        ctx.strokeRect(pipeX, bottomPipeY, PIPE_WIDTH, bottomPipeHeight + 20);
+      }
       ctx.restore(); // Restore from shadowBlur = 0
 
       // Internal Lightning for Pipes
@@ -2578,46 +2681,47 @@ export default function App() {
         };
         
         drawPipeLightning(0, topPipeHeight);
-        drawPipeLightning(bottomPipeY, height);
+        drawPipeLightning(bottomPipeY, height - GROUND_HEIGHT);
         ctx.restore();
       }
 
-      // Pre-calculate gradient once for all rivets
-      const rivetGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 5);
-      rivetGrad.addColorStop(0, '#e0e0e0');
-      rivetGrad.addColorStop(1, '#606060');
+    }
 
-      const renderRivet = (x: number, y: number) => {
-        // Rivet Outer Ring (Shadow)
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    // Draw Ground
+    const groundX = (frameCount.current * 3) % width;
+    ctx.save();
+    
+    // Bottom Ground Base
+    ctx.fillStyle = '#0a0a0c'; // Matches planetary shadows
+    ctx.fillRect(0, height - GROUND_HEIGHT, width, GROUND_HEIGHT);
+    
+    // Top Edge of Ground
+    ctx.fillStyle = '#1a1a24';
+    ctx.fillRect(0, height - GROUND_HEIGHT, width, 4);
+    
+    // Decorative scrolling patterns for speed feeling
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+    ctx.lineWidth = 1;
+    for (let i = -width; i < width * 2; i += 60) {
+      const lineX = i - groundX;
+      if (lineX > -20 && lineX < width + 20) {
         ctx.beginPath();
-        ctx.arc(x, y, 6, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Rivet Head
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.fillStyle = rivetGrad;
-        ctx.beginPath();
-        ctx.arc(0, 0, 5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Highlight
-        ctx.fillStyle = COLORS.WHITE;
-        ctx.beginPath();
-        ctx.arc(-2, -2, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      };
-
-      ctx.shadowBlur = 0; // Ensure no shadow for rivets
-      for (let y = 40; y < height; y += 70) {
-        if (y < topPipeHeight - 20 || y > bottomPipeY + 20) {
-          renderRivet(pipeX + 15, y);
-          renderRivet(pipeX + PIPE_WIDTH - 15, y);
-        }
+        ctx.moveTo(lineX, height - GROUND_HEIGHT);
+        ctx.lineTo(lineX - 40, height);
+        ctx.stroke();
       }
     }
+
+    // Heavy Brutalist Label for Ground
+    ctx.save();
+    ctx.globalAlpha = 0.05;
+    ctx.fillStyle = COLORS.WHITE;
+    ctx.font = 'black 120px italic font-display';
+    ctx.textAlign = 'center';
+    ctx.fillText('CRUSH ZONE', width/2, height - GROUND_HEIGHT/3);
+    ctx.restore();
+
+    ctx.restore();
 
     // Draw Screen-Wide Lightning Storm during Divine Wrath (Ultra-Optimized)
     if (isDivineRef.current) {
@@ -2809,6 +2913,40 @@ export default function App() {
       onPointerMove={handleMove}
     >
       <div className="absolute inset-0 halftone" />
+
+      {/* Global Sector Selection (Top Right) */}
+      <AnimatePresence>
+        {gameState !== 'PLAYING' && (
+          <motion.div 
+            initial={{ x: 100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 100, opacity: 0 }}
+            className="absolute top-4 right-4 z-[400] flex flex-col items-center gap-1 pointer-events-auto"
+          >
+            <motion.button
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => {
+                e.stopPropagation(); // Avoid triggering game interactions
+                setIsPlanetSelectorOpen(true);
+              }}
+              className="relative group"
+            >
+              <div className="w-12 h-12 md:w-20 md:h-20 drop-shadow-[4px_4px_0px_#000]">
+                <img 
+                  src="https://files.catbox.moe/hqkue3.png" 
+                  alt="Map" 
+                  className="w-full h-full object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <div className="mt-1 bg-black text-white px-2 py-0.5 text-[8px] md:text-[10px] font-black uppercase tracking-widest border border-white/20 bent-button">
+                WORLDS
+              </div>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Divine Wrath Overlay */}
       <AnimatePresence>
         {isDivine && (
@@ -2973,26 +3111,28 @@ export default function App() {
         {gameState === 'START' && (
           <motion.div 
             initial={{ opacity: 0 }}
-            animate={{ opacity: logoLoaded ? 1 : 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           >
-            <div className="brutalist-card p-4 md:p-12 flex flex-col items-center max-w-[280px] md:max-w-md w-full relative">
+            <div className="p-4 md:p-12 flex flex-col items-center max-w-[280px] md:max-w-md w-full relative">
               <motion.div 
-                animate={{ rotate: [-5, 5, -5], scale: [1, 1.1, 1] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-                className="mb-3 md:mb-8"
+                animate={{ rotate: [-2, 2, -2], scale: [1, 1.02, 1] }}
+                transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                className="w-full mb-8 px-4"
               >
-                <div className="w-16 h-16 md:w-32 md:h-32 bg-[#FFF000] rounded-full border-4 md:border-8 border-black flex items-center justify-center shadow-[4px_4px_0px_#000] md:shadow-[8px_8px_0px_#000] overflow-hidden">
-                  <img src="https://files.catbox.moe/ylwdma.png" alt="Logo" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
-                </div>
+                <img 
+                  src="https://files.catbox.moe/ju8xaz.png" 
+                  alt="COCKY BIRDS" 
+                  className="w-full h-auto drop-shadow-[0_10px_20px_rgba(0,240,255,0.3)]" 
+                  referrerPolicy="no-referrer" 
+                />
               </motion.div>
-              
-              <h1 className="text-4xl md:text-8xl font-black text-black mb-1 tracking-tighter font-display italic text-center leading-none">
-                COCKY<br/>BIRDS
-              </h1>
-              <p className="bg-black text-white px-2 py-0.5 font-black mb-6 md:mb-12 uppercase tracking-[0.2em] text-[8px] md:text-sm rotate-[-2deg]">
+              <p 
+                style={{ boxShadow: 'none' }}
+                className="bent-button bg-black text-white px-4 py-1 font-black mb-6 md:mb-12 uppercase tracking-[0.3em] text-[10px] md:text-sm"
+              >
                 REVENGE IS A PIPE
               </p>
 
@@ -3005,10 +3145,12 @@ export default function App() {
                   initGame();
                   setGameState('PLAYING');
                 }}
-                className="brutalist-btn w-full py-3 md:py-6 text-lg md:text-3xl font-black text-black flex items-center justify-center gap-2 md:gap-4 bg-[#00FF41]"
+                className="bent-button w-full py-4 md:py-8 text-2xl md:text-5xl font-black text-black flex items-center justify-center gap-3 md:gap-5 bg-[#00FF5E]"
               >
-                <Play fill="currentColor" size={20} md:size={32} />
-                CRUSH 'EM!
+                <Play fill="black" size={24} md:size={48} />
+                <span className="italic font-display tracking-tight uppercase">
+                  CRUSH 'EM!
+                </span>
               </motion.button>
             </div>
           </motion.div>
@@ -3052,10 +3194,10 @@ export default function App() {
               </motion.div>
             )}
 
-            <div className="brutalist-card p-4 md:p-12 w-full max-w-[260px] md:max-w-sm text-center relative overflow-hidden bg-[#FF3E00]">
-              <div className="absolute top-0 left-0 w-full h-2 md:h-4 bg-black" />
+            <div className="bent-button bg-[#FF3E00] p-4 md:p-12 w-full max-w-[280px] md:max-w-md text-center relative overflow-hidden flex flex-col items-center">
+              <div className="absolute top-0 left-0 w-full h-1 md:h-2 bg-black opacity-30" />
               
-              <h2 className="text-3xl md:text-7xl font-black text-white mb-4 md:mb-10 italic font-display leading-none drop-shadow-[3px_3px_0px_#000] md:drop-shadow-[6px_6px_0px_#000]">
+              <h2 className="text-3xl md:text-7xl font-black text-white mb-4 md:mb-10 italic font-display leading-none drop-shadow-[4px_4px_0px_#000]">
                 PIPES<br/>BUSTED!
               </h2>
 
@@ -3078,10 +3220,10 @@ export default function App() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleShare}
-                  className="brutalist-btn w-full py-2 md:py-4 text-sm md:text-xl font-black text-black flex items-center justify-center gap-2 md:gap-3 bg-[#FFF000]"
+                  className="bent-button w-full py-3 md:py-5 text-sm md:text-2xl font-black text-black flex items-center justify-center gap-2 md:gap-3 bg-[#A855F7]"
                 >
-                  <Share2 size={16} md:size={24} strokeWidth={3} />
-                  SHARE SCORE
+                  <Share2 size={20} md:size={32} strokeWidth={3} />
+                  <span className="uppercase italic font-display">SHARE SCORE</span>
                 </motion.button>
 
                 <motion.button
@@ -3092,10 +3234,12 @@ export default function App() {
                     initGame();
                     setGameState('PLAYING');
                   }}
-                  className="brutalist-btn w-full py-3 md:py-6 text-base md:text-2xl font-black text-black flex items-center justify-center gap-2 md:gap-4 bg-[#00F0FF]"
+                  className="bent-button w-full py-3 md:py-6 text-xl md:text-4xl font-black text-black flex items-center justify-center gap-3 md:gap-5 bg-[#FF3E00]"
                 >
-                  <RotateCcw size={20} md:size={32} strokeWidth={3} />
-                  RETRY!
+                  <RotateCcw size={24} md:size={48} strokeWidth={3} />
+                  <span className="italic font-display tracking-tight uppercase">
+                    RETRY!
+                  </span>
                 </motion.button>
               </div>
             </div>
@@ -3122,6 +3266,109 @@ export default function App() {
                 THUNDER READY!!!
               </motion.div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Planet Selector Popup */}
+      <AnimatePresence>
+        {isPlanetSelectorOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="brutalist-card bg-white p-4 md:p-8 w-full max-w-sm relative overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-2xl md:text-4xl font-black text-black italic leading-none">SELECT PLANET</h3>
+                  <p className="text-[10px] md:text-xs font-black text-black/40 uppercase tracking-widest mt-1">SWIPE TO EXPLORE</p>
+                </div>
+                <button 
+                  onClick={() => setIsPlanetSelectorOpen(false)}
+                  className="w-8 h-8 md:w-10 md:h-10 bg-black text-white flex items-center justify-center font-black border-2 border-black hover:bg-zinc-800 transition-colors"
+                >
+                  X
+                </button>
+              </div>
+
+              {/* Swipeable Carousel */}
+              <div className="relative h-[380px] md:h-[480px] overflow-hidden mb-6 group cursor-grab active:cursor-grabbing">
+                <AnimatePresence mode="wait">
+                  <motion.div 
+                    key={PLANETS[currentPlanetIndex].id}
+                    initial={{ x: 100, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -100, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    className="absolute inset-0 flex flex-col"
+                  >
+                    <div className="relative flex-1 bg-black border-4 border-black overflow-hidden group">
+                      <img 
+                        src={PLANETS[currentPlanetIndex].url}
+                        alt={PLANETS[currentPlanetIndex].name}
+                        className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div 
+                        className="absolute inset-0 opacity-40 mix-blend-overlay"
+                        style={{ backgroundColor: PLANETS[currentPlanetIndex].primaryColor }}
+                      />
+                      <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black to-transparent">
+                         <span className="text-white font-black text-xl md:text-3xl italic tracking-tighter">
+                           {PLANETS[currentPlanetIndex].name}
+                         </span>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-[10px] md:text-sm font-black text-black/60 uppercase text-center italic">
+                      {PLANETS[currentPlanetIndex].description}
+                    </p>
+                  </motion.div>
+                </AnimatePresence>
+                
+                {/* Navigation Arrows */}
+                <div className="absolute inset-y-0 left-0 flex items-center px-2">
+                  <button 
+                    onClick={() => {
+                      const next = (currentPlanetIndex - 1 + PLANETS.length) % PLANETS.length;
+                      setCurrentPlanetIndex(next);
+                      localStorage.setItem('cocky-birds-current-planet', next.toString());
+                    }}
+                    className="w-8 h-8 md:w-10 md:h-10 bg-white/10 hover:bg-white text-white hover:text-black border-2 border-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    ←
+                  </button>
+                </div>
+                <div className="absolute inset-y-0 right-0 flex items-center px-2">
+                  <button 
+                    onClick={() => {
+                      const next = (currentPlanetIndex + 1) % PLANETS.length;
+                      setCurrentPlanetIndex(next);
+                      localStorage.setItem('cocky-birds-current-planet', next.toString());
+                    }}
+                    className="w-8 h-8 md:w-10 md:h-10 bg-white/10 hover:bg-white text-white hover:text-black border-2 border-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    →
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsPlanetSelectorOpen(false)}
+                className="brutalist-btn bg-[#FF3E00] text-white w-full py-4 md:py-6 font-black text-xl md:text-3xl italic tracking-tighter"
+              >
+                TOUCHDOWN!
+              </motion.button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
