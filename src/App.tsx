@@ -335,8 +335,8 @@ export default function App() {
     const birdAssets = {
       TANK: 'https://i.ibb.co/wNVzWX6R/purple-tank.png',
       SNIPER: 'https://i.ibb.co/Ld2Q2zsr/blue-sniper.png',
-      DIVER: 'https://i.ibb.co/8gtLm9qB/yellow-diver.png',
-      NORMAL: 'https://i.ibb.co/pjNspj7Q/fire-diver.png',
+      DIVER: 'https://i.ibb.co/pjNspj7Q/fire-diver.png',
+      NORMAL: 'https://i.ibb.co/8gtLm9qB/yellow-diver.png',
       PIPE: 'https://i.ibb.co/SDzcVyM3/pipe-asset.png'
     };
 
@@ -2916,7 +2916,7 @@ export default function App() {
 
       {/* Global Sector Selection (Top Right) */}
       <AnimatePresence>
-        {gameState !== 'PLAYING' && (
+        {gameState !== 'PLAYING' && !isPlanetSelectorOpen && !showShareBanner && (
           <motion.div 
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -3116,7 +3116,7 @@ export default function App() {
             exit={{ opacity: 0 }}
             className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           >
-            <div className="p-4 md:p-12 flex flex-col items-center max-w-[280px] md:max-w-md w-full relative">
+            <div className="p-4 md:p-12 flex flex-col items-center max-w-[240px] md:max-w-sm w-full relative">
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
@@ -3206,7 +3206,7 @@ export default function App() {
               </motion.div>
             )}
 
-            <div className="bent-button bg-[#FF3E00] p-4 md:p-8 w-full max-w-[240px] md:max-w-sm text-center relative overflow-hidden flex flex-col items-center">
+            <div className="bent-button bg-[#FF3E00] p-4 md:p-8 w-full max-w-[220px] md:max-w-[320px] text-center relative overflow-hidden flex flex-col items-center">
               <div className="absolute top-0 left-0 w-full h-1 md:h-2 bg-black opacity-30" />
               
               <h2 className="text-3xl md:text-5xl font-black text-white mb-2 md:mb-6 italic font-display leading-none drop-shadow-[4px_4px_0px_#000]">
