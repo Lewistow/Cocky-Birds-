@@ -333,11 +333,11 @@ export default function App() {
 
   useEffect(() => {
     const birdAssets = {
-      TANK: 'https://files.catbox.moe/iraoh9.png',
-      SNIPER: 'https://files.catbox.moe/fkhr97.png',
-      DIVER: 'https://files.catbox.moe/bmi71p.png',
-      NORMAL: 'https://files.catbox.moe/d6byed.png',
-      PIPE: 'https://files.catbox.moe/lchvzz.png'
+      TANK: 'https://i.ibb.co/wNVzWX6R/purple-tank.png',
+      SNIPER: 'https://i.ibb.co/Ld2Q2zsr/blue-sniper.png',
+      DIVER: 'https://i.ibb.co/8gtLm9qB/yellow-diver.png',
+      NORMAL: 'https://i.ibb.co/pjNspj7Q/fire-diver.png',
+      PIPE: 'https://i.ibb.co/SDzcVyM3/pipe-asset.png'
     };
 
     Object.entries(birdAssets).forEach(([type, filename]) => {
@@ -2934,13 +2934,13 @@ export default function App() {
             >
               <div className="w-12 h-12 md:w-20 md:h-20 drop-shadow-[4px_4px_0px_#000]">
                 <img 
-                  src="https://files.catbox.moe/hqkue3.png" 
+                  src="https://i.ibb.co/n8rnRQCd/map.png" 
                   alt="Map" 
                   className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <div className="mt-1 bg-black text-white px-2 py-0.5 text-[8px] md:text-[10px] font-black uppercase tracking-widest border border-white/20 bent-button">
+              <div className="mt-1 text-[#FFF000] text-[10px] md:text-sm font-black uppercase tracking-[0.2em] drop-shadow-[2px_2px_0px_#000]">
                 WORLDS
               </div>
             </motion.button>
@@ -3118,12 +3118,24 @@ export default function App() {
           >
             <div className="p-4 md:p-12 flex flex-col items-center max-w-[280px] md:max-w-md w-full relative">
               <motion.div 
+                animate={{ y: [0, -10, 0] }}
+                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                className="w-24 h-24 md:w-40 md:h-40 mb-4"
+              >
+                <img 
+                  src="https://i.ibb.co/9922hyC5/logo.png" 
+                  alt="Bird Logo" 
+                  className="w-full h-full object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]" 
+                  referrerPolicy="no-referrer"
+                />
+              </motion.div>
+              <motion.div 
                 animate={{ rotate: [-2, 2, -2], scale: [1, 1.02, 1] }}
                 transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
                 className="w-full mb-8 px-4"
               >
                 <img 
-                  src="https://files.catbox.moe/ju8xaz.png" 
+                  src="https://i.ibb.co/N6dft7mM/cocky-birdtext.png" 
                   alt="COCKY BIRDS" 
                   className="w-full h-auto drop-shadow-[0_10px_20px_rgba(0,240,255,0.3)]" 
                   referrerPolicy="no-referrer" 
