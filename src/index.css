@@ -43,13 +43,7 @@ canvas {
   display: block;
 }
 
-/* Halftone Pattern Overlay */
-.halftone {
-  background-image: radial-gradient(circle, #000 1px, transparent 1px);
-  background-size: 4px 4px;
-  opacity: 0.1;
-  pointer-events: none;
-}
+
 
 @keyframes strobe {
   0%, 100% { background-color: rgba(255, 255, 255, 0.8); }

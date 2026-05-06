@@ -2960,7 +2960,7 @@ export default function App() {
         onPointerMove={handleMove}
         style={{ background: '#000' }}
       >
-        <div className="absolute inset-0 halftone" />
+
 
       {/* Global Sector Selection (Top Right) */}
       <AnimatePresence>
