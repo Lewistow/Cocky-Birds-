@@ -3120,7 +3120,7 @@ export default function App() {
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                className="w-24 h-24 md:w-40 md:h-40 mb-4"
+                className="w-20 h-20 md:w-32 md:h-32 mb-2"
               >
                 <img 
                   src="https://i.ibb.co/9922hyC5/logo.png" 
@@ -3132,7 +3132,7 @@ export default function App() {
               <motion.div 
                 animate={{ rotate: [-2, 2, -2], scale: [1, 1.02, 1] }}
                 transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                className="w-full mb-8 px-4"
+                className="w-full mb-4 px-8"
               >
                 <img 
                   src="https://i.ibb.co/N6dft7mM/cocky-birdtext.png" 
@@ -3143,7 +3143,7 @@ export default function App() {
               </motion.div>
               <p 
                 style={{ boxShadow: 'none' }}
-                className="bent-button bg-black text-white px-4 py-1 font-black mb-6 md:mb-12 uppercase tracking-[0.3em] text-[10px] md:text-sm"
+                className="bent-button bg-black text-white px-4 py-1 font-black mb-4 md:mb-6 uppercase tracking-[0.3em] text-[8px] md:text-xs"
               >
                 REVENGE IS A PIPE
               </p>
@@ -3157,9 +3157,9 @@ export default function App() {
                   initGame();
                   setGameState('PLAYING');
                 }}
-                className="bent-button w-full py-4 md:py-8 text-2xl md:text-5xl font-black text-black flex items-center justify-center gap-3 md:gap-5 bg-[#00FF5E]"
+                className="bent-button w-full py-3 md:py-5 text-xl md:text-3xl font-black text-black flex items-center justify-center gap-3 md:gap-4 bg-[#00FF5E]"
               >
-                <Play fill="black" size={24} md:size={48} />
+                <Play fill="black" size={24} />
                 <span className="italic font-display tracking-tight uppercase">
                   CRUSH 'EM!
                 </span>
@@ -3178,7 +3178,7 @@ export default function App() {
               <motion.div 
                 initial={{ y: -100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="mb-4 bg-yellow-400 border-4 border-black p-4 shadow-[8px_8px_0px_#000] -rotate-2 max-w-sm w-full relative"
+                className="mb-4 bg-yellow-400 border-4 border-black p-3 shadow-[4px_4px_0px_#000] -rotate-2 max-w-[240px] md:max-w-[280px] w-full relative"
               >
                 <button 
                   onClick={() => {
@@ -3186,12 +3186,12 @@ export default function App() {
                     setHasSeenShareBanner(true);
                     localStorage.setItem('cocky-birds-share-banner-seen', 'true');
                   }}
-                  className="absolute -top-4 -right-4 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center font-black border-2 border-white"
+                  className="absolute -top-3 -right-3 w-6 h-6 bg-black text-white rounded-full flex items-center justify-center font-black border-2 border-white text-xs"
                 >
                   X
                 </button>
-                <h3 className="text-xl font-black text-black uppercase leading-none mb-2">YOU'RE GETTING GOOD!</h3>
-                <p className="text-black font-bold text-sm mb-4">Share your best score of {highScore} and see if your friends can beat it! 🐦🕶️</p>
+                <h3 className="text-sm md:text-lg font-black text-black uppercase leading-none mb-1">YOU'RE GETTING GOOD!</h3>
+                <p className="text-black font-bold text-[10px] md:text-xs mb-3">Share your best score of {highScore} and see if your friends can beat it! 🐦🕶️</p>
                 <button 
                   onClick={() => {
                     handleShare();
@@ -3199,26 +3199,26 @@ export default function App() {
                     setHasSeenShareBanner(true);
                     localStorage.setItem('cocky-birds-share-banner-seen', 'true');
                   }}
-                  className="w-full bg-black text-white py-2 font-black uppercase tracking-widest hover:bg-white hover:text-black transition-colors border-2 border-black"
+                  className="w-full bg-black text-white py-1.5 text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-colors border-2 border-black"
                 >
                   SHARE NOW
                 </button>
               </motion.div>
             )}
 
-            <div className="bent-button bg-[#FF3E00] p-4 md:p-12 w-full max-w-[280px] md:max-w-md text-center relative overflow-hidden flex flex-col items-center">
+            <div className="bent-button bg-[#FF3E00] p-4 md:p-8 w-full max-w-[240px] md:max-w-sm text-center relative overflow-hidden flex flex-col items-center">
               <div className="absolute top-0 left-0 w-full h-1 md:h-2 bg-black opacity-30" />
               
-              <h2 className="text-3xl md:text-7xl font-black text-white mb-4 md:mb-10 italic font-display leading-none drop-shadow-[4px_4px_0px_#000]">
+              <h2 className="text-3xl md:text-5xl font-black text-white mb-2 md:mb-6 italic font-display leading-none drop-shadow-[4px_4px_0px_#000]">
                 PIPES<br/>BUSTED!
               </h2>
 
-              <div className="space-y-3 md:space-y-6 mb-6 md:mb-12">
-                <div className="bg-white border-2 md:border-4 border-black p-3 md:p-6 shadow-[4px_4px_0px_#000] md:shadow-[8px_8px_0px_#000]">
+              <div className="space-y-2 md:space-y-4 mb-4 md:mb-8">
+                <div className="bg-white border-2 md:border-4 border-black p-2 md:p-4 shadow-[4px_4px_0px_#000] md:shadow-[8px_8px_0px_#000]">
                   <p className="text-black/40 font-black uppercase text-[7px] md:text-xs tracking-widest mb-0.5">Total Squashed</p>
-                  <span className="text-3xl md:text-7xl font-black text-black italic font-display">{score}</span>
+                  <span className="text-3xl md:text-5xl font-black text-black italic font-display">{score}</span>
                 </div>
-                <div className="bg-black text-white p-2 md:p-4 border-2 md:border-4 border-white">
+                <div className="bg-black text-white p-2 md:p-3 border-2 md:border-4 border-white">
                   <p className="font-black uppercase text-[7px] md:text-xs tracking-widest">Best Record: {highScore}</p>
                 </div>
                 <div className="bg-white/10 p-2 border border-white/20">
@@ -3227,14 +3227,14 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 w-full">
+              <div className="flex flex-col gap-2 w-full">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleShare}
-                  className="bent-button w-full py-3 md:py-5 text-sm md:text-2xl font-black text-black flex items-center justify-center gap-2 md:gap-3 bg-[#A855F7]"
+                  className="bent-button w-full py-2 md:py-4 text-xs md:text-xl font-black text-black flex items-center justify-center gap-2 md:gap-3 bg-[#A855F7]"
                 >
-                  <Share2 size={20} md:size={32} strokeWidth={3} />
+                  <Share2 size={18} md:size={28} strokeWidth={3} />
                   <span className="uppercase italic font-display">SHARE SCORE</span>
                 </motion.button>
 
@@ -3246,9 +3246,9 @@ export default function App() {
                     initGame();
                     setGameState('PLAYING');
                   }}
-                  className="bent-button w-full py-3 md:py-6 text-xl md:text-4xl font-black text-black flex items-center justify-center gap-3 md:gap-5 bg-[#FF3E00]"
+                  className="bent-button w-full py-2 md:py-5 text-lg md:text-2xl font-black text-black flex items-center justify-center gap-3 md:gap-5 bg-[#FF3E00]"
                 >
-                  <RotateCcw size={24} md:size={48} strokeWidth={3} />
+                  <RotateCcw size={18} md:size={28} strokeWidth={3} />
                   <span className="italic font-display tracking-tight uppercase">
                     RETRY!
                   </span>
@@ -3294,7 +3294,7 @@ export default function App() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="brutalist-card bg-white p-4 md:p-8 w-full max-w-sm relative overflow-hidden"
+              className="brutalist-card bg-white p-4 md:p-6 w-full max-w-[280px] md:max-w-sm relative overflow-hidden"
             >
               {/* Header */}
               <div className="flex justify-between items-start mb-6">
