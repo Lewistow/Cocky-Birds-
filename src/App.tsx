@@ -32,6 +32,7 @@ interface Bird {
   health: number;
   maxHealth: number;
   vx: number;
+  baseVx: number;
   vy: number;
   size: number;
   state: 'FLYING' | 'CRUSHED' | 'PASSED';
@@ -288,7 +289,7 @@ const COLORS = {
   DARK_ACCENT: '#141419'
 };
 
-const EARTH_SVG_CONTENT = `<svg viewBox="0 0 900 1600" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+const EARTH_SVG_CONTENT = `<svg viewBox="0 0 900 1600" width="900" height="1600" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#4FA2FF"/>
@@ -393,11 +394,16 @@ const EARTH_SVG_CONTENT = `<svg viewBox="0 0 900 1600" width="100%" height="100%
   </g>
 </svg>`;
 
+const MARS_SVG_CONTENT = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1080 1920' width='100%' height='100%'><defs><linearGradient id='skyGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#12030f'/><stop offset='40%' stop-color='#2b0a15'/><stop offset='70%' stop-color='#591717'/><stop offset='100%' stop-color='#9e3b22'/></linearGradient><radialGradient id='sunGlow' cx='50%' cy='50%' r='50%'><stop offset='0%' stop-color='#ffb170' stop-opacity='1'/><stop offset='30%' stop-color='#db6644' stop-opacity='0.8'/><stop offset='70%' stop-color='#8c2b18' stop-opacity='0.3'/><stop offset='100%' stop-color='#8c2b18' stop-opacity='0'/></radialGradient><linearGradient id='bgMountGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#360e10'/><stop offset='100%' stop-color='#1c0507'/></linearGradient><linearGradient id='midMountGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#611712'/><stop offset='100%' stop-color='#330a08'/></linearGradient><linearGradient id='duneGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#8c2b18'/><stop offset='100%' stop-color='#4f1309'/></linearGradient><linearGradient id='fgGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#b33f22'/><stop offset='100%' stop-color='#4a1508'/></linearGradient><linearGradient id='fogGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#eb734b' stop-opacity='0'/><stop offset='50%' stop-color='#eb734b' stop-opacity='0.35'/><stop offset='100%' stop-color='#eb734b' stop-opacity='0'/></linearGradient></defs><rect width='1080' height='1920' fill='url(#skyGrad)'/><g fill='#ffffff'><circle cx='100' cy='150' r='1.5' opacity='0.8'/><circle cx='300' cy='80' r='1' opacity='0.4'/><circle cx='500' cy='220' r='2' opacity='0.9'/><circle cx='700' cy='120' r='1' opacity='0.3'/><circle cx='850' cy='300' r='1.5' opacity='0.6'/><circle cx='1000' cy='150' r='2' opacity='0.7'/><circle cx='250' cy='450' r='1.5' opacity='0.8'/><circle cx='450' cy='600' r='1' opacity='0.5'/><circle cx='800' cy='550' r='2' opacity='0.8'/><circle cx='950' cy='750' r='1.5' opacity='0.6'/><circle cx='150' cy='800' r='1' opacity='0.4'/><circle cx='650' cy='850' r='2' opacity='0.9'/><circle cx='350' cy='250' r='1' opacity='0.6'/><circle cx='150' cy='350' r='1.5' opacity='0.5'/><circle cx='600' cy='280' r='1' opacity='0.4'/><circle cx='750' cy='420' r='1.5' opacity='0.7'/><circle cx='120' cy='550' r='2' opacity='0.8'/><circle cx='980' cy='480' r='1' opacity='0.5'/><circle cx='880' cy='900' r='1.5' opacity='0.7'/><circle cx='420' cy='950' r='1' opacity='0.4'/></g><g fill='#ffb4a3'><circle cx='200' cy='300' r='2' opacity='0.8'/><circle cx='600' cy='400' r='2.5' opacity='0.7'/><circle cx='900' cy='200' r='1.5' opacity='0.9'/><circle cx='400' cy='800' r='2' opacity='0.6'/><circle cx='750' cy='700' r='1.5' opacity='0.8'/></g><ellipse cx='300' cy='450' rx='200' ry='12' fill='#d95a36' opacity='0.2'/><ellipse cx='800' cy='300' rx='250' ry='15' fill='#d95a36' opacity='0.15'/><ellipse cx='500' cy='750' rx='180' ry='10' fill='#d95a36' opacity='0.2'/><ellipse cx='850' cy='850' rx='120' ry='8' fill='#eb734b' opacity='0.1'/><path d='M 880 140 A 60 60 0 1 1 840 240 A 80 80 0 1 0 880 140 Z' fill='#b06951' opacity='0.85'/><circle cx='910' cy='180' r='8' fill='#80412e' opacity='0.7'/><circle cx='895' cy='210' r='5' fill='#80412e' opacity='0.7'/><circle cx='885' cy='160' r='4' fill='#80412e' opacity='0.7'/><circle cx='540' cy='650' r='220' fill='url(#sunGlow)'/><circle cx='540' cy='650' r='55' fill='#ffe2b8'/><path d='M 0 1150 L 80 1050 L 150 1100 L 250 950 L 350 1020 L 450 850 L 550 960 L 650 880 L 780 1050 L 900 920 L 1000 1080 L 1080 1000 L 1080 1920 L 0 1920 Z' fill='url(#bgMountGrad)'/><line x1='400' y1='1150' x2='400' y2='1080' stroke='#1c0507' stroke-width='4'/><line x1='385' y1='1100' x2='415' y2='1100' stroke='#1c0507' stroke-width='3'/><circle cx='400' cy='1080' r='4' fill='#d64933'/><polygon points='400,1080 385,1115 415,1115' fill='#1c0507'/><path d='M 0 1400 L 120 1250 L 250 1350 L 400 1150 L 550 1280 L 700 1180 L 850 1320 L 980 1200 L 1080 1300 L 1080 1920 L 0 1920 Z' fill='url(#midMountGrad)'/><polygon points='400,1150 550,1280 460,1350' fill='#29070a' opacity='0.4'/><polygon points='700,1180 850,1320 760,1380' fill='#29070a' opacity='0.4'/><path d='M 0 1500 Q 200 1420 400 1480 T 800 1450 T 1080 1520 L 1080 1920 L 0 1920 Z' fill='url(#duneGrad)'/><g transform='translate(750, 1460)' fill='#240704'><circle cx='0' cy='5' r='8'/><circle cx='25' cy='5' r='8'/><circle cx='50' cy='5' r='8'/><rect x='-5' y='-10' width='60' height='12' rx='3'/><path d='M 45 -10 L 40 -35 L 55 -40 L 60 -20 Z'/><line x1='10' y1='-10' x2='10' y2='-30' stroke='#240704' stroke-width='4'/><circle cx='10' cy='-32' r='5'/></g><rect x='0' y='1300' width='1080' height='400' fill='url(#fogGrad)' pointer-events='none'/><path d='M 0 1650 Q 250 1580 500 1680 T 800 1600 T 1080 1650 L 1080 1920 L 0 1920 Z' fill='url(#fgGrad)'/><g fill='#330e05'><ellipse cx='250' cy='1750' rx='100' ry='20'/><ellipse cx='800' cy='1800' rx='140' ry='28'/><ellipse cx='550' cy='1680' rx='70' ry='15'/></g><g fill='none' stroke='#db5f3d' stroke-width='4' opacity='0.8'><path d='M 150 1750 A 100 20 0 0 0 350 1750'/><path d='M 660 1800 A 140 28 0 0 0 940 1800'/><path d='M 480 1680 A 70 15 0 0 0 620 1680'/></g><polygon points='0,1920 0,1300 120,1250 200,1400 180,1600 300,1750 350,1920' fill='#5c1508'/><polygon points='0,1300 120,1250 90,1400 0,1450' fill='#e86843'/><polygon points='120,1250 200,1400 180,1600 150,1450' fill='#2e0802'/><polygon points='0,1600 60,1550 100,1650 70,1750 0,1850' fill='#b54124'/><polygon points='1080,1920 1080,1540 960,1490 860,1590 780,1690 710,1920' fill='#5c1508'/><polygon points='960,1490 860,1590 880,1690 1000,1590' fill='#e86843'/><polygon points='860,1590 780,1690 820,1790 920,1660' fill='#2e0802'/><polygon points='800,1850 820,1820 850,1840 830,1870' fill='#e86843'/><polygon points='850,1840 880,1860 830,1870' fill='#2e0802'/><polygon points='400,1800 420,1780 450,1810 430,1830' fill='#e86843'/><polygon points='450,1810 480,1820 430,1830' fill='#2e0802'/><path d='M 150 1600 Q 250 1590 350 1610' stroke='#ff8c66' stroke-width='2' fill='none' opacity='0.4'/><path d='M 450 1750 Q 600 1730 750 1770' stroke='#ff8c66' stroke-width='2' fill='none' opacity='0.5'/><path d='M 700 1650 Q 850 1640 1000 1670' stroke='#ff8c66' stroke-width='2' fill='none' opacity='0.4'/><g fill='#ffb399' opacity='0.7'><circle cx='120' cy='1650' r='2'/><circle cx='150' cy='1680' r='1.5'/><circle cx='300' cy='1720' r='3'/><circle cx='340' cy='1700' r='2'/><circle cx='500' cy='1660' r='1.5'/><circle cx='700' cy='1750' r='2.5'/><circle cx='750' cy='1730' r='1'/><circle cx='900' cy='1780' r='2'/><circle cx='950' cy='1690' r='3'/><circle cx='450' cy='1860' r='1.5'/><circle cx='600' cy='1890' r='2'/><circle cx='850' cy='1810' r='2.5'/><circle cx='250' cy='1840' r='1.5'/><circle cx='150' cy='1880' r='2'/></g></svg>`;
+
+const b64Earth = typeof btoa !== 'undefined' ? btoa(unescape(encodeURIComponent(EARTH_SVG_CONTENT))) : '';
+const b64Mars = typeof btoa !== 'undefined' ? btoa(unescape(encodeURIComponent(MARS_SVG_CONTENT))) : '';
+
 const PLANETS = [
   { 
     id: 'earth', 
     name: 'EARTH', 
-    url: `data:image/svg+xml;base64,${btoa(EARTH_SVG_CONTENT)}`, 
+    url: `data:image/svg+xml;base64,${b64Earth}`, 
     primaryColor: '#4FA2FF',
     mountainColor: '#1E8928',
     description: 'HOME SWEET HOME'
@@ -405,7 +411,7 @@ const PLANETS = [
   { 
     id: 'mars', 
     name: 'MARS', 
-    url: 'https://files.catbox.moe/6rkuba.png', 
+    url: `data:image/svg+xml;base64,${b64Mars}`, 
     primaryColor: '#FF3E00',
     mountainColor: '#300a00',
     description: 'THE RED WASTELAND'
@@ -511,48 +517,83 @@ export default function App() {
 
   const [isBirdsCharactersOpen, setIsBirdsCharactersOpen] = useState(false);
   const [showBirdTooltip, setShowBirdTooltip] = useState(false);
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-
-  const startLongPress = () => {
-    longPressTimer.current = setTimeout(() => {
-      setShowBirdTooltip(true);
-    }, 500);
-  };
-
-  const endLongPress = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-    setShowBirdTooltip(false);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    };
-  }, []);
+  const cycleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const infoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [currentCharacterIndex, setCurrentCharacterIndex] = useState(0);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
     if (isBirdsCharactersOpen) {
-      interval = setInterval(() => {
-        setCurrentCharacterIndex(prev => (prev + 1) % CHARACTER_INFO.length);
-        setShowBirdTooltip(false); // Hide tooltip when bird changes
-      }, 4000); 
+      const runCycle = () => {
+        setShowBirdTooltip(false);
+        
+        // Step 1: Bird enters and stays centered
+        infoTimeoutRef.current = setTimeout(() => {
+          // Step 2: Show tooltip, bird moves aside
+          setShowBirdTooltip(true);
+        }, 1500);
+
+        // Step 3: Wait for a readable duration then cycle
+        cycleTimeoutRef.current = setTimeout(() => {
+          setShowBirdTooltip(false);
+          // Wait for tooltip exit animation before showing next bird
+          infoTimeoutRef.current = setTimeout(() => {
+            setCurrentCharacterIndex(prev => (prev + 1) % CHARACTER_INFO.length);
+            runCycle();
+          }, 800);
+        }, 7500);
+      };
+
+      runCycle();
+    } else {
+      setShowBirdTooltip(false);
+      if (cycleTimeoutRef.current) clearTimeout(cycleTimeoutRef.current);
+      if (infoTimeoutRef.current) clearTimeout(infoTimeoutRef.current);
     }
-    return () => clearInterval(interval);
+
+    return () => {
+      if (cycleTimeoutRef.current) clearTimeout(cycleTimeoutRef.current);
+      if (infoTimeoutRef.current) clearTimeout(infoTimeoutRef.current);
+    };
   }, [isBirdsCharactersOpen]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState>('START');
   const [currentPlanetIndex, setCurrentPlanetIndex] = useState(() => {
+    // Default to index 0 (EARTH)
     const saved = localStorage.getItem('cocky-birds-current-planet');
-    return saved ? Math.min(PLANETS.length - 1, parseInt(saved, 10)) : 0;
+    if (!saved) return 0;
+    const idx = parseInt(saved, 10);
+    return (isNaN(idx) || idx < 0 || idx >= PLANETS.length) ? 0 : idx;
   });
+  const [previewPlanetIndex, setPreviewPlanetIndex] = useState(currentPlanetIndex);
   const [isPlanetSelectorOpen, setIsPlanetSelectorOpen] = useState(false);
+  const autoCycleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startAutoCycle = useCallback(() => {
+    if (autoCycleTimerRef.current) clearInterval(autoCycleTimerRef.current);
+    autoCycleTimerRef.current = setInterval(() => {
+      setPreviewPlanetIndex(prev => (prev + 1) % PLANETS.length);
+    }, 4500); 
+  }, []);
+
+  const stopAutoCycle = useCallback(() => {
+    if (autoCycleTimerRef.current) {
+      clearInterval(autoCycleTimerRef.current);
+      autoCycleTimerRef.current = null;
+    }
+  }, []);
+
+  // Sync preview when opening selector and start auto-cycle
+  useEffect(() => {
+    if (isPlanetSelectorOpen) {
+      setPreviewPlanetIndex(currentPlanetIndex);
+      startAutoCycle();
+    } else {
+      stopAutoCycle();
+    }
+    return () => stopAutoCycle();
+  }, [isPlanetSelectorOpen, currentPlanetIndex, startAutoCycle, stopAutoCycle]);
   const [score, setScore] = useState(0);
   const totalSmashedRef = useRef(0);
   const [highScore, setHighScore] = useState(() => {
@@ -1800,6 +1841,7 @@ export default function App() {
         health: h,
         maxHealth: h,
         vx: v,
+        baseVx: v,
         vy: 0,
         size: s,
         state: 'FLYING',
@@ -2125,6 +2167,13 @@ export default function App() {
       const pipeRight = pipeX + PIPE_WIDTH / 2;
 
       if (bird.state === 'FLYING') {
+        // Recover speed from stun
+        if (bird.vx > bird.baseVx) {
+          bird.vx = Math.max(bird.baseVx, bird.vx - 60 * dt);
+        } else if (bird.vx < bird.baseVx) {
+          bird.vx = Math.min(bird.baseVx, bird.vx + 60 * dt);
+        }
+
         bird.x += bird.vx * dt;
         bird.flapFrame += 12 * dt;
 
@@ -2384,50 +2433,6 @@ export default function App() {
       ctx.restore();
     }
     
-    // Draw Parallax Mountains - Receding into haze
-    if (currentPlanet.id !== 'earth') {
-      const layers = [
-        { width: 800, speed: 0.15, opacity: 0.2, peakShift: 120, heightMult: 0.25, color: currentPlanet.mountainColor }, 
-        { width: 600, speed: 0.45, opacity: 0.4, peakShift: 80, heightMult: 0.4, color: currentPlanet.mountainColor },  
-        { width: 900, speed: 1.2, opacity: 0.8, peakShift: 200, heightMult: 0.55, color: currentPlanet.mountainColor }   
-      ];
-
-      layers.forEach((layer, lIdx) => {
-        const layerOffset = (frameCount.current * layer.speed) % layer.width;
-        
-        for (let i = -layer.width; i < width + layer.width; i += layer.width) {
-          const xStart = i - layerOffset;
-          const xEnd = xStart + layer.width;
-          const xPeak = xStart + layer.width / 2 + layer.peakShift;
-          const xBaseMid = xStart + layer.width / 2;
-          const pyramidHeight = height * layer.heightMult;
-          const yBase = height;
-          const yPeak = height - pyramidHeight;
-
-          ctx.save();
-          ctx.globalAlpha = layer.opacity;
-
-          // Left Face (Light Side)
-          ctx.fillStyle = layer.color;
-          ctx.beginPath();
-          ctx.moveTo(xStart, yBase);
-          ctx.lineTo(xPeak, yPeak);
-          ctx.lineTo(xBaseMid, yBase);
-          ctx.fill();
-
-          // Right Face (Shadow Side)
-          ctx.fillStyle = 'rgba(0,0,0,0.4)'; 
-          ctx.beginPath();
-          ctx.moveTo(xBaseMid, yBase);
-          ctx.lineTo(xPeak, yPeak);
-          ctx.lineTo(xEnd, yBase);
-          ctx.fill();
-          
-          ctx.restore();
-        }
-      });
-    }
-
     // Draw Scanning Line
     const scanY = (frameCount.current * 90) % height;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
@@ -2991,7 +2996,7 @@ export default function App() {
       });
       ctx.restore();
     });
-  }, [gameState, isThunderReady]); // gameState is okay, but score is not needed here
+  }, [gameState, isThunderReady, currentPlanetIndex]); // Add currentPlanetIndex to dependencies
 
   const loop = useCallback((time: number) => {
     const canvas = canvasRef.current;
@@ -3540,48 +3545,58 @@ export default function App() {
                     }}
                     className="flex flex-col items-center gap-8"
                   >
-                    <motion.div
-                      animate={{ y: [0, -20, 0], scale: [1, 1.05, 1] }}
-                      transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                      className="w-48 h-48 md:w-64 md:h-64 relative cursor-help"
-                      onPointerDown={startLongPress}
-                      onPointerUp={endLongPress}
-                      onPointerLeave={endLongPress}
-                      onPointerCancel={endLongPress}
-                      onTouchStart={startLongPress}
-                      onTouchEnd={endLongPress}
-                    >
-                      <img 
-                        src={CHARACTER_INFO[currentCharacterIndex].img} 
-                        alt="Bird"
-                        className="w-full h-full object-contain filter drop-shadow-[0_20px_20px_rgba(255,240,0,0.4)]"
-                        referrerPolicy="no-referrer"
-                      />
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-16 w-full max-w-5xl px-6 min-h-[500px] md:min-h-[600px] relative">
+                      <motion.div
+                        layout
+                        initial={false}
+                        animate={{ 
+                          scale: showBirdTooltip ? 0.8 : 1.3,
+                          y: showBirdTooltip ? (window.innerWidth < 768 ? -20 : 0) : 0
+                        }}
+                        transition={{ 
+                          duration: 0.8, 
+                          type: "spring",
+                          damping: 15
+                        }}
+                        className="w-48 h-48 md:w-80 md:h-80 relative z-10 shrink-0"
+                      >
+                        <motion.img 
+                          animate={{ y: [0, -15, 0] }}
+                          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                          src={CHARACTER_INFO[currentCharacterIndex].img} 
+                          alt="Bird"
+                          className="w-full h-full object-contain filter drop-shadow-[0_20px_20px_rgba(255,240,0,0.4)]"
+                          referrerPolicy="no-referrer"
+                        />
+                      </motion.div>
 
-                      <AnimatePresence>
+                      <AnimatePresence mode="wait">
                         {showBirdTooltip && (
                           <motion.div
-                            initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                            className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 md:w-80 bg-white border-2 md:border-4 border-black shadow-[4px_4px_0px_#000] p-3 md:p-4 z-[600]"
+                            initial={{ opacity: 0, scale: 0.8, x: window.innerWidth < 768 ? 0 : 40, y: window.innerWidth < 768 ? 40 : 0 }}
+                            animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, x: window.innerWidth < 768 ? 0 : 40, y: window.innerWidth < 768 ? 40 : 0 }}
+                            transition={{ 
+                              type: "spring", 
+                              damping: 20,
+                              stiffness: 100
+                            }}
+                            className="w-full md:w-auto md:max-w-xl bg-white border-4 md:border-8 border-black shadow-[8px_8px_0px_#000] md:shadow-[12px_12px_0px_#000] p-6 md:p-12 z-[600] relative"
                           >
-                            <p className="text-black font-black text-[10px] md:text-sm leading-tight italic uppercase">
+                            <p className="text-black font-black text-lg md:text-3xl lg:text-4xl leading-tight italic uppercase tracking-tighter">
                               {CHARACTER_INFO[currentCharacterIndex].description}
                             </p>
-                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-b-2 border-r-2 md:border-b-4 md:border-r-4 border-black rotate-45" />
+                            {/* Responsive Tail */}
+                            <div className="absolute 
+                              top-[-16px] left-1/2 -translate-x-1/2 rotate-[135deg] 
+                              md:top-1/2 md:-left-6 md:-translate-y-1/2 md:rotate-45
+                              w-8 h-8 md:w-16 md:h-16 bg-white 
+                              border-l-4 md:border-l-8 border-b-4 md:border-b-8 border-black z-[-1]" 
+                            />
                           </motion.div>
                         )}
                       </AnimatePresence>
-
-                      <motion.div 
-                        animate={{ opacity: [0.4, 1, 0.4] }}
-                        transition={{ repeat: Infinity, duration: 2 }}
-                        className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap"
-                      >
-                         <p className="text-white text-[8px] md:text-xs font-black tracking-widest bg-black/50 px-2 py-1 rounded">LONG PRESS FOR INFO</p>
-                      </motion.div>
-                    </motion.div>
+                    </div>
                     
                     <motion.div
                       initial={{ scale: 0, opacity: 0 }}
@@ -3648,35 +3663,49 @@ export default function App() {
               </div>
 
               {/* Swipeable Carousel */}
-              <div className="relative h-[380px] md:h-[480px] overflow-hidden mb-6 group cursor-grab active:cursor-grabbing">
-                <AnimatePresence mode="wait">
+              <div className="relative h-[380px] md:h-[480px] overflow-hidden mb-6 group">
+                <AnimatePresence mode="popLayout" initial={false}>
                   <motion.div 
-                    key={PLANETS[currentPlanetIndex].id}
-                    initial={{ x: 100, opacity: 0 }}
+                    key={PLANETS[previewPlanetIndex].id}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragStart={stopAutoCycle}
+                    onDragEnd={(_, info) => {
+                      startAutoCycle();
+                      if (info.offset.x > 50) {
+                        const next = (previewPlanetIndex - 1 + PLANETS.length) % PLANETS.length;
+                        setPreviewPlanetIndex(next);
+                      } else if (info.offset.x < -50) {
+                        const next = (previewPlanetIndex + 1) % PLANETS.length;
+                        setPreviewPlanetIndex(next);
+                      }
+                    }}
+                    initial={{ x: 300, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: -100, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    className="absolute inset-0 flex flex-col"
+                    exit={{ x: -300, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                    className="absolute inset-0 flex flex-col cursor-grab active:cursor-grabbing"
                   >
-                    <div className="relative flex-1 bg-black border-4 border-black overflow-hidden group">
+                    <div className="relative flex-1 bg-black border-4 border-black overflow-hidden group select-none">
                       <img 
-                        src={PLANETS[currentPlanetIndex].url}
-                        alt={PLANETS[currentPlanetIndex].name}
-                        className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-500"
+                        src={PLANETS[previewPlanetIndex].url}
+                        alt={PLANETS[previewPlanetIndex].name}
+                        className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-500 pointer-events-none"
                         referrerPolicy="no-referrer"
                       />
                       <div 
                         className="absolute inset-0 opacity-40 mix-blend-overlay"
-                        style={{ backgroundColor: PLANETS[currentPlanetIndex].primaryColor }}
+                        style={{ backgroundColor: PLANETS[previewPlanetIndex].primaryColor }}
                       />
                       <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black to-transparent">
                          <span className="text-white font-black text-xl md:text-3xl italic tracking-tighter">
-                           {PLANETS[currentPlanetIndex].name}
+                           {PLANETS[previewPlanetIndex].name}
                          </span>
                       </div>
                     </div>
                     <p className="mt-3 text-[10px] md:text-sm font-black text-black/60 uppercase text-center italic">
-                      {PLANETS[currentPlanetIndex].description}
+                      {PLANETS[previewPlanetIndex].description}
                     </p>
                   </motion.div>
                 </AnimatePresence>
@@ -3685,9 +3714,10 @@ export default function App() {
                 <div className="absolute inset-y-0 left-0 flex items-center px-2">
                   <button 
                     onClick={() => {
-                      const next = (currentPlanetIndex - 1 + PLANETS.length) % PLANETS.length;
-                      setCurrentPlanetIndex(next);
-                      localStorage.setItem('cocky-birds-current-planet', next.toString());
+                      stopAutoCycle();
+                      const next = (previewPlanetIndex - 1 + PLANETS.length) % PLANETS.length;
+                      setPreviewPlanetIndex(next);
+                      startAutoCycle();
                     }}
                     className="w-8 h-8 md:w-10 md:h-10 bg-white/10 hover:bg-white text-white hover:text-black border-2 border-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
                   >
@@ -3697,9 +3727,10 @@ export default function App() {
                 <div className="absolute inset-y-0 right-0 flex items-center px-2">
                   <button 
                     onClick={() => {
-                      const next = (currentPlanetIndex + 1) % PLANETS.length;
-                      setCurrentPlanetIndex(next);
-                      localStorage.setItem('cocky-birds-current-planet', next.toString());
+                      stopAutoCycle();
+                      const next = (previewPlanetIndex + 1) % PLANETS.length;
+                      setPreviewPlanetIndex(next);
+                      startAutoCycle();
                     }}
                     className="w-8 h-8 md:w-10 md:h-10 bg-white/10 hover:bg-white text-white hover:text-black border-2 border-white rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
                   >
@@ -3713,9 +3744,8 @@ export default function App() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
-                  const next = (currentPlanetIndex + 1) % PLANETS.length;
-                  setCurrentPlanetIndex(next);
-                  localStorage.setItem('cocky-birds-current-planet', next.toString());
+                  setCurrentPlanetIndex(previewPlanetIndex);
+                  localStorage.setItem('cocky-birds-current-planet', previewPlanetIndex.toString());
                   setIsPlanetSelectorOpen(false);
                 }}
                 className="brutalist-btn bg-[#FF3E00] text-white w-full py-4 md:py-6 font-black text-xl md:text-3xl italic tracking-tighter"
