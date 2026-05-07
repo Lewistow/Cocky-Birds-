@@ -288,7 +288,120 @@ const COLORS = {
   DARK_ACCENT: '#141419'
 };
 
+const EARTH_SVG_CONTENT = `<svg viewBox="0 0 900 1600" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4FA2FF"/>
+      <stop offset="100%" stop-color="#9CE6FF"/>
+    </linearGradient>
+    <linearGradient id="hillGradBack" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#34C443"/>
+      <stop offset="100%" stop-color="#1E8928"/>
+    </linearGradient>
+    <linearGradient id="hillGradFront" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4EED5F"/>
+      <stop offset="100%" stop-color="#2DAF3D"/>
+    </linearGradient>
+    <pattern id="dirt" width="200" height="120" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="200" height="120" fill="#C27339"/>
+      <rect x="25" y="25" width="45" height="15" rx="4" fill="#A8612E"/>
+      <rect x="140" y="35" width="35" height="18" rx="4" fill="#D68448"/>
+      <rect x="85" y="75" width="55" height="20" rx="4" fill="#A8612E"/>
+      <rect x="160" y="90" width="30" height="15" rx="4" fill="#8F4E21"/>
+      <rect x="15" y="95" width="40" height="18" rx="4" fill="#D68448"/>
+    </pattern>
+    <pattern id="grassShadow" width="100" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 0 0 L 100 0 L 100 25 C 90 25, 85 40, 75 40 C 65 40, 60 25, 50 25 C 40 25, 35 40, 25 40 C 15 40, 10 25, 0 25 Z" fill="#3AA826"/>
+    </pattern>
+    <pattern id="grassOverhang" width="100" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 0 0 L 100 0 L 100 15 C 90 15, 85 30, 75 30 C 65 30, 60 15, 50 15 C 40 15, 35 30, 25 30 C 15 30, 10 15, 0 15 Z" fill="#5CE042"/>
+    </pattern>
+  </defs>
+
+  <rect width="900" height="1600" fill="url(#skyGrad)"/>
+
+  <g id="clouds" fill="#FFFFFF" opacity="0.6">
+    <g>
+      <rect x="120" y="100" width="120" height="30" rx="15"/>
+      <circle cx="150" cy="95" r="25"/>
+      <circle cx="190" cy="85" r="35"/>
+      <circle cx="220" cy="100" r="20"/>
+    </g>
+    <g>
+      <rect x="520" y="250" width="140" height="35" rx="17.5"/>
+      <circle cx="560" cy="240" r="30"/>
+      <circle cx="610" cy="230" r="40"/>
+      <circle cx="640" cy="245" r="25"/>
+    </g>
+    <g>
+      <rect x="700" y="450" width="100" height="25" rx="12.5"/>
+      <circle cx="730" cy="445" r="20"/>
+      <circle cx="765" cy="435" r="30"/>
+    </g>
+    <g opacity="0.8">
+      <rect x="250" y="600" width="80" height="20" rx="10"/>
+      <circle cx="275" cy="595" r="15"/>
+      <circle cx="305" cy="590" r="20"/>
+    </g>
+    <g>
+      <rect x="600" y="750" width="120" height="30" rx="15"/>
+      <circle cx="630" cy="745" r="25"/>
+      <circle cx="670" cy="735" r="35"/>
+      <circle cx="700" cy="750" r="20"/>
+    </g>
+    <g>
+      <rect x="150" y="900" width="100" height="25" rx="12.5"/>
+      <circle cx="180" cy="895" r="20"/>
+      <circle cx="215" cy="885" r="30"/>
+    </g>
+    <g>
+      <rect x="400" y="1050" width="140" height="35" rx="17.5"/>
+      <circle cx="440" cy="1040" r="30"/>
+      <circle cx="490" cy="1030" r="40"/>
+      <circle cx="520" cy="1045" r="25"/>
+    </g>
+  </g>
+
+  <g id="skyline" transform="translate(0, 800)">
+    <path d="M 0 400 L 0 250 L 40 250 L 40 200 L 90 200 L 90 260 L 140 260 L 140 180 L 180 180 L 180 230 L 250 230 L 250 150 L 320 150 L 320 280 L 370 280 L 370 200 L 430 200 L 430 240 L 500 240 L 500 170 L 570 170 L 570 220 L 630 220 L 630 260 L 680 260 L 680 190 L 740 190 L 740 240 L 800 240 L 800 180 L 860 180 L 860 270 L 920 270 L 920 210 L 970 210 L 970 250 L 1000 250 L 1000 400 Z" fill="#87C9F5"/>
+    <path d="M 0 400 L 0 280 L 60 280 L 60 220 L 110 220 L 110 300 L 170 300 L 170 260 L 220 260 L 220 200 L 280 200 L 280 270 L 340 270 L 340 240 L 400 240 L 400 290 L 470 290 L 470 230 L 540 230 L 540 280 L 600 280 L 600 250 L 660 250 L 660 300 L 730 300 L 730 220 L 790 220 L 790 280 L 850 280 L 850 250 L 910 250 L 910 290 L 960 290 L 960 280 L 1000 280 L 1000 400 Z" fill="#75BCED"/>
+  </g>
+
+  <g id="hills-back" fill="url(#hillGradBack)" transform="translate(0, 800)">
+    <ellipse cx="0" cy="420" rx="180" ry="120"/>
+    <ellipse cx="250" cy="400" rx="220" ry="140"/>
+    <ellipse cx="550" cy="410" rx="240" ry="130"/>
+    <ellipse cx="850" cy="390" rx="200" ry="150"/>
+    <ellipse cx="1000" cy="420" rx="180" ry="120"/>
+  </g>
+
+  <g id="hills-front" fill="url(#hillGradFront)" transform="translate(0, 800)">
+    <ellipse cx="0" cy="460" rx="140" ry="80"/>
+    <ellipse cx="180" cy="470" rx="160" ry="100"/>
+    <ellipse cx="400" cy="450" rx="180" ry="90"/>
+    <ellipse cx="650" cy="480" rx="200" ry="110"/>
+    <ellipse cx="880" cy="460" rx="150" ry="100"/>
+    <ellipse cx="1000" cy="460" rx="140" ry="80"/>
+  </g>
+
+  <g id="foreground" transform="translate(0, 800)">
+    <rect x="0" y="480" width="900" height="320" fill="url(#dirt)"/>
+    <rect x="0" y="500" width="900" height="40" fill="url(#grassShadow)"/>
+    <rect x="0" y="500" width="900" height="30" fill="url(#grassOverhang)"/>
+    <rect x="0" y="480" width="900" height="20" fill="#5CE042"/>
+    <rect x="0" y="480" width="900" height="6" fill="#8CFF75" opacity="0.8"/>
+  </g>
+</svg>`;
+
 const PLANETS = [
+  { 
+    id: 'earth', 
+    name: 'EARTH', 
+    url: `data:image/svg+xml;base64,${btoa(EARTH_SVG_CONTENT)}`, 
+    primaryColor: '#4FA2FF',
+    mountainColor: '#1E8928',
+    description: 'HOME SWEET HOME'
+  },
   { 
     id: 'mars', 
     name: 'MARS', 
@@ -319,22 +432,26 @@ const CHARACTER_INFO = [
   { 
     id: 'TANK', 
     img: 'https://i.ibb.co/wNVzWX6R/purple-tank.png', 
-    text: 'https://i.ibb.co/Wvnc3S3g/purple-tanktext.png' 
+    text: 'https://i.ibb.co/Wvnc3S3g/purple-tanktext.png',
+    description: "🟣 THE TANK: Big, slow, and takes 3 hits to crush. He’s the muscle. 🧱💪"
   },
   { 
     id: 'SNIPER', 
     img: 'https://i.ibb.co/Ld2Q2zsr/blue-sniper.png', 
-    text: 'https://i.ibb.co/ksfCNnqG/blue-snipertext.png' 
+    text: 'https://i.ibb.co/ksfCNnqG/blue-snipertext.png',
+    description: "🔵 THE SNIPER: Small, blue, and shoots with 99% accuracy. He doesn't miss. 🎯⚡️"
   },
   { 
     id: 'NORMAL', 
     img: 'https://i.ibb.co/8gtLm9qB/yellow-diver.png', 
-    text: 'https://i.ibb.co/3Jjds2K/yellow-divertext.png' 
+    text: 'https://i.ibb.co/3Jjds2K/yellow-divertext.png',
+    description: "🟡 THE DIVER: The original speed demon. Blink and he’s already past you. 🏎️💨"
   },
   { 
     id: 'DIVER', 
     img: 'https://i.ibb.co/pjNspj7Q/fire-diver.png', 
-    text: 'https://i.ibb.co/qLXCR6Nv/fire-divertext.png' 
+    text: 'https://i.ibb.co/qLXCR6Nv/fire-divertext.png',
+    description: "🔴 THE FIRE DIVER (NEW!): A literal pyromaniac. He’s red, he’s fast, and he breathes fire."
   },
 ];
 
@@ -393,6 +510,29 @@ export default function App() {
   }, []);
 
   const [isBirdsCharactersOpen, setIsBirdsCharactersOpen] = useState(false);
+  const [showBirdTooltip, setShowBirdTooltip] = useState(false);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const startLongPress = () => {
+    longPressTimer.current = setTimeout(() => {
+      setShowBirdTooltip(true);
+    }, 500);
+  };
+
+  const endLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    setShowBirdTooltip(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    };
+  }, []);
+
   const [currentCharacterIndex, setCurrentCharacterIndex] = useState(0);
 
   useEffect(() => {
@@ -400,6 +540,7 @@ export default function App() {
     if (isBirdsCharactersOpen) {
       interval = setInterval(() => {
         setCurrentCharacterIndex(prev => (prev + 1) % CHARACTER_INFO.length);
+        setShowBirdTooltip(false); // Hide tooltip when bird changes
       }, 4000); 
     }
     return () => clearInterval(interval);
@@ -2244,46 +2385,48 @@ export default function App() {
     }
     
     // Draw Parallax Mountains - Receding into haze
-    const layers = [
-      { width: 800, speed: 0.15, opacity: 0.2, peakShift: 120, heightMult: 0.25, color: currentPlanet.mountainColor }, 
-      { width: 600, speed: 0.45, opacity: 0.4, peakShift: 80, heightMult: 0.4, color: currentPlanet.mountainColor },  
-      { width: 900, speed: 1.2, opacity: 0.8, peakShift: 200, heightMult: 0.55, color: currentPlanet.mountainColor }   
-    ];
+    if (currentPlanet.id !== 'earth') {
+      const layers = [
+        { width: 800, speed: 0.15, opacity: 0.2, peakShift: 120, heightMult: 0.25, color: currentPlanet.mountainColor }, 
+        { width: 600, speed: 0.45, opacity: 0.4, peakShift: 80, heightMult: 0.4, color: currentPlanet.mountainColor },  
+        { width: 900, speed: 1.2, opacity: 0.8, peakShift: 200, heightMult: 0.55, color: currentPlanet.mountainColor }   
+      ];
 
-    layers.forEach((layer, lIdx) => {
-      const layerOffset = (frameCount.current * layer.speed) % layer.width;
-      
-      for (let i = -layer.width; i < width + layer.width; i += layer.width) {
-        const xStart = i - layerOffset;
-        const xEnd = xStart + layer.width;
-        const xPeak = xStart + layer.width / 2 + layer.peakShift;
-        const xBaseMid = xStart + layer.width / 2;
-        const pyramidHeight = height * layer.heightMult;
-        const yBase = height;
-        const yPeak = height - pyramidHeight;
-
-        ctx.save();
-        ctx.globalAlpha = layer.opacity;
-
-        // Left Face (Light Side)
-        ctx.fillStyle = layer.color;
-        ctx.beginPath();
-        ctx.moveTo(xStart, yBase);
-        ctx.lineTo(xPeak, yPeak);
-        ctx.lineTo(xBaseMid, yBase);
-        ctx.fill();
-
-        // Right Face (Shadow Side)
-        ctx.fillStyle = 'rgba(0,0,0,0.4)'; 
-        ctx.beginPath();
-        ctx.moveTo(xBaseMid, yBase);
-        ctx.lineTo(xPeak, yPeak);
-        ctx.lineTo(xEnd, yBase);
-        ctx.fill();
+      layers.forEach((layer, lIdx) => {
+        const layerOffset = (frameCount.current * layer.speed) % layer.width;
         
-        ctx.restore();
-      }
-    });
+        for (let i = -layer.width; i < width + layer.width; i += layer.width) {
+          const xStart = i - layerOffset;
+          const xEnd = xStart + layer.width;
+          const xPeak = xStart + layer.width / 2 + layer.peakShift;
+          const xBaseMid = xStart + layer.width / 2;
+          const pyramidHeight = height * layer.heightMult;
+          const yBase = height;
+          const yPeak = height - pyramidHeight;
+
+          ctx.save();
+          ctx.globalAlpha = layer.opacity;
+
+          // Left Face (Light Side)
+          ctx.fillStyle = layer.color;
+          ctx.beginPath();
+          ctx.moveTo(xStart, yBase);
+          ctx.lineTo(xPeak, yPeak);
+          ctx.lineTo(xBaseMid, yBase);
+          ctx.fill();
+
+          // Right Face (Shadow Side)
+          ctx.fillStyle = 'rgba(0,0,0,0.4)'; 
+          ctx.beginPath();
+          ctx.moveTo(xBaseMid, yBase);
+          ctx.lineTo(xPeak, yPeak);
+          ctx.lineTo(xEnd, yBase);
+          ctx.fill();
+          
+          ctx.restore();
+        }
+      });
+    }
 
     // Draw Scanning Line
     const scanY = (frameCount.current * 90) % height;
@@ -3400,7 +3543,13 @@ export default function App() {
                     <motion.div
                       animate={{ y: [0, -20, 0], scale: [1, 1.05, 1] }}
                       transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                      className="w-48 h-48 md:w-64 md:h-64"
+                      className="w-48 h-48 md:w-64 md:h-64 relative cursor-help"
+                      onPointerDown={startLongPress}
+                      onPointerUp={endLongPress}
+                      onPointerLeave={endLongPress}
+                      onPointerCancel={endLongPress}
+                      onTouchStart={startLongPress}
+                      onTouchEnd={endLongPress}
                     >
                       <img 
                         src={CHARACTER_INFO[currentCharacterIndex].img} 
@@ -3408,6 +3557,30 @@ export default function App() {
                         className="w-full h-full object-contain filter drop-shadow-[0_20px_20px_rgba(255,240,0,0.4)]"
                         referrerPolicy="no-referrer"
                       />
+
+                      <AnimatePresence>
+                        {showBirdTooltip && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                            className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 md:w-80 bg-white border-2 md:border-4 border-black shadow-[4px_4px_0px_#000] p-3 md:p-4 z-[600]"
+                          >
+                            <p className="text-black font-black text-[10px] md:text-sm leading-tight italic uppercase">
+                              {CHARACTER_INFO[currentCharacterIndex].description}
+                            </p>
+                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-b-2 border-r-2 md:border-b-4 md:border-r-4 border-black rotate-45" />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <motion.div 
+                        animate={{ opacity: [0.4, 1, 0.4] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap"
+                      >
+                         <p className="text-white text-[8px] md:text-xs font-black tracking-widest bg-black/50 px-2 py-1 rounded">LONG PRESS FOR INFO</p>
+                      </motion.div>
                     </motion.div>
                     
                     <motion.div
@@ -3430,9 +3603,13 @@ export default function App() {
 
               <div className="absolute bottom-12 flex gap-4">
                 {CHARACTER_INFO.map((_, idx) => (
-                  <div 
+                  <button 
                     key={idx}
-                    className={`w-3 h-3 rounded-full border-2 border-white transition-all duration-300 ${idx === currentCharacterIndex ? 'bg-yellow-400 w-8' : 'bg-transparent'}`}
+                    onClick={() => {
+                      setCurrentCharacterIndex(idx);
+                      setShowBirdTooltip(false);
+                    }}
+                    className={`w-3 h-3 rounded-full border-2 border-white transition-all duration-300 ${idx === currentCharacterIndex ? 'bg-yellow-400 w-8' : 'bg-transparent hover:bg-white/50'}`}
                   />
                 ))}
               </div>
@@ -3535,7 +3712,12 @@ export default function App() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setIsPlanetSelectorOpen(false)}
+                onClick={() => {
+                  const next = (currentPlanetIndex + 1) % PLANETS.length;
+                  setCurrentPlanetIndex(next);
+                  localStorage.setItem('cocky-birds-current-planet', next.toString());
+                  setIsPlanetSelectorOpen(false);
+                }}
                 className="brutalist-btn bg-[#FF3E00] text-white w-full py-4 md:py-6 font-black text-xl md:text-3xl italic tracking-tighter"
               >
                 TOUCHDOWN!
