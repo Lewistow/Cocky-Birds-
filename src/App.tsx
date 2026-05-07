@@ -403,7 +403,7 @@ const PLANETS = [
   { 
     id: 'earth', 
     name: 'EARTH', 
-    url: `data:image/svg+xml;base64,${b64Earth}`, 
+    url: 'https://i.ibb.co/C5GMT8WF/earth-backgroud.jpg', 
     primaryColor: '#4FA2FF',
     mountainColor: '#1E8928',
     description: 'HOME SWEET HOME'
@@ -476,6 +476,7 @@ interface PipeFragment {
 export default function App() {
   const birdImagesRef = useRef<Record<string, HTMLImageElement>>({});
   const planetImagesRef = useRef<Record<string, HTMLImageElement>>({});
+  const earthForegroundRef = useRef<HTMLImageElement | null>(null);
   const featherImagesRef = useRef<{ blue?: HTMLImageElement; yellow?: HTMLImageElement }>({});
 
   useEffect(() => {
@@ -502,6 +503,12 @@ export default function App() {
         planetImagesRef.current[planet.id] = img;
       };
     });
+
+    const earthFg = new Image();
+    earthFg.src = 'https://i.ibb.co/N6NmjbNV/earthforeground-asset.jpg';
+    earthFg.onload = () => {
+      earthForegroundRef.current = earthFg;
+    };
 
     // Preload custom feathers
     const blueFeather = new Image();
@@ -2885,28 +2892,46 @@ export default function App() {
     const groundX = (frameCount.current * 3) % width;
     ctx.save();
     
-    // Bottom Ground Base
-    ctx.fillStyle = '#0a0a0c'; // Matches planetary shadows
-    ctx.fillRect(0, height - GROUND_HEIGHT, width, GROUND_HEIGHT);
-    
-    // Top Edge of Ground
-    ctx.fillStyle = '#1a1a24';
-    ctx.fillRect(0, height - GROUND_HEIGHT, width, 4);
-    
-    // Decorative scrolling patterns for speed feeling
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
-    ctx.lineWidth = 1;
-    for (let i = -width; i < width * 2; i += 60) {
-      const lineX = i - groundX;
-      if (lineX > -20 && lineX < width + 20) {
-        ctx.beginPath();
-        ctx.moveTo(lineX, height - GROUND_HEIGHT);
-        ctx.lineTo(lineX - 40, height);
-        ctx.stroke();
-      }
+    const groundY = height - GROUND_HEIGHT;
+
+    if (currentPlanet.id === 'earth' && earthForegroundRef.current) {
+        // Draw Earth specific foreground asset
+        const fgImg = earthForegroundRef.current;
+        const drawHeight = 120; 
+        const drawY = height - drawHeight;
+        
+        // Loop the image across the width with horizontal scroll
+        const imgAspect = fgImg.width / fgImg.height;
+        const drawWidth = drawHeight * imgAspect;
+        const scrollX = (frameCount.current * 180) % drawWidth; 
+
+        for (let x = -drawWidth; x < width + drawWidth; x += drawWidth) {
+          ctx.drawImage(fgImg, x - scrollX, drawY, drawWidth, drawHeight);
+        }
+    } else {
+        // Bottom Ground Base
+        ctx.fillStyle = '#0a0a0c'; // Matches planetary shadows
+        ctx.fillRect(0, groundY, width, GROUND_HEIGHT);
+        
+        // Top Edge of Ground
+        ctx.fillStyle = '#1a1a24';
+        ctx.fillRect(0, groundY, width, 4);
+        
+        // Decorative scrolling patterns for speed feeling
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+        ctx.lineWidth = 1;
+        for (let i = -width; i < width * 2; i += 60) {
+          const lineX = i - groundX;
+          if (lineX > -20 && lineX < width + 20) {
+            ctx.beginPath();
+            ctx.moveTo(lineX, groundY);
+            ctx.lineTo(lineX - 40, height);
+            ctx.stroke();
+          }
+        }
     }
 
-    // Heavy Brutalist Label for Ground
+    // Heavy Brutalist Label for Ground (On top of texture)
     ctx.save();
     ctx.globalAlpha = 0.05;
     ctx.fillStyle = COLORS.WHITE;
