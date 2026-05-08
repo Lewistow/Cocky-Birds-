@@ -3568,9 +3568,9 @@ export default function App() {
                       stiffness: 100,
                       duration: 0.8
                     }}
-                    className="flex flex-col items-center gap-8"
+                    className="flex flex-col items-center gap-2"
                   >
-                    <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-16 w-full max-w-5xl px-6 min-h-[500px] md:min-h-[600px] relative">
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-16 w-full max-w-5xl px-6 min-h-[300px] md:min-h-[400px] relative">
                       <motion.div
                         layout
                         initial={false}
