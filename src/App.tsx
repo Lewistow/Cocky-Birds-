@@ -1902,6 +1902,50 @@ export default function App() {
     createBird(t, h, v, s, os, oa);
   }, [playFireDiverCue, playNormalBirdCue, playSniperBirdCue, playTankBirdCue]);
 
+  const playPointSound = () => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    const playNote = (freq: number, startTime: number, duration: number, isLast: boolean = false) => {
+      // Layer 1: The "Bite" (Sawtooth for high energy punch)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(freq, startTime);
+      osc1.frequency.exponentialRampToValueAtTime(freq * 1.05, startTime + duration);
+      
+      // Volume boost
+      gain1.gain.setValueAtTime(20.0, startTime);
+      gain1.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+
+      // Layer 2: The "Sparkle" (High Sine for the chime effect)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(freq * 2, startTime);
+      
+      gain2.gain.setValueAtTime(15.0, startTime);
+      gain2.gain.exponentialRampToValueAtTime(0.01, startTime + duration * (isLast ? 2 : 1));
+      
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+
+      osc1.start(startTime);
+      osc1.stop(startTime + duration);
+      osc2.start(startTime);
+      osc2.stop(startTime + duration * (isLast ? 2 : 1));
+    };
+
+    // Rapid 3-note arpeggio (C6 -> E6 -> G6) with high volume
+    playNote(1046.50, now, 0.08);        // C6
+    playNote(1318.51, now + 0.06, 0.1);  // E6
+    playNote(1567.98, now + 0.12, 0.3, true); // G6 (Dopamine Tail)
+  };
+
   const playMilestoneSound = () => {
     const ctx = audioCtxRef.current;
     const gain = milestoneGainNodeRef.current;
@@ -2049,12 +2093,18 @@ export default function App() {
               // Update total smashed ref
               totalSmashedRef.current++;
 
-              if (next % 10 === 0 && next > lastMilestoneRef.current) {
+              if (next % 5 === 0 && next > lastMilestoneRef.current) {
                 lastMilestoneRef.current = next;
-                integrityRef.current = MAX_INTEGRITY;
                 createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
-                createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
-                playMilestoneSound();
+                
+                if (next % 10 === 0) {
+                  integrityRef.current = MAX_INTEGRITY;
+                  createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
+                  playMilestoneSound();
+                } else {
+                  playPointSound();
+                }
+                
                 setIsShaking(true);
                 shakeEndTimeRef.current = now + 300;
               }
@@ -2104,12 +2154,18 @@ export default function App() {
                     // Update total smashed ref
                     totalSmashedRef.current++;
 
-                    if (next % 10 === 0 && next > lastMilestoneRef.current) {
+                    if (next % 5 === 0 && next > lastMilestoneRef.current) {
                       lastMilestoneRef.current = next;
-                      integrityRef.current = MAX_INTEGRITY;
                       createParticles(dimensions.current.width / 2, gapY.current, COLORS.YELLOW, 1, 'TEXT', `${next} POINTS!`);
-                      createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
-                      playMilestoneSound();
+                      
+                      if (next % 10 === 0) {
+                        integrityRef.current = MAX_INTEGRITY;
+                        createParticles(dimensions.current.width / 2, gapY.current, COLORS.GREEN, 1, 'TEXT', 'HEALTH REPLENISHED!');
+                        playMilestoneSound();
+                      } else {
+                        playPointSound();
+                      }
+                      
                       setIsShaking(true);
                       shakeEndTimeRef.current = now + 300;
                     }
@@ -2157,7 +2213,7 @@ export default function App() {
 
     // Spawn birds logic using a dedicated timer Ref
     // Slowed down: base interval starts larger, minimum is 40 frames (0.66s), curve is much flatter
-    const spawnRateBase = Math.max(40, 120 - Math.floor(scoreRef.current / 10) * 8);
+    const spawnRateBase = Math.max(40, 120 - Math.floor(scoreRef.current / 5) * 8);
     const spawnInterval = spawnRateBase / 60; // seconds per spawn
     
     spawnTimerRef.current += dt;
