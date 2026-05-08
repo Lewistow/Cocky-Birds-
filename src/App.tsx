@@ -3560,7 +3560,7 @@ export default function App() {
                   <motion.div
                     key={CHARACTER_INFO[currentCharacterIndex].id}
                     initial={{ y: 500, rotate: 20, scale: 0.5 }}
-                    animate={{ y: 0, rotate: 0, scale: 1.2 }}
+                    animate={{ y: 0, rotate: 0, scale: 1.0 }}
                     exit={{ y: 500, rotate: -20, scale: 0.5 }}
                     transition={{ 
                       type: "spring", 
@@ -3575,15 +3575,15 @@ export default function App() {
                         layout
                         initial={false}
                         animate={{ 
-                          scale: showBirdTooltip ? 0.8 : 1.3,
-                          y: showBirdTooltip ? (window.innerWidth < 768 ? -20 : 0) : 0
+                          scale: showBirdTooltip ? 0.6 : 1.0,
+                          y: showBirdTooltip ? (window.innerWidth < 768 ? -10 : 0) : 0
                         }}
                         transition={{ 
                           duration: 0.8, 
                           type: "spring",
                           damping: 15
                         }}
-                        className="w-48 h-48 md:w-80 md:h-80 relative z-10 shrink-0"
+                        className="w-36 h-36 md:w-64 md:h-64 relative z-10 shrink-0"
                       >
                         <motion.img 
                           animate={{ y: [0, -15, 0] }}
@@ -3606,9 +3606,9 @@ export default function App() {
                               damping: 20,
                               stiffness: 100
                             }}
-                            className="w-full md:w-auto md:max-w-xl bg-white border-4 md:border-8 border-black shadow-[8px_8px_0px_#000] md:shadow-[12px_12px_0px_#000] p-6 md:p-12 z-[600] relative"
+                            className="w-full md:w-auto md:max-w-md bg-white border-4 md:border-6 border-black shadow-[6px_6px_0px_#000] md:shadow-[10px_10px_0px_#000] p-4 md:p-8 z-[600] relative"
                           >
-                            <p className="text-black font-black text-lg md:text-3xl lg:text-4xl leading-tight italic uppercase tracking-tighter">
+                            <p className="text-black font-black text-base md:text-xl lg:text-2xl leading-tight italic uppercase tracking-tighter">
                               {CHARACTER_INFO[currentCharacterIndex].description}
                             </p>
                             {/* Responsive Tail */}
@@ -3628,7 +3628,7 @@ export default function App() {
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="w-full max-w-[280px] md:max-w-[340px]"
+                      className="w-full max-w-[200px] md:max-w-[260px]"
                     >
                       <img 
                         src={CHARACTER_INFO[currentCharacterIndex].text} 
