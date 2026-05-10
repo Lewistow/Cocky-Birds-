@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, RotateCcw, Shield, Zap, Skull, Target, Flame, Share2, Globe } from 'lucide-react';
 import { initGA, trackSlam, trackClout, trackPageView } from './lib/analytics';
@@ -289,148 +289,117 @@ const COLORS = {
   DARK_ACCENT: '#141419'
 };
 
-const EARTH_SVG_CONTENT = `<svg viewBox="0 0 900 1600" width="900" height="1600" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#4FA2FF"/>
-      <stop offset="100%" stop-color="#9CE6FF"/>
-    </linearGradient>
-    <linearGradient id="hillGradBack" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#34C443"/>
-      <stop offset="100%" stop-color="#1E8928"/>
-    </linearGradient>
-    <linearGradient id="hillGradFront" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#4EED5F"/>
-      <stop offset="100%" stop-color="#2DAF3D"/>
-    </linearGradient>
-    <pattern id="dirt" width="200" height="120" patternUnits="userSpaceOnUse">
-      <rect x="0" y="0" width="200" height="120" fill="#C27339"/>
-      <rect x="25" y="25" width="45" height="15" rx="4" fill="#A8612E"/>
-      <rect x="140" y="35" width="35" height="18" rx="4" fill="#D68448"/>
-      <rect x="85" y="75" width="55" height="20" rx="4" fill="#A8612E"/>
-      <rect x="160" y="90" width="30" height="15" rx="4" fill="#8F4E21"/>
-      <rect x="15" y="95" width="40" height="18" rx="4" fill="#D68448"/>
-    </pattern>
-    <pattern id="grassShadow" width="100" height="40" patternUnits="userSpaceOnUse">
-      <path d="M 0 0 L 100 0 L 100 25 C 90 25, 85 40, 75 40 C 65 40, 60 25, 50 25 C 40 25, 35 40, 25 40 C 15 40, 10 25, 0 25 Z" fill="#3AA826"/>
-    </pattern>
-    <pattern id="grassOverhang" width="100" height="30" patternUnits="userSpaceOnUse">
-      <path d="M 0 0 L 100 0 L 100 15 C 90 15, 85 30, 75 30 C 65 30, 60 15, 50 15 C 40 15, 35 30, 25 30 C 15 30, 10 15, 0 15 Z" fill="#5CE042"/>
-    </pattern>
-  </defs>
-
-  <rect width="900" height="1600" fill="url(#skyGrad)"/>
-
-  <g id="clouds" fill="#FFFFFF" opacity="0.6">
-    <g>
-      <rect x="120" y="100" width="120" height="30" rx="15"/>
-      <circle cx="150" cy="95" r="25"/>
-      <circle cx="190" cy="85" r="35"/>
-      <circle cx="220" cy="100" r="20"/>
-    </g>
-    <g>
-      <rect x="520" y="250" width="140" height="35" rx="17.5"/>
-      <circle cx="560" cy="240" r="30"/>
-      <circle cx="610" cy="230" r="40"/>
-      <circle cx="640" cy="245" r="25"/>
-    </g>
-    <g>
-      <rect x="700" y="450" width="100" height="25" rx="12.5"/>
-      <circle cx="730" cy="445" r="20"/>
-      <circle cx="765" cy="435" r="30"/>
-    </g>
-    <g opacity="0.8">
-      <rect x="250" y="600" width="80" height="20" rx="10"/>
-      <circle cx="275" cy="595" r="15"/>
-      <circle cx="305" cy="590" r="20"/>
-    </g>
-    <g>
-      <rect x="600" y="750" width="120" height="30" rx="15"/>
-      <circle cx="630" cy="745" r="25"/>
-      <circle cx="670" cy="735" r="35"/>
-      <circle cx="700" cy="750" r="20"/>
-    </g>
-    <g>
-      <rect x="150" y="900" width="100" height="25" rx="12.5"/>
-      <circle cx="180" cy="895" r="20"/>
-      <circle cx="215" cy="885" r="30"/>
-    </g>
-    <g>
-      <rect x="400" y="1050" width="140" height="35" rx="17.5"/>
-      <circle cx="440" cy="1040" r="30"/>
-      <circle cx="490" cy="1030" r="40"/>
-      <circle cx="520" cy="1045" r="25"/>
-    </g>
-  </g>
-
-  <g id="skyline" transform="translate(0, 800)">
-    <path d="M 0 400 L 0 250 L 40 250 L 40 200 L 90 200 L 90 260 L 140 260 L 140 180 L 180 180 L 180 230 L 250 230 L 250 150 L 320 150 L 320 280 L 370 280 L 370 200 L 430 200 L 430 240 L 500 240 L 500 170 L 570 170 L 570 220 L 630 220 L 630 260 L 680 260 L 680 190 L 740 190 L 740 240 L 800 240 L 800 180 L 860 180 L 860 270 L 920 270 L 920 210 L 970 210 L 970 250 L 1000 250 L 1000 400 Z" fill="#87C9F5"/>
-    <path d="M 0 400 L 0 280 L 60 280 L 60 220 L 110 220 L 110 300 L 170 300 L 170 260 L 220 260 L 220 200 L 280 200 L 280 270 L 340 270 L 340 240 L 400 240 L 400 290 L 470 290 L 470 230 L 540 230 L 540 280 L 600 280 L 600 250 L 660 250 L 660 300 L 730 300 L 730 220 L 790 220 L 790 280 L 850 280 L 850 250 L 910 250 L 910 290 L 960 290 L 960 280 L 1000 280 L 1000 400 Z" fill="#75BCED"/>
-  </g>
-
-  <g id="hills-back" fill="url(#hillGradBack)" transform="translate(0, 800)">
-    <ellipse cx="0" cy="420" rx="180" ry="120"/>
-    <ellipse cx="250" cy="400" rx="220" ry="140"/>
-    <ellipse cx="550" cy="410" rx="240" ry="130"/>
-    <ellipse cx="850" cy="390" rx="200" ry="150"/>
-    <ellipse cx="1000" cy="420" rx="180" ry="120"/>
-  </g>
-
-  <g id="hills-front" fill="url(#hillGradFront)" transform="translate(0, 800)">
-    <ellipse cx="0" cy="460" rx="140" ry="80"/>
-    <ellipse cx="180" cy="470" rx="160" ry="100"/>
-    <ellipse cx="400" cy="450" rx="180" ry="90"/>
-    <ellipse cx="650" cy="480" rx="200" ry="110"/>
-    <ellipse cx="880" cy="460" rx="150" ry="100"/>
-    <ellipse cx="1000" cy="460" rx="140" ry="80"/>
-  </g>
-
-  <g id="foreground" transform="translate(0, 800)">
-    <rect x="0" y="480" width="900" height="320" fill="url(#dirt)"/>
-    <rect x="0" y="500" width="900" height="40" fill="url(#grassShadow)"/>
-    <rect x="0" y="500" width="900" height="30" fill="url(#grassOverhang)"/>
-    <rect x="0" y="480" width="900" height="20" fill="#5CE042"/>
-    <rect x="0" y="480" width="900" height="6" fill="#8CFF75" opacity="0.8"/>
-  </g>
-</svg>`;
-
-const MARS_SVG_CONTENT = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1080 1920' width='100%' height='100%'><defs><linearGradient id='skyGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#12030f'/><stop offset='40%' stop-color='#2b0a15'/><stop offset='70%' stop-color='#591717'/><stop offset='100%' stop-color='#9e3b22'/></linearGradient><radialGradient id='sunGlow' cx='50%' cy='50%' r='50%'><stop offset='0%' stop-color='#ffb170' stop-opacity='1'/><stop offset='30%' stop-color='#db6644' stop-opacity='0.8'/><stop offset='70%' stop-color='#8c2b18' stop-opacity='0.3'/><stop offset='100%' stop-color='#8c2b18' stop-opacity='0'/></radialGradient><linearGradient id='bgMountGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#360e10'/><stop offset='100%' stop-color='#1c0507'/></linearGradient><linearGradient id='midMountGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#611712'/><stop offset='100%' stop-color='#330a08'/></linearGradient><linearGradient id='duneGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#8c2b18'/><stop offset='100%' stop-color='#4f1309'/></linearGradient><linearGradient id='fgGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#b33f22'/><stop offset='100%' stop-color='#4a1508'/></linearGradient><linearGradient id='fogGrad' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#eb734b' stop-opacity='0'/><stop offset='50%' stop-color='#eb734b' stop-opacity='0.35'/><stop offset='100%' stop-color='#eb734b' stop-opacity='0'/></linearGradient></defs><rect width='1080' height='1920' fill='url(#skyGrad)'/><g fill='#ffffff'><circle cx='100' cy='150' r='1.5' opacity='0.8'/><circle cx='300' cy='80' r='1' opacity='0.4'/><circle cx='500' cy='220' r='2' opacity='0.9'/><circle cx='700' cy='120' r='1' opacity='0.3'/><circle cx='850' cy='300' r='1.5' opacity='0.6'/><circle cx='1000' cy='150' r='2' opacity='0.7'/><circle cx='250' cy='450' r='1.5' opacity='0.8'/><circle cx='450' cy='600' r='1' opacity='0.5'/><circle cx='800' cy='550' r='2' opacity='0.8'/><circle cx='950' cy='750' r='1.5' opacity='0.6'/><circle cx='150' cy='800' r='1' opacity='0.4'/><circle cx='650' cy='850' r='2' opacity='0.9'/><circle cx='350' cy='250' r='1' opacity='0.6'/><circle cx='150' cy='350' r='1.5' opacity='0.5'/><circle cx='600' cy='280' r='1' opacity='0.4'/><circle cx='750' cy='420' r='1.5' opacity='0.7'/><circle cx='120' cy='550' r='2' opacity='0.8'/><circle cx='980' cy='480' r='1' opacity='0.5'/><circle cx='880' cy='900' r='1.5' opacity='0.7'/><circle cx='420' cy='950' r='1' opacity='0.4'/></g><g fill='#ffb4a3'><circle cx='200' cy='300' r='2' opacity='0.8'/><circle cx='600' cy='400' r='2.5' opacity='0.7'/><circle cx='900' cy='200' r='1.5' opacity='0.9'/><circle cx='400' cy='800' r='2' opacity='0.6'/><circle cx='750' cy='700' r='1.5' opacity='0.8'/></g><ellipse cx='300' cy='450' rx='200' ry='12' fill='#d95a36' opacity='0.2'/><ellipse cx='800' cy='300' rx='250' ry='15' fill='#d95a36' opacity='0.15'/><ellipse cx='500' cy='750' rx='180' ry='10' fill='#d95a36' opacity='0.2'/><ellipse cx='850' cy='850' rx='120' ry='8' fill='#eb734b' opacity='0.1'/><path d='M 880 140 A 60 60 0 1 1 840 240 A 80 80 0 1 0 880 140 Z' fill='#b06951' opacity='0.85'/><circle cx='910' cy='180' r='8' fill='#80412e' opacity='0.7'/><circle cx='895' cy='210' r='5' fill='#80412e' opacity='0.7'/><circle cx='885' cy='160' r='4' fill='#80412e' opacity='0.7'/><circle cx='540' cy='650' r='220' fill='url(#sunGlow)'/><circle cx='540' cy='650' r='55' fill='#ffe2b8'/><path d='M 0 1150 L 80 1050 L 150 1100 L 250 950 L 350 1020 L 450 850 L 550 960 L 650 880 L 780 1050 L 900 920 L 1000 1080 L 1080 1000 L 1080 1920 L 0 1920 Z' fill='url(#bgMountGrad)'/><line x1='400' y1='1150' x2='400' y2='1080' stroke='#1c0507' stroke-width='4'/><line x1='385' y1='1100' x2='415' y2='1100' stroke='#1c0507' stroke-width='3'/><circle cx='400' cy='1080' r='4' fill='#d64933'/><polygon points='400,1080 385,1115 415,1115' fill='#1c0507'/><path d='M 0 1400 L 120 1250 L 250 1350 L 400 1150 L 550 1280 L 700 1180 L 850 1320 L 980 1200 L 1080 1300 L 1080 1920 L 0 1920 Z' fill='url(#midMountGrad)'/><polygon points='400,1150 550,1280 460,1350' fill='#29070a' opacity='0.4'/><polygon points='700,1180 850,1320 760,1380' fill='#29070a' opacity='0.4'/><path d='M 0 1500 Q 200 1420 400 1480 T 800 1450 T 1080 1520 L 1080 1920 L 0 1920 Z' fill='url(#duneGrad)'/><g transform='translate(750, 1460)' fill='#240704'><circle cx='0' cy='5' r='8'/><circle cx='25' cy='5' r='8'/><circle cx='50' cy='5' r='8'/><rect x='-5' y='-10' width='60' height='12' rx='3'/><path d='M 45 -10 L 40 -35 L 55 -40 L 60 -20 Z'/><line x1='10' y1='-10' x2='10' y2='-30' stroke='#240704' stroke-width='4'/><circle cx='10' cy='-32' r='5'/></g><rect x='0' y='1300' width='1080' height='400' fill='url(#fogGrad)' pointer-events='none'/><path d='M 0 1650 Q 250 1580 500 1680 T 800 1600 T 1080 1650 L 1080 1920 L 0 1920 Z' fill='url(#fgGrad)'/><g fill='#330e05'><ellipse cx='250' cy='1750' rx='100' ry='20'/><ellipse cx='800' cy='1800' rx='140' ry='28'/><ellipse cx='550' cy='1680' rx='70' ry='15'/></g><g fill='none' stroke='#db5f3d' stroke-width='4' opacity='0.8'><path d='M 150 1750 A 100 20 0 0 0 350 1750'/><path d='M 660 1800 A 140 28 0 0 0 940 1800'/><path d='M 480 1680 A 70 15 0 0 0 620 1680'/></g><polygon points='0,1920 0,1300 120,1250 200,1400 180,1600 300,1750 350,1920' fill='#5c1508'/><polygon points='0,1300 120,1250 90,1400 0,1450' fill='#e86843'/><polygon points='120,1250 200,1400 180,1600 150,1450' fill='#2e0802'/><polygon points='0,1600 60,1550 100,1650 70,1750 0,1850' fill='#b54124'/><polygon points='1080,1920 1080,1540 960,1490 860,1590 780,1690 710,1920' fill='#5c1508'/><polygon points='960,1490 860,1590 880,1690 1000,1590' fill='#e86843'/><polygon points='860,1590 780,1690 820,1790 920,1660' fill='#2e0802'/><polygon points='800,1850 820,1820 850,1840 830,1870' fill='#e86843'/><polygon points='850,1840 880,1860 830,1870' fill='#2e0802'/><polygon points='400,1800 420,1780 450,1810 430,1830' fill='#e86843'/><polygon points='450,1810 480,1820 430,1830' fill='#2e0802'/><path d='M 150 1600 Q 250 1590 350 1610' stroke='#ff8c66' stroke-width='2' fill='none' opacity='0.4'/><path d='M 450 1750 Q 600 1730 750 1770' stroke='#ff8c66' stroke-width='2' fill='none' opacity='0.5'/><path d='M 700 1650 Q 850 1640 1000 1670' stroke='#ff8c66' stroke-width='2' fill='none' opacity='0.4'/><g fill='#ffb399' opacity='0.7'><circle cx='120' cy='1650' r='2'/><circle cx='150' cy='1680' r='1.5'/><circle cx='300' cy='1720' r='3'/><circle cx='340' cy='1700' r='2'/><circle cx='500' cy='1660' r='1.5'/><circle cx='700' cy='1750' r='2.5'/><circle cx='750' cy='1730' r='1'/><circle cx='900' cy='1780' r='2'/><circle cx='950' cy='1690' r='3'/><circle cx='450' cy='1860' r='1.5'/><circle cx='600' cy='1890' r='2'/><circle cx='850' cy='1810' r='2.5'/><circle cx='250' cy='1840' r='1.5'/><circle cx='150' cy='1880' r='2'/></g></svg>`;
-
-const b64Earth = typeof btoa !== 'undefined' ? btoa(unescape(encodeURIComponent(EARTH_SVG_CONTENT))) : '';
-const b64Mars = typeof btoa !== 'undefined' ? btoa(unescape(encodeURIComponent(MARS_SVG_CONTENT))) : '';
 
 const PLANETS = [
   { 
     id: 'earth', 
     name: 'EARTH', 
     url: 'https://i.ibb.co/C5GMT8WF/earth-backgroud.jpg', 
+    foregroundUrl: 'https://i.ibb.co/N6NmjbNV/earthforeground-asset.jpg',
     primaryColor: '#4FA2FF',
     mountainColor: '#1E8928',
-    description: 'HOME SWEET HOME'
+    description: 'HOME SWEET HOME',
+    unlockScore: 0
   },
   { 
-    id: 'mars', 
-    name: 'MARS', 
-    url: `data:image/svg+xml;base64,${b64Mars}`, 
-    primaryColor: '#FF3E00',
-    mountainColor: '#300a00',
-    description: 'THE RED WASTELAND'
+    id: 'ares_anvil', 
+    name: "ARES' ANVIL", 
+    url: 'https://i.ibb.co/4nnGR0vR/ares-anvil-background.png', 
+    foregroundUrl: 'https://i.ibb.co/qqtJ9wR/ares-anvilforeground-asset.jpg',
+    primaryColor: '#FF4500',
+    mountainColor: '#3d1000',
+    description: 'FORGED IN COSMIC FIRE',
+    unlockScore: 10
   },
   { 
-    id: 'saturn', 
-    name: 'SATURN', 
-    url: 'https://files.catbox.moe/p9o7z9.png', 
-    primaryColor: '#ffcc33',
-    mountainColor: '#4a3c00',
-    description: 'JEWEL OF THE RINGS'
+    id: 'neon_nebula', 
+    name: 'THE NEON NEBULA', 
+    url: 'https://i.ibb.co/v4xVyv8Y/theneonnebula-background.png', 
+    foregroundUrl: 'https://i.ibb.co/3mTdkg2n/theneonnebulaforeground-asset.jpg',
+    primaryColor: '#FF00FF',
+    mountainColor: '#2d004a',
+    description: 'A LUCID SPACE DREAM',
+    unlockScore: 20
   },
   { 
-    id: 'neptune', 
-    name: 'NEPTUNE', 
-    url: 'https://files.catbox.moe/becc63.png', 
-    primaryColor: '#00e5ff',
-    mountainColor: '#002b4a',
-    description: 'THE DISTANT GALE'
+    id: 'stardust_crater', 
+    name: 'STARDUST CRATER', 
+    url: 'https://i.ibb.co/ch5NqsvH/stardustcrater-background.png', 
+    foregroundUrl: 'https://i.ibb.co/rG67rNJ5/stardustcraterforeground-asset.jpg',
+    primaryColor: '#87CEFA',
+    mountainColor: '#1a2a4a',
+    description: 'REMAINS OF A DEAD STAR',
+    unlockScore: 30
+  },
+  { 
+    id: 'eclipse_ridge', 
+    name: 'ECLIPSE RIDGE', 
+    url: 'https://i.ibb.co/bM433Qk8/eclipseridge.png', 
+    foregroundUrl: 'https://i.ibb.co/2121dZdy/eclipseridgeforeground-asset.jpg',
+    primaryColor: '#4B0082',
+    mountainColor: '#0c001a',
+    description: 'BEYOND THE SHADOWS',
+    unlockScore: 40
+  },
+  { 
+    id: 'solstice_prime', 
+    name: 'SOLSTICE PRIME', 
+    url: 'https://i.ibb.co/G47859j6/solsticeprime-bacground.png', 
+    foregroundUrl: 'https://i.ibb.co/YT0qPnnH/solsticeprimeforeground-asset.jpg',
+    primaryColor: '#FFD700',
+    mountainColor: '#4a3f00',
+    description: 'ETERNAL STELLAR LIGHT',
+    unlockScore: 50
+  },
+  { 
+    id: 'saturn_shallows', 
+    name: 'THE SATURN SHALLOWS', 
+    url: 'https://i.ibb.co/vxCXcj4Q/thesaturnshallows-background.png', 
+    foregroundUrl: 'https://i.ibb.co/dw9hW3xG/thesaturnshallowsforeground-asset.jpg',
+    primaryColor: '#F4A460',
+    mountainColor: '#3d250a',
+    description: 'DRIFTING THROUGH THE RINGS',
+    unlockScore: 60
+  },
+  { 
+    id: 'violet_void', 
+    name: 'VIOLET VOID', 
+    url: 'https://i.ibb.co/RGTBdkLB/violetvoid-background.png', 
+    foregroundUrl: 'https://i.ibb.co/fGx1SSwG/violetvoidforeground-asset.jpg',
+    primaryColor: '#8A2BE2',
+    mountainColor: '#1e0a3d',
+    description: 'WHERE REALITY FADES',
+    unlockScore: 70
+  },
+  { 
+    id: 'asteroid_graveyard', 
+    name: 'THE ASTEROID GRAVEYARD', 
+    url: 'https://i.ibb.co/0RvHsPD1/theasteroidgraveyard-background.png', 
+    foregroundUrl: 'https://i.ibb.co/3YPBZfd3/theasteroidgraveyardforeground-asset.jpg',
+    primaryColor: '#708090',
+    mountainColor: '#22282e',
+    description: 'ECHOES OF ANCIENT COLLISIONS',
+    unlockScore: 80
+  },
+  { 
+    id: 'azure_outpost', 
+    name: 'AZURE OUTPOST', 
+    url: 'https://i.ibb.co/j9vRH5WY/azureoutpost-background.png', 
+    foregroundUrl: 'https://i.ibb.co/PvrCT016/azureoutpostforeground-asset.jpg',
+    primaryColor: '#007FFF',
+    mountainColor: '#001a33',
+    description: 'FRONTIER OF THE DEEP BLUE',
+    unlockScore: 90
+  },
+  { 
+    id: 'nova_citadel', 
+    name: 'NOVA CITADEL', 
+    url: 'https://i.ibb.co/Q7SkX0Ln/novacitadel-background.png', 
+    foregroundUrl: 'https://i.ibb.co/KJLsZNR/novacitadelforeground-asset.jpg',
+    primaryColor: '#E0FFFF',
+    mountainColor: '#003366',
+    description: 'GLORY OF THE DYING SUN',
+    unlockScore: 100
   },
 ];
 
@@ -476,7 +445,7 @@ interface PipeFragment {
 export default function App() {
   const birdImagesRef = useRef<Record<string, HTMLImageElement>>({});
   const planetImagesRef = useRef<Record<string, HTMLImageElement>>({});
-  const earthForegroundRef = useRef<HTMLImageElement | null>(null);
+  const planetForegroundImagesRef = useRef<Record<string, HTMLImageElement>>({});
   const featherImagesRef = useRef<{ blue?: HTMLImageElement; yellow?: HTMLImageElement }>({});
 
   useEffect(() => {
@@ -502,13 +471,15 @@ export default function App() {
       img.onload = () => {
         planetImagesRef.current[planet.id] = img;
       };
-    });
 
-    const earthFg = new Image();
-    earthFg.src = 'https://i.ibb.co/N6NmjbNV/earthforeground-asset.jpg';
-    earthFg.onload = () => {
-      earthForegroundRef.current = earthFg;
-    };
+      if (planet.foregroundUrl) {
+        const fgImg = new Image();
+        fgImg.src = planet.foregroundUrl;
+        fgImg.onload = () => {
+          planetForegroundImagesRef.current[planet.id] = fgImg;
+        };
+      }
+    });
 
     // Preload custom feathers
     const blueFeather = new Image();
@@ -626,6 +597,27 @@ export default function App() {
     return localStorage.getItem('cocky-birds-share-banner-seen') === 'true';
   });
   const [showShareBanner, setShowShareBanner] = useState(false);
+  const [seenPlanetIds, setSeenPlanetIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('cocky-birds-seen-planets');
+    return saved ? JSON.parse(saved) : ['earth'];
+  });
+
+  const getUnlockedPlanets = useCallback(() => {
+    return PLANETS.filter(p => highScore >= p.unlockScore).map(p => p.id);
+  }, [highScore]);
+
+  const hasNewUnseenPlanets = useMemo(() => {
+    const unlocked = getUnlockedPlanets();
+    return unlocked.some(id => !seenPlanetIds.includes(id));
+  }, [getUnlockedPlanets, seenPlanetIds]);
+
+  const markAllUnlockedAsSeen = useCallback(() => {
+    const unlocked = getUnlockedPlanets();
+    const newSeen = Array.from(new Set([...seenPlanetIds, ...unlocked]));
+    setSeenPlanetIds(newSeen);
+    localStorage.setItem('cocky-birds-seen-planets', JSON.stringify(newSeen));
+  }, [getUnlockedPlanets, seenPlanetIds]);
+
   const [integrity, setIntegrity] = useState(MAX_INTEGRITY);
   const gameStateRef = useRef<GameState>(gameState);
   const [chaos, setChaos] = useState(0);
@@ -1161,7 +1153,7 @@ export default function App() {
     osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
     osc.frequency.exponentialRampToValueAtTime(20, now + duration);
 
-    oscGain.gain.setValueAtTime(0.8, now);
+    oscGain.gain.setValueAtTime(2.5, now);
     oscGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     const bufferSize = ctx.sampleRate * duration;
@@ -1180,7 +1172,7 @@ export default function App() {
     noiseFilter.frequency.exponentialRampToValueAtTime(60, now + duration * 0.8);
 
     const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.5, now);
+    noiseGain.gain.setValueAtTime(1.5, now);
     noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     const dist = ctx.createWaveShaper();
@@ -1248,7 +1240,7 @@ export default function App() {
       filter.Q.value = 5;
 
       burstGain.gain.setValueAtTime(0.0001, startTime);
-      burstGain.gain.exponentialRampToValueAtTime(0.8, startTime + 0.04);
+      burstGain.gain.exponentialRampToValueAtTime(2.5, startTime + 0.04);
       burstGain.gain.exponentialRampToValueAtTime(0.0001, stopTime);
 
       osc.connect(filter);
@@ -1478,7 +1470,7 @@ export default function App() {
       osc2.frequency.exponentialRampToValueAtTime(baseFreq * 0.5, endTime);
 
       pulseGain.gain.setValueAtTime(0.001, startTime);
-      pulseGain.gain.exponentialRampToValueAtTime(0.9, startTime + 0.05);
+      pulseGain.gain.exponentialRampToValueAtTime(3.0, startTime + 0.05);
       pulseGain.gain.exponentialRampToValueAtTime(0.001, endTime);
 
       osc1.connect(pulseGain);
@@ -1727,8 +1719,8 @@ export default function App() {
     const ctx = audioCtxRef.current;
     const now = ctx.currentTime;
     
-    // Low frequency crunch
-    const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    // 1. DEEP CRUNCH (Heavy low-frequency noise)
+    const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 2.5, ctx.sampleRate);
     const data = noiseBuffer.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
     
@@ -1737,32 +1729,56 @@ export default function App() {
     
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(400, now);
-    filter.frequency.exponentialRampToValueAtTime(40, now + 1.5);
+    filter.frequency.setValueAtTime(600, now);
+    filter.frequency.exponentialRampToValueAtTime(30, now + 2.0);
     
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.5, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+    gain.gain.setValueAtTime(3.0, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
     
     noise.connect(filter);
     filter.connect(gain);
     gain.connect(ctx.destination);
     noise.start();
 
-    // Metallic clangs
-    for (let i = 0; i < 5; i++) {
-      const osc = ctx.createOscillator();
-      const oGain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(100 + Math.random() * 100, now + i * 0.1);
-      osc.frequency.exponentialRampToValueAtTime(40, now + i * 0.1 + 0.3);
-      oGain.gain.setValueAtTime(0.2, now + i * 0.1);
-      oGain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
-      osc.connect(oGain);
-      oGain.connect(ctx.destination);
-      osc.start(now + i * 0.1);
-      osc.stop(now + i * 0.1 + 0.3);
+    // 2. METALLIC CLANGS (Resonant pings for falling pipes)
+    for (let i = 0; i < 9; i++) {
+      const clangOsc = ctx.createOscillator();
+      const clangGain = ctx.createGain();
+      
+      const baseFreq = 200 + Math.random() * 400;
+      clangOsc.type = i % 2 === 0 ? 'sine' : 'triangle';
+      clangOsc.frequency.setValueAtTime(baseFreq, now + i * 0.08);
+      clangOsc.frequency.exponentialRampToValueAtTime(baseFreq * 0.4, now + i * 0.08 + 0.5);
+      
+      clangGain.gain.setValueAtTime(1.5, now + i * 0.08);
+      clangGain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.5);
+      
+      const resFilter = ctx.createBiquadFilter();
+      resFilter.type = 'bandpass';
+      resFilter.frequency.value = baseFreq * 2.5; 
+      resFilter.Q.value = 12; // Striking a resonant metal piece
+      
+      clangOsc.connect(resFilter);
+      resFilter.connect(clangGain);
+      clangGain.connect(ctx.destination);
+      
+      clangOsc.start(now + i * 0.08);
+      clangOsc.stop(now + i * 0.08 + 0.5);
     }
+
+    // 3. IMPACT THUD (The big initial hit)
+    const thud = ctx.createOscillator();
+    const thudGain = ctx.createGain();
+    thud.type = 'sine';
+    thud.frequency.setValueAtTime(150, now);
+    thud.frequency.exponentialRampToValueAtTime(35, now + 0.4);
+    thudGain.gain.setValueAtTime(4.0, now);
+    thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    thud.connect(thudGain);
+    thudGain.connect(ctx.destination);
+    thud.start(now);
+    thud.stop(now + 0.4);
   }, []);
 
   const triggerCrumble = useCallback(() => {
@@ -1916,7 +1932,7 @@ export default function App() {
       osc1.frequency.exponentialRampToValueAtTime(freq * 1.05, startTime + duration);
       
       // Volume boost
-      gain1.gain.setValueAtTime(20.0, startTime);
+      gain1.gain.setValueAtTime(50.0, startTime);
       gain1.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
       
       osc1.connect(gain1);
@@ -1928,7 +1944,7 @@ export default function App() {
       osc2.type = 'sine';
       osc2.frequency.setValueAtTime(freq * 2, startTime);
       
-      gain2.gain.setValueAtTime(15.0, startTime);
+      gain2.gain.setValueAtTime(35.0, startTime);
       gain2.gain.exponentialRampToValueAtTime(0.01, startTime + duration * (isLast ? 2 : 1));
       
       osc2.connect(gain2);
@@ -1954,7 +1970,7 @@ export default function App() {
     const now = ctx.currentTime;
     gain.gain.cancelScheduledValues(now);
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.8, now + 0.05);
+    gain.gain.linearRampToValueAtTime(2.5, now + 0.05);
     gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
 
     // Victory Fanfare Chord (C Majorish)
@@ -1965,7 +1981,7 @@ export default function App() {
       osc.frequency.exponentialRampToValueAtTime(freq * 1.2, now + 0.5);
       
       const oscGain = ctx.createGain();
-      oscGain.gain.setValueAtTime(0.2, now);
+      oscGain.gain.setValueAtTime(0.8, now);
       oscGain.gain.exponentialRampToValueAtTime(0.01, now + 1);
       
       osc.connect(oscGain);
@@ -2950,9 +2966,9 @@ export default function App() {
     
     const groundY = height - GROUND_HEIGHT;
 
-    if (currentPlanet.id === 'earth' && earthForegroundRef.current) {
-        // Draw Earth specific foreground asset
-        const fgImg = earthForegroundRef.current;
+    const fgImg = planetForegroundImagesRef.current[currentPlanet.id];
+    if (fgImg) {
+        // Draw planet specific foreground asset
         const drawHeight = 120; 
         const drawY = height - drawHeight;
         
@@ -3206,6 +3222,7 @@ export default function App() {
               onClick={(e) => {
                 e.stopPropagation(); // Avoid triggering game interactions
                 setIsPlanetSelectorOpen(true);
+                markAllUnlockedAsSeen();
               }}
               className="relative group"
             >
@@ -3216,6 +3233,13 @@ export default function App() {
                   className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
                 />
+                {hasNewUnseenPlanets && (
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 w-4 h-4 md:w-6 md:h-6 bg-red-600 rounded-full border-2 border-black z-10"
+                  />
+                )}
               </div>
               <div className="mt-2 text-[#FFF000] text-[9px] md:text-xs font-black uppercase tracking-[0.2em] drop-shadow-[2px_2px_0px_#000]">
                 WORLDS
@@ -3772,9 +3796,22 @@ export default function App() {
                       <img 
                         src={PLANETS[previewPlanetIndex].url}
                         alt={PLANETS[previewPlanetIndex].name}
-                        className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-500 pointer-events-none"
+                        className={`w-full h-full object-cover transition-all duration-500 pointer-events-none ${highScore < PLANETS[previewPlanetIndex].unlockScore ? 'grayscale blur-sm opacity-50' : 'grayscale-[0.5] group-hover:grayscale-0'}`}
                         referrerPolicy="no-referrer"
                       />
+                      {highScore < PLANETS[previewPlanetIndex].unlockScore && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+                          <div className="w-12 h-12 md:w-16 md:h-16 mb-4">
+                            <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-white drop-shadow-lg" stroke="currentColor" strokeWidth="3">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                          </div>
+                          <span className="text-white font-black text-xs md:text-sm uppercase tracking-tighter bg-black px-3 py-1 border-2 border-white">
+                            UNLOCKS AT {PLANETS[previewPlanetIndex].unlockScore} POINTS
+                          </span>
+                        </div>
+                      )}
                       <div 
                         className="absolute inset-0 opacity-40 mix-blend-overlay"
                         style={{ backgroundColor: PLANETS[previewPlanetIndex].primaryColor }}
@@ -3822,16 +3859,21 @@ export default function App() {
 
               {/* Action Button */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={highScore >= PLANETS[previewPlanetIndex].unlockScore ? { scale: 1.02 } : {}}
+                whileTap={highScore >= PLANETS[previewPlanetIndex].unlockScore ? { scale: 0.98 } : {}}
+                disabled={highScore < PLANETS[previewPlanetIndex].unlockScore}
                 onClick={() => {
                   setCurrentPlanetIndex(previewPlanetIndex);
                   localStorage.setItem('cocky-birds-current-planet', previewPlanetIndex.toString());
                   setIsPlanetSelectorOpen(false);
                 }}
-                className="brutalist-btn bg-[#FF3E00] text-white w-full py-4 md:py-6 font-black text-xl md:text-3xl italic tracking-tighter"
+                className={`w-full py-4 md:py-6 font-black text-xl md:text-3xl italic tracking-tighter border-4 border-black transition-all ${
+                  highScore < PLANETS[previewPlanetIndex].unlockScore 
+                    ? 'bg-zinc-400 text-zinc-600 cursor-not-allowed border-zinc-500 shadow-[4px_4px_0px_#000]' 
+                    : 'bg-[#FF3E00] text-white hover:bg-black hover:text-white shadow-[8px_8px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1'
+                }`}
               >
-                TOUCHDOWN!
+                {highScore < PLANETS[previewPlanetIndex].unlockScore ? 'LOCKED' : 'TOUCHDOWN!'}
               </motion.button>
             </motion.div>
           </motion.div>
