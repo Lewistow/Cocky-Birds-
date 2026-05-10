@@ -448,49 +448,143 @@ export default function App() {
   const planetForegroundImagesRef = useRef<Record<string, HTMLImageElement>>({});
   const featherImagesRef = useRef<{ blue?: HTMLImageElement; yellow?: HTMLImageElement }>({});
 
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState('INITIATING FLIGHT...');
+
+  useEffect(() => {
+    const messages = [
+      'WARMING UP ENGINES...',
+      'CALIBRATING SLAM FORCE...',
+      'FEEDING THE BIRDS...',
+      'POLISHING THE PIPES...',
+      'DEFLATING EGO...',
+      'HIDING THE WORLDS...',
+      'PLOTTING THE COURSE...',
+      'SYNCHRONIZING CHAOS...',
+      'READYING THE CLOUT...'
+    ];
+    
+    if (isInitialLoading) {
+      const interval = setInterval(() => {
+        setLoadingMessage(messages[Math.floor(Math.random() * messages.length)]);
+      }, 1500);
+      return () => clearInterval(interval);
+    }
+  }, [isInitialLoading]);
+
   useEffect(() => {
     const birdAssets = {
       TANK: 'https://i.ibb.co/wNVzWX6R/purple-tank.png',
       SNIPER: 'https://i.ibb.co/Ld2Q2zsr/blue-sniper.png',
       DIVER: 'https://i.ibb.co/pjNspj7Q/fire-diver.png',
       NORMAL: 'https://i.ibb.co/8gtLm9qB/yellow-diver.png',
-      PIPE: 'https://i.ibb.co/SDzcVyM3/pipe-asset.png'
+      PIPE: 'https://i.ibb.co/SDzcVyM3/pipe-asset.png',
+      LOGO: 'https://i.ibb.co/9922hyC5/logo.png',
+      LOGOTEXT: 'https://i.ibb.co/N6dft7mM/cocky-birdtext.png'
+    };
+
+    const essentialPlanets = [PLANETS[currentPlanetIndex], PLANETS[0]]; // Current and Earth
+    const totalToLoad = Object.keys(birdAssets).length + essentialPlanets.length + 2 + 2; // +2 for feathers, +2 for music
+    let loadedCount = 0;
+
+    const onAssetLoad = () => {
+      loadedCount++;
+      const progress = Math.min(100, Math.floor((loadedCount / totalToLoad) * 100));
+      setLoadingProgress(progress);
+      if (loadedCount >= totalToLoad) {
+        // Minimum visible time for splash
+        setTimeout(() => setIsInitialLoading(false), 800);
+      }
     };
 
     Object.entries(birdAssets).forEach(([type, filename]) => {
       const img = new Image();
       img.src = filename;
-      img.onload = () => {
-        birdImagesRef.current[type] = img;
-      };
+      img.onload = onAssetLoad;
+      img.onerror = onAssetLoad; // Don't block forever if one fails
+      birdImagesRef.current[type] = img;
     });
 
-    PLANETS.forEach(planet => {
+    essentialPlanets.forEach(planet => {
       const img = new Image();
       img.src = planet.url;
-      img.onload = () => {
-        planetImagesRef.current[planet.id] = img;
-      };
-
-      if (planet.foregroundUrl) {
-        const fgImg = new Image();
-        fgImg.src = planet.foregroundUrl;
-        fgImg.onload = () => {
-          planetForegroundImagesRef.current[planet.id] = fgImg;
-        };
-      }
+      img.onload = onAssetLoad;
+      img.onerror = onAssetLoad;
+      planetImagesRef.current[planet.id] = img;
     });
 
     // Preload custom feathers
     const blueFeather = new Image();
     blueFeather.src = 'https://i.ibb.co/R4v3ZxnC/blue-birdfeather.png';
     blueFeather.referrerPolicy = 'no-referrer';
-    blueFeather.onload = () => { featherImagesRef.current.blue = blueFeather; };
+    blueFeather.onload = onAssetLoad;
+    blueFeather.onerror = onAssetLoad;
+    featherImagesRef.current.blue = blueFeather;
 
     const yellowFeather = new Image();
     yellowFeather.src = 'https://i.ibb.co/99DCvMLF/yellow-birdfeather.png';
     yellowFeather.referrerPolicy = 'no-referrer';
-    yellowFeather.onload = () => { featherImagesRef.current.yellow = yellowFeather; };
+    yellowFeather.onload = onAssetLoad;
+    yellowFeather.onerror = onAssetLoad;
+    featherImagesRef.current.yellow = yellowFeather;
+
+    const loadOneAudio = async (url: string, name: string) => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const ab = await res.arrayBuffer();
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        const buffer = await audioCtxRef.current.decodeAudioData(ab);
+        console.log(`Successfully loaded ${name}`);
+        onAssetLoad();
+        return buffer;
+      } catch (e) {
+        console.warn(`Failed to load ${name} from ${url}:`, e);
+        onAssetLoad();
+        return null;
+      }
+    };
+
+    const loadAllAudio = async () => {
+      const [menuBuffer, playBuffer] = await Promise.all([
+        loadOneAudio(MENU_AUDIO_URL, 'Menu Audio'),
+        loadOneAudio(PLAY_AUDIO_URL, 'Play Audio')
+      ]);
+
+      menuBufferRef.current = menuBuffer;
+      playBufferRef.current = playBuffer;
+
+      if (audioStarted.current) {
+        startAudio();
+      }
+    };
+
+    loadAllAudio();
+
+    // Background load the rest of the planets silently
+    PLANETS.forEach(planet => {
+      if (essentialPlanets.find(ep => ep.id === planet.id)) return;
+      const img = new Image();
+      img.src = planet.url;
+      img.onload = () => { planetImagesRef.current[planet.id] = img; };
+      
+      if (planet.foregroundUrl) {
+        const fgImg = new Image();
+        fgImg.src = planet.foregroundUrl;
+        fgImg.onload = () => { planetForegroundImagesRef.current[planet.id] = fgImg; };
+      }
+    });
+
+    // Foreground asset for current planet if exists
+    const currentPlanet = PLANETS[currentPlanetIndex];
+    if (currentPlanet.foregroundUrl) {
+       const fgImg = new Image();
+       fgImg.src = currentPlanet.foregroundUrl;
+       fgImg.onload = () => { planetForegroundImagesRef.current[currentPlanet.id] = fgImg; };
+    }
   }, []);
 
   const [isBirdsCharactersOpen, setIsBirdsCharactersOpen] = useState(false);
@@ -842,47 +936,14 @@ export default function App() {
     }
   }, []);
 
-  // Initialize Audio
+  // Audio initialization logic moved to main preload effect
   useEffect(() => {
-    const loadBuffers = async () => {
-      const loadOne = async (url: string, name: string) => {
-        try {
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const ab = await res.arrayBuffer();
-          if (!audioCtxRef.current) {
-            audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-          }
-          const buffer = await audioCtxRef.current.decodeAudioData(ab);
-          console.log(`Successfully loaded ${name}`);
-          return buffer;
-        } catch (e) {
-          console.warn(`Failed to load ${name} from ${url}:`, e);
-          return null;
-        }
-      };
-
-      const [menuBuffer, playBuffer] = await Promise.all([
-        loadOne(MENU_AUDIO_URL, 'Menu Audio'),
-        loadOne(PLAY_AUDIO_URL, 'Play Audio')
-      ]);
-
-      menuBufferRef.current = menuBuffer;
-      playBufferRef.current = playBuffer;
-
-      if (audioStarted.current) {
-        startAudio();
-      }
-    };
-
-    loadBuffers();
-
     return () => {
       if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
         audioCtxRef.current.close().catch(() => {});
       }
     };
-  }, [startAudio]);
+  }, []);
 
   const playMetallicSound = useCallback((isMiss: boolean) => {
     if (!audioCtxRef.current) {
@@ -3199,6 +3260,118 @@ export default function App() {
 
   return (
     <div className="fixed inset-0 bg-[#070707] flex items-center justify-center p-0 md:p-4 selection:bg-[#FFF000] selection:text-black">
+      {/* Loading Splash Screen */}
+      <AnimatePresence mode="wait">
+        {isInitialLoading && (
+          <motion.div
+            key="loading-screen"
+            initial={{ opacity: 1 }}
+            exit={{ 
+              opacity: 0, 
+              scale: 1.1,
+              transition: { duration: 0.8, ease: [0.43, 0.13, 0.23, 0.96] }
+            }}
+            className="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-6"
+          >
+            {/* Ambient Background */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <motion.div 
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  opacity: [0.1, 0.2, 0.1]
+                }}
+                transition={{ duration: 8, repeat: Infinity }}
+                className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#FFF000] rounded-full blur-[120px]" 
+              />
+              <motion.div 
+                animate={{ 
+                  scale: [1.2, 1, 1.2],
+                  opacity: [0.1, 0.2, 0.1]
+                }}
+                transition={{ duration: 10, repeat: Infinity }}
+                className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FF3E00] rounded-full blur-[150px]" 
+              />
+            </div>
+
+            <div className="relative z-10 w-full max-w-sm flex flex-col items-center">
+              {/* Logo Area */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="mb-12 flex flex-col items-center"
+              >
+                <div className="w-40 h-40 md:w-56 md:h-56 mb-8 relative">
+                   <motion.img 
+                     src="https://i.ibb.co/9922hyC5/logo.png" 
+                     alt="Cocky Birds Logo"
+                     className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(255,240,0,0.3)]"
+                     animate={{ 
+                       rotate: [0, -3, 3, 0],
+                       scale: [1, 1.03, 1]
+                     }}
+                     transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                     referrerPolicy="no-referrer"
+                   />
+                </div>
+                <motion.img 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                  src="https://i.ibb.co/N6dft7mM/cocky-birdtext.png" 
+                  alt="Cocky Birds Text"
+                  className="h-12 md:h-20 object-contain" 
+                  referrerPolicy="no-referrer"
+                />
+              </motion.div>
+
+              {/* Progress Container */}
+              <div className="w-full flex flex-col items-center gap-6">
+                <div className="w-full h-10 md:h-12 bg-zinc-900 border-4 border-white relative overflow-hidden shadow-[8px_8px_0px_#FF3E00]">
+                  <motion.div 
+                    className="absolute inset-y-0 left-0 bg-[#FFF000]"
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${loadingProgress}%` }}
+                    transition={{ ease: 'easeOut', duration: 0.4 }}
+                  />
+                  {/* Digital read-out overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center mix-blend-difference">
+                    <span className="text-white font-black italic tracking-tighter text-lg md:text-xl">
+                      {loadingProgress}%
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="h-8 md:h-10">
+                  <AnimatePresence mode="wait">
+                    <motion.span 
+                      key={loadingMessage}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 1.1 }}
+                      className="text-[#FFF000] font-black italic text-lg md:text-xl uppercase tracking-tighter block text-center"
+                    >
+                      {loadingMessage}
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Decorative detail */}
+              <div className="mt-16 flex gap-2">
+                {[...Array(5)].map((_, i) => (
+                  <motion.div 
+                    key={i}
+                    animate={{ opacity: [0.2, 1, 0.2] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                    className="w-2 h-2 bg-[#FF3E00]"
+                  />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div 
         className={`relative w-full h-full md:aspect-[600/1300] md:h-auto md:max-h-[95vh] md:max-w-[440px] md:rounded-[2rem] md:border-8 md:border-[#1a1a1a] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden font-sans touch-none ${isShaking ? 'shake' : ''}`}
         onPointerDown={handleInteraction}
@@ -3209,7 +3382,7 @@ export default function App() {
 
       {/* Global Sector Selection (Top Right) */}
       <AnimatePresence>
-        {(gameState === 'START' || gameState === 'GAME_OVER') && !isPlanetSelectorOpen && (
+        {(gameState === 'START' || gameState === 'GAME_OVER') && !isPlanetSelectorOpen && !isBirdsCharactersOpen && !showShareBanner && (
           <motion.div 
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -3251,7 +3424,7 @@ export default function App() {
 
       {/* Birds Characters Button (Top Left) */}
       <AnimatePresence>
-        {(gameState === 'START' || gameState === 'GAME_OVER') && !isPlanetSelectorOpen && !isBirdsCharactersOpen && (
+        {(gameState === 'START' || gameState === 'GAME_OVER') && !isPlanetSelectorOpen && !isBirdsCharactersOpen && !showShareBanner && (
           <motion.div 
             initial={{ x: -100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
