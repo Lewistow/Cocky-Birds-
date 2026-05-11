@@ -480,8 +480,8 @@ export default function App() {
       DIVER: 'https://i.ibb.co/pjNspj7Q/fire-diver.png',
       NORMAL: 'https://i.ibb.co/8gtLm9qB/yellow-diver.png',
       PIPE: 'https://i.ibb.co/SDzcVyM3/pipe-asset.png',
-      LOGO: 'https://i.ibb.co/fmjwfwcj/pnhunvmvbhh9.png',
-      LOGOTEXT: 'https://i.ibb.co/yfv1b1nh/ai0iofyd8jrb.png'
+      LOGO: 'https://res.cloudinary.com/dz5azd4g1/image/upload/e_sharpen:100/n/fmjwfwcjpnhunvmvbhh9',
+      LOGOTEXT: 'https://res.cloudinary.com/dz5azd4g1/image/upload/e_sharpen:100/n/yfv1b1nhai0iofyd8jrb'
     };
 
     const essentialPlanets = [PLANETS[currentPlanetIndex], PLANETS[0]]; // Current and Earth
@@ -3302,7 +3302,7 @@ export default function App() {
               >
                 <div className="w-40 h-40 md:w-56 md:h-56 mb-8 relative">
                    <motion.img 
-                     src="https://i.ibb.co/fmjwfwcj/pnhunvmvbhh9.png" 
+                     src="https://res.cloudinary.com/dz5azd4g1/image/upload/e_sharpen:100/n/fmjwfwcjpnhunvmvbhh9" 
                      alt="Cocky Birds Logo"
                      className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(255,240,0,0.3)]"
                      animate={{ 
@@ -3317,7 +3317,7 @@ export default function App() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.3 }}
-                  src="https://i.ibb.co/yfv1b1nh/ai0iofyd8jrb.png" 
+                  src="https://res.cloudinary.com/dz5azd4g1/image/upload/e_sharpen:100/n/yfv1b1nhai0iofyd8jrb" 
                   alt="Cocky Birds Text"
                   className="h-12 md:h-20 object-contain" 
                   referrerPolicy="no-referrer"
