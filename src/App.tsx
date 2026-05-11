@@ -518,6 +518,56 @@ interface PipeFragment {
   color: string;
 }
 
+// Advertisement Components
+const BannerAd = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    // Clear previous if any
+    containerRef.current.innerHTML = '';
+    
+    (window as any).atOptions = {
+      'key' : '69bb61741ecf60ea22b97516edbffa48',
+      'format' : 'iframe',
+      'height' : 60,
+      'width' : 468,
+      'params' : {}
+    };
+    
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = '//www.highperformanceformat.com/69bb61741ecf60ea22b97516edbffa48/invoke.js';
+    
+    containerRef.current.appendChild(script);
+  }, []);
+
+  return (
+    <div className="flex justify-center w-full py-4 z-50">
+      <div ref={containerRef} className="max-w-full overflow-hidden" />
+    </div>
+  );
+};
+
+const NativeAd = () => {
+  const containerId = "container-155f76137bdb5daef68ec0347014c7cf";
+  
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.async = true;
+    script.setAttribute('data-cfasync', 'false');
+    script.src = 'https://pl29421108.profitablecpmratenetwork.com/155f76137bdb5daef68ec0347014c7cf/invoke.js';
+    document.body.appendChild(script);
+  }, []);
+
+  return (
+    <div className="my-6 flex justify-center w-full scale-75 md:scale-100">
+      <div id={containerId} className="w-full max-w-[400px]"></div>
+    </div>
+  );
+};
+
 export default function App() {
   const birdImagesRef = useRef<Record<string, HTMLImageElement>>({});
   const planetImagesRef = useRef<Record<string, HTMLImageElement>>({});
@@ -3974,6 +4024,9 @@ export default function App() {
                   CRUSH 'EM!
                 </span>
               </motion.button>
+              
+              {/* Native Ad in Start Menu */}
+              <NativeAd />
             </div>
           </motion.div>
         )}
@@ -4047,6 +4100,9 @@ export default function App() {
                   <Share2 size={18} md:size={28} strokeWidth={3} />
                   <span className="uppercase italic font-display">SHARE SCORE</span>
                 </motion.button>
+
+                {/* Native Ad in Game Over Menu */}
+                <NativeAd />
 
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -4507,6 +4563,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
+        {/* Footer Banner Ad */}
+        <BannerAd />
       </div>
     </div>
   );
