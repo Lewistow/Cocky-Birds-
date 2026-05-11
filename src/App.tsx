@@ -850,6 +850,9 @@ export default function App() {
   const [integrity, setIntegrity] = useState(MAX_INTEGRITY);
   const [isPipeSkinsOpen, setIsPipeSkinsOpen] = useState(false);
   const [shopSelectedId, setShopSelectedId] = useState('classic');
+  const [viewedSkinCount, setViewedSkinCount] = useState(() => {
+    return parseInt(localStorage.getItem('cocky-birds-viewed-skin-count') || '1');
+  });
 
   const [currentPipeSkinId, setCurrentPipeSkinId] = useState(() => {
     return localStorage.getItem('cocky-birds-current-pipe-skin') || 'classic';
@@ -864,6 +867,13 @@ export default function App() {
   const unlockedPipeSkinIds = useMemo(() => {
     return PIPE_SKINS.filter(s => highScore >= s.unlockScore).map(s => s.id);
   }, [highScore]);
+
+  useEffect(() => {
+    if (isPipeSkinsOpen) {
+      setViewedSkinCount(unlockedPipeSkinIds.length);
+      localStorage.setItem('cocky-birds-viewed-skin-count', unlockedPipeSkinIds.length.toString());
+    }
+  }, [isPipeSkinsOpen, unlockedPipeSkinIds.length]);
   const gameStateRef = useRef<GameState>(gameState);
   const [chaos, setChaos] = useState(0);
 
@@ -2026,6 +2036,8 @@ export default function App() {
     
     const wasThunder = isThunderReadyRef.current;
     const pipeColor = getPipeColor();
+    const isClassic = currentPipeSkinRef.current === 'classic';
+    const themedThunderColor = isClassic ? COLORS.CYAN : pipeColor;
     
     isCrumbling.current = true;
     playCrumbleSound();
@@ -2060,7 +2072,7 @@ export default function App() {
             vy: (Math.random() - 2) * 300,
             rotation: Math.random() * Math.PI * 2,
             vRotation: (Math.random() - 0.5) * 12,
-            color: wasThunder ? COLORS.YELLOW : pipeColor
+            color: wasThunder ? themedThunderColor : pipeColor
           });
         }
       }
@@ -2725,6 +2737,12 @@ export default function App() {
 
   const draw = useCallback((ctx: CanvasRenderingContext2D) => {
     const { width, height } = dimensions.current;
+    
+    // Shared Theming
+    const isClassicPipe = currentPipeSkinRef.current === 'classic';
+    const pipeSkinBaseColor = getPipeColor();
+    const themedThunderColor = isClassicPipe ? COLORS.CYAN : pipeSkinBaseColor;
+
     ctx.clearRect(0, 0, width, height);
 
     // Background - Planetary Atmosphere
@@ -3116,10 +3134,10 @@ export default function App() {
         pipeX += (Math.random() - 0.5) * 25; 
         pipeYOffset = (Math.random() - 0.5) * 25;
         ctx.shadowBlur = isDivineRef.current ? 30 : 20; 
-        ctx.shadowColor = isDivineRef.current ? COLORS.CYAN : COLORS.YELLOW;
+        ctx.shadowColor = themedThunderColor;
         
         // Draw glow as a separate pass behind the pipes to keep it isolated
-        ctx.fillStyle = isDivineRef.current ? COLORS.CYAN : COLORS.YELLOW;
+        ctx.fillStyle = themedThunderColor;
         ctx.globalAlpha = 0.3;
         ctx.fillRect(pipeX - 10, -20, PIPE_WIDTH + 20, height + 40);
         ctx.restore();
@@ -3196,7 +3214,7 @@ export default function App() {
         ctx.strokeStyle = isSupercharged ? COLORS.WHITE : 'rgba(255, 255, 255, 0.8)';
         ctx.lineWidth = isSupercharged ? 6 : 2; 
         ctx.shadowBlur = isSupercharged ? 20 : 0; // Only glow if supercharged
-        ctx.shadowColor = isPepperZone ? '#FF3E00' : COLORS.CYAN;
+        ctx.shadowColor = isPepperZone ? '#FF3E00' : themedThunderColor;
         
         const drawPipeLightning = (y1: number, y2: number) => {
           const boltCount = isDivineRef.current ? 3 : (isSupercharged ? 2 : 1);
@@ -3295,10 +3313,10 @@ export default function App() {
 
         // Outer Glow
         const isPepperZone = scoreRef.current >= 50;
-        ctx.strokeStyle = isPepperZone ? '#FF3E00' : COLORS.CYAN;
+        ctx.strokeStyle = isPepperZone ? '#FF3E00' : themedThunderColor;
         ctx.lineWidth = 10;
         ctx.shadowBlur = 10; 
-        ctx.shadowColor = isPepperZone ? '#FF0000' : COLORS.CYAN;
+        ctx.shadowColor = isPepperZone ? '#FF0000' : themedThunderColor;
         ctx.stroke();
         
         // Inner Core
@@ -3635,6 +3653,8 @@ export default function App() {
               onClick={(e) => {
                 e.stopPropagation();
                 setShopSelectedId(currentPipeSkinId);
+                setViewedSkinCount(unlockedPipeSkinIds.length);
+                localStorage.setItem('cocky-birds-viewed-skin-count', unlockedPipeSkinIds.length.toString());
                 setIsPipeSkinsOpen(true);
               }}
               className="relative group mt-2"
@@ -3647,6 +3667,15 @@ export default function App() {
                   className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
                 />
+                
+                {/* Red Dot Notification */}
+                {unlockedPipeSkinIds.length > viewedSkinCount && (
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-red-600 border-2 border-white rounded-full z-10 shadow-lg"
+                  />
+                )}
               </div>
               <div className="mt-1 text-[#FFF000] text-[8px] md:text-[10px] font-black uppercase tracking-[0.1em] drop-shadow-[1px_1px_0px_#000]">
                 SKINS
@@ -3869,7 +3898,9 @@ export default function App() {
                   className="absolute top-0 left-0 h-full"
                   animate={{ 
                     width: `${chaos}%`,
-                    backgroundColor: isThunderReady ? ['#000', '#FFF000', '#000'] : '#00F0FF'
+                    backgroundColor: isThunderReady 
+                      ? ['#000', (score >= 50 ? '#FF3E00' : (currentPipeSkinId === 'classic' ? COLORS.CYAN : getPipeColor())), '#000'] 
+                      : (score >= 50 ? '#FF3E00' : '#00F0FF')
                   }}
                   transition={isThunderReady ? { repeat: Infinity, duration: 0.5 } : { type: 'spring', stiffness: 500, damping: 25 }}
                 />
