@@ -858,6 +858,7 @@ export default function App() {
 
   const [integrity, setIntegrity] = useState(MAX_INTEGRITY);
   const [isPipeSkinsOpen, setIsPipeSkinsOpen] = useState(false);
+  const [shopSelectedId, setShopSelectedId] = useState('classic');
   const [unlockedPipeSkinIds, setUnlockedPipeSkinIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('cocky-birds-unlocked-pipe-skins');
     return saved ? JSON.parse(saved) : ['classic'];
@@ -880,7 +881,7 @@ export default function App() {
   const [purchaseInProgress, setPurchaseInProgress] = useState<string | null>(null);
 
   const fwConfig = {
-    public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY || 'FLWPUBK_TEST-a3c3c7e7e7e7e7e7e7e7e7e7e7e7e7e7-X',
+    public_key: (import.meta as any).env.VITE_FLUTTERWAVE_PUBLIC_KEY || 'FLWPUBK_TEST-a3c3c7e7e7e7e7e7e7e7e7e7e7e7e7e7-X',
     tx_ref: `cocky-bird-skin-${purchaseInProgress}-${Date.now()}`,
     amount: PIPE_SKINS.find(s => s.id === purchaseInProgress)?.priceAmount || 0,
     currency: 'USD',
@@ -3688,6 +3689,7 @@ export default function App() {
               }}
               onClick={(e) => {
                 e.stopPropagation();
+                setShopSelectedId(currentPipeSkinId);
                 setIsPipeSkinsOpen(true);
               }}
               className="relative group mt-2"
@@ -4408,7 +4410,8 @@ export default function App() {
               <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                 {PIPE_SKINS.map((skin) => {
                   const isUnlocked = unlockedPipeSkinIds.includes(skin.id);
-                  const isSelected = currentPipeSkinId === skin.id;
+                  const isSelected = shopSelectedId === skin.id;
+                  const isEquipped = currentPipeSkinId === skin.id;
                   
                   return (
                     <motion.button
@@ -4416,11 +4419,7 @@ export default function App() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
-                        if (isUnlocked) {
-                          setCurrentPipeSkinId(skin.id);
-                        } else {
-                          setPurchaseInProgress(skin.id);
-                        }
+                        setShopSelectedId(skin.id);
                       }}
                       className={`relative p-3 border-4 flex flex-col items-center gap-2 transition-all ${
                         isSelected 
@@ -4440,8 +4439,9 @@ export default function App() {
                         {skin.rarity}
                       </div>
 
-                      {/* Lock/Unlock Icon */}
-                      <div className="absolute top-1 right-1">
+                      {/* Status Icon */}
+                      <div className="absolute top-1 right-1 flex gap-1">
+                        {isEquipped && <div className="bg-white text-black text-[6px] px-1 font-bold">EQUIPPED</div>}
                         {isUnlocked ? (
                           <Check className={`w-3 h-3 ${isSelected ? 'text-black' : 'text-green-500'}`} />
                         ) : (
@@ -4479,7 +4479,7 @@ export default function App() {
 
               {/* Inspect Bar */}
               <div className="mt-6 bg-black border-2 border-zinc-700 p-3 italic text-xs text-white">
-                {PIPE_SKINS.find(s => s.id === currentPipeSkinId)?.description}
+                {PIPE_SKINS.find(s => s.id === shopSelectedId)?.description}
               </div>
 
               <div className="flex gap-2 mt-4">
@@ -4490,22 +4490,34 @@ export default function App() {
                   CLOSE
                 </button>
                 
-                {!unlockedPipeSkinIds.includes(currentPipeSkinId) && (
+                {!unlockedPipeSkinIds.includes(shopSelectedId) && (
                    <button
-                    onClick={() => setPurchaseInProgress(currentPipeSkinId)}
+                    onClick={() => setPurchaseInProgress(shopSelectedId)}
                     className="flex-[2] py-3 bg-yellow-400 text-black font-black uppercase text-sm md:text-lg border-b-4 border-yellow-600 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2"
                   >
                     <Zap className="w-5 h-5 fill-black" />
-                    BUY {PIPE_SKINS.find(s => s.id === currentPipeSkinId)?.price}
+                    BUY {PIPE_SKINS.find(s => s.id === shopSelectedId)?.price}
                   </button>
                 )}
                 
-                {unlockedPipeSkinIds.includes(currentPipeSkinId) && (
+                {unlockedPipeSkinIds.includes(shopSelectedId) && currentPipeSkinId !== shopSelectedId && (
                    <button
-                    onClick={() => setIsPipeSkinsOpen(false)}
+                    onClick={() => {
+                      setCurrentPipeSkinId(shopSelectedId);
+                      setIsPipeSkinsOpen(false);
+                    }}
                     className="flex-[2] py-3 bg-green-500 text-white font-black uppercase text-sm md:text-lg border-b-4 border-green-700 active:border-b-0 active:translate-y-1 transition-all"
                   >
                     EQUIP SKIN
+                  </button>
+                )}
+
+                {unlockedPipeSkinIds.includes(shopSelectedId) && currentPipeSkinId === shopSelectedId && (
+                   <button
+                    disabled
+                    className="flex-[2] py-3 bg-zinc-700 text-zinc-400 font-black uppercase text-sm md:text-lg border-b-4 border-zinc-800 cursor-not-allowed"
+                  >
+                    EQUIPPED
                   </button>
                 )}
               </div>
