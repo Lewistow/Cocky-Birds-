@@ -3657,7 +3657,7 @@ export default function App() {
       </AnimatePresence>
 
       <div 
-        className={`relative w-full h-full md:aspect-[600/1300] md:h-auto md:max-h-[95vh] md:max-w-[440px] md:rounded-[2rem] md:border-8 md:border-[#1a1a1a] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden font-sans touch-none ${isShaking ? 'shake' : ''}`}
+        className={`relative w-full h-full md:aspect-[600/1300] md:h-auto md:max-h-[98vh] md:max-w-[480px] md:rounded-[2rem] md:border-8 md:border-[#1a1a1a] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden font-sans touch-none ${isShaking ? 'shake' : ''}`}
         onPointerDown={handleInteraction}
         onPointerMove={handleMove}
         style={{ background: '#000' }}
@@ -3746,7 +3746,7 @@ export default function App() {
                 SKINS
               </div>
             </motion.button>
-            <NativeAd />
+            {gameState === 'GAME_OVER' && <NativeAd />}
           </motion.div>
         )}
       </AnimatePresence>
