@@ -14,6 +14,82 @@ const DEFAULT_GAP_SIZE = 240;
 const SLAM_SPEED = 3300; // Pixels per second
 const OPEN_SPEED = 1080;
 const BIRD_BASE_SPEED = 85;
+
+interface PipeSkin {
+  id: string;
+  name: string;
+  description: string;
+  rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary' | 'Mythic';
+  price: string;
+  url: string;
+  color: string;
+}
+
+const PIPE_SKINS: PipeSkin[] = [
+  {
+    id: 'classic',
+    name: 'Classic Green',
+    description: 'The OG pipe. Simple and effective.',
+    rarity: 'Common',
+    price: 'FREE',
+    url: 'https://i.ibb.co/SDzcVyM3/pipe-asset.png',
+    color: '#22c55e'
+  },
+  {
+    id: 'chrome-black',
+    name: 'Chrome Black',
+    description: 'The "Starter Stealth" look.',
+    rarity: 'Common',
+    price: '$0.99',
+    url: 'https://i.ibb.co/B5bpVcbv/chromeblackpipe-asset.png',
+    color: '#1a1a1a'
+  },
+  {
+    id: 'hazard-yellow',
+    name: 'Hazard Yellow',
+    description: 'High visibility, high disrespect.',
+    rarity: 'Common',
+    price: '$1.49',
+    url: 'https://i.ibb.co/fdtFtJWs/hazardyellowpipe-asset.png',
+    color: '#fbbf24'
+  },
+  {
+    id: 'neon-amethyst',
+    name: 'NEON AMETHYST',
+    description: 'The Space World glow.',
+    rarity: 'Rare',
+    price: '$2.99',
+    url: 'https://i.ibb.co/2YgkYPzn/neonamethystpipe-asset.png',
+    color: '#a855f7'
+  },
+  {
+    id: 'ruby-fury',
+    name: 'Ruby Fury',
+    description: 'Permanent Red (The "Cheater" Pipe).',
+    rarity: 'Epic',
+    price: '$4.99',
+    url: 'https://i.ibb.co/20dJBs99/rubyfurypipe-asset.png',
+    color: '#ef4444'
+  },
+  {
+    id: 'solid-gold',
+    name: 'Solid Gold',
+    description: 'Pure flex. The "Rich Pipe" vibe.',
+    rarity: 'Legendary',
+    price: '$9.99',
+    url: 'https://i.ibb.co/mM158N8/solidgoldpipe-asset.png',
+    color: '#fbbf24'
+  },
+  {
+    id: 'galaxy-glass',
+    name: 'Galaxy Glass',
+    description: 'Animated stars. The ultimate God-tier.',
+    rarity: 'Mythic',
+    price: '$14.99',
+    url: 'https://i.ibb.co/0pfVXTtm/galaxyglasspipe-asset.png',
+    color: '#6366f1'
+  }
+];
 const WARMUP_SECONDS = 10;
 const MAX_INTEGRITY = 100;
 const CHAOS_LIMIT = 100;
@@ -480,12 +556,16 @@ export default function App() {
       DIVER: 'https://i.ibb.co/pjNspj7Q/fire-diver.png',
       NORMAL: 'https://i.ibb.co/8gtLm9qB/yellow-diver.png',
       PIPE: 'https://i.ibb.co/SDzcVyM3/pipe-asset.png',
+      RED_PIPE: 'https://i.ibb.co/hJRtxFpv/fiftypointsredpipe-asset.png',
       LOGO: 'https://res.cloudinary.com/dz5azd4g1/image/upload/e_sharpen:100/n/tvaxh3dkuvbqu3h3itzc',
-      LOGOTEXT: 'https://res.cloudinary.com/dz5azd4g1/image/upload/e_sharpen:100/n/tortfxecstyrnzit7vbd'
+      LOGOTEXT: 'https://res.cloudinary.com/dz5azd4g1/image/upload/e_sharpen:100/n/tortfxecstyrnzit7vbd',
+      SKIN_ICON: 'https://i.ibb.co/npGq2Rw/pipe-skinicon.png',
+      // Add all skins to preloader
+      ...Object.fromEntries(PIPE_SKINS.map(s => [s.id, s.url]))
     };
 
     const essentialPlanets = [PLANETS[currentPlanetIndex], PLANETS[0]]; // Current and Earth
-    const totalToLoad = Object.keys(birdAssets).length + essentialPlanets.length + 2 + 2; // +2 for feathers, +2 for music
+    const totalToLoad = Object.keys(birdAssets).length + essentialPlanets.length + 2 + 3; // +2 for feathers, +3 for music (menu, play, pepper)
     let loadedCount = 0;
 
     const onAssetLoad = () => {
@@ -548,14 +628,69 @@ export default function App() {
       }
     };
 
+    const synthesizePepperZoneSound = () => {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      const sampleRate = ctx.sampleRate;
+      const duration = 3.5; 
+      const buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate);
+      const data = buffer.getChannelData(0);
+
+      // Deep, mourning foghorn/fire drone "mmuuuuuuuuuuu"
+      const f0 = 92; // Low F#2/G2 area
+      for (let i = 0; i < data.length; i++) {
+        const t = i / sampleRate;
+        
+        // Complex oscillator (Foundational drone)
+        let sample = Math.sin(2 * Math.PI * f0 * t);
+        // Add heavy harmonics for that rich, mourning "brass" feel
+        sample += 0.6 * Math.sin(2 * Math.PI * f0 * 1.01 * t); // slight detune for chorus
+        sample += 0.4 * Math.sin(2 * Math.PI * f0 * 2.0 * t);
+        sample += 0.3 * Math.sin(2 * Math.PI * f0 * 3.0 * t);
+        sample += 0.2 * Math.sin(2 * Math.PI * f0 * 4.0 * t);
+
+        // Sub bass
+        sample += 0.5 * Math.sin(2 * Math.PI * (f0 / 2) * t);
+
+        // "Fire Mourning" characteristic noise
+        const fireNoise = (Math.random() * 2 - 1) * 0.15;
+        // Low-pass filtered noise style (very crude but effective for drone body)
+        sample += fireNoise * Math.sin(2 * Math.PI * 40 * t);
+
+        // Envelope: Slow swelling mmmmuuuuuuuu
+        let env = 1.0;
+        const attack = 0.8;
+        const sustain = 1.5;
+        const release = 1.2;
+
+        if (t < attack) {
+          env = Math.pow(t / attack, 2); // Exponential swell
+        } else if (t > duration - release) {
+          env = (duration - t) / release;
+        }
+
+        // Saturation/Clipping for "Loud" aggressive feel
+        sample = Math.tanh(sample * 1.8);
+
+        data[i] = sample * env * 0.7;
+      }
+      onAssetLoad();
+      return buffer;
+    };
+
     const loadAllAudio = async () => {
       const [menuBuffer, playBuffer] = await Promise.all([
         loadOneAudio(MENU_AUDIO_URL, 'Menu Audio'),
         loadOneAudio(PLAY_AUDIO_URL, 'Play Audio')
       ]);
+      
+      const pepperBuffer = synthesizePepperZoneSound();
 
       menuBufferRef.current = menuBuffer;
       playBufferRef.current = playBuffer;
+      pepperZoneBufferRef.current = pepperBuffer;
 
       if (audioStarted.current) {
         startAudio();
@@ -713,6 +848,16 @@ export default function App() {
   }, [getUnlockedPlanets, seenPlanetIds]);
 
   const [integrity, setIntegrity] = useState(MAX_INTEGRITY);
+  const [isPipeSkinsOpen, setIsPipeSkinsOpen] = useState(false);
+  const [currentPipeSkinId, setCurrentPipeSkinId] = useState(() => {
+    return localStorage.getItem('cocky-birds-current-pipe-skin') || 'classic';
+  });
+  const currentPipeSkinRef = useRef(currentPipeSkinId);
+
+  useEffect(() => {
+    currentPipeSkinRef.current = currentPipeSkinId;
+    localStorage.setItem('cocky-birds-current-pipe-skin', currentPipeSkinId);
+  }, [currentPipeSkinId]);
   const gameStateRef = useRef<GameState>(gameState);
   const [chaos, setChaos] = useState(0);
 
@@ -812,6 +957,7 @@ export default function App() {
     spawnTimerRef.current = 0;
     setScore(0);
     scoreRef.current = 0;
+    hasPlayedPepperSoundRef.current = false;
     
     // Increment total games played
     setTotalGamesPlayed(prev => {
@@ -859,6 +1005,8 @@ export default function App() {
   const isAudioUnlockedRef = useRef(false);
   const menuBufferRef = useRef<AudioBuffer | null>(null);
   const playBufferRef = useRef<AudioBuffer | null>(null);
+  const pepperZoneBufferRef = useRef<AudioBuffer | null>(null);
+  const hasPlayedPepperSoundRef = useRef(false);
   const menuGainNodeRef = useRef<GainNode | null>(null);
   const playGainNodeRef = useRef<GainNode | null>(null);
   const milestoneGainNodeRef = useRef<GainNode | null>(null);
@@ -934,6 +1082,25 @@ export default function App() {
       isLoopingStartedRef.current = true;
       isAudioUnlockedRef.current = true;
     }
+  }, []);
+
+  const playPepperZoneSound = useCallback(() => {
+    if (!audioCtxRef.current || !pepperZoneBufferRef.current || hasPlayedPepperSoundRef.current) return;
+    
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const source = ctx.createBufferSource();
+    source.buffer = pepperZoneBufferRef.current;
+    
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 1.0; 
+    
+    source.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    source.start();
+    hasPlayedPepperSoundRef.current = true;
   }, []);
 
   // Audio initialization logic moved to main preload effect
@@ -2160,6 +2327,10 @@ export default function App() {
               scoreRef.current++;
               const next = scoreRef.current;
               
+              if (next >= 50 && !hasPlayedPepperSoundRef.current) {
+                playPepperZoneSound();
+              }
+              
               // Update high score immediately
               if (next > highScoreRef.current) {
                 highScoreRef.current = next;
@@ -2220,6 +2391,10 @@ export default function App() {
                     
                     scoreRef.current++;
                     const next = scoreRef.current;
+
+                    if (next >= 50 && !hasPlayedPepperSoundRef.current) {
+                      playPepperZoneSound();
+                    }
 
                     // Update high score immediately
                     if (next > highScoreRef.current) {
@@ -2951,7 +3126,7 @@ export default function App() {
 
       // Top Pipe
       const topPipeHeight = gapY.current - currentGapSize.current / 2 + pipeYOffset;
-      const pipeImg = birdImagesRef.current['PIPE'];
+      const pipeImg = isPepperZone ? birdImagesRef.current['RED_PIPE'] : (birdImagesRef.current[currentPipeSkinRef.current] || birdImagesRef.current['PIPE']);
 
       if (pipeImg) {
         // Draw top pipe - flip vertically so cap is at the bottom
@@ -2993,10 +3168,11 @@ export default function App() {
       if (isSlamming.current || isDivineRef.current) {
         ctx.save();
         const isSupercharged = isThunderReadyRef.current || isDivineRef.current;
+        const isPepperZone = scoreRef.current >= 50;
         ctx.strokeStyle = isSupercharged ? COLORS.WHITE : 'rgba(255, 255, 255, 0.8)';
         ctx.lineWidth = isSupercharged ? 6 : 2; 
         ctx.shadowBlur = isSupercharged ? 20 : 0; // Only glow if supercharged
-        ctx.shadowColor = COLORS.CYAN;
+        ctx.shadowColor = isPepperZone ? '#FF3E00' : COLORS.CYAN;
         
         const drawPipeLightning = (y1: number, y2: number) => {
           const boltCount = isDivineRef.current ? 3 : (isSupercharged ? 2 : 1);
@@ -3094,10 +3270,11 @@ export default function App() {
         }
 
         // Outer Glow
-        ctx.strokeStyle = COLORS.CYAN;
+        const isPepperZone = scoreRef.current >= 50;
+        ctx.strokeStyle = isPepperZone ? '#FF3E00' : COLORS.CYAN;
         ctx.lineWidth = 10;
         ctx.shadowBlur = 10; 
-        ctx.shadowColor = COLORS.CYAN;
+        ctx.shadowColor = isPepperZone ? '#FF0000' : COLORS.CYAN;
         ctx.stroke();
         
         // Inner Core
@@ -3418,6 +3595,38 @@ export default function App() {
                 WORLDS
               </div>
             </motion.button>
+
+            {/* Pipe Skins Button */}
+            <motion.button
+              whileHover={{ scale: 1.1, rotate: -5 }}
+              whileTap={{ scale: 0.9 }}
+              animate={{ 
+                y: [0, -5, 0],
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPipeSkinsOpen(true);
+              }}
+              className="relative group mt-2"
+            >
+              <div className="w-10 h-10 md:w-14 md:h-14 drop-shadow-[2px_2px_0px_#000] relative">
+                 <div className="absolute inset-0 bg-yellow-400/30 blur-xl rounded-full z-[-1] animate-pulse" />
+                <img 
+                  src="https://i.ibb.co/npGq2Rw/pipe-skinicon.png" 
+                  alt="Pipe Skin" 
+                  className="w-full h-full object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <div className="mt-1 text-[#FFF000] text-[8px] md:text-[10px] font-black uppercase tracking-[0.1em] drop-shadow-[1px_1px_0px_#000]">
+                SKINS
+              </div>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -3510,6 +3719,42 @@ export default function App() {
             transition={{ duration: 0.1 }}
             className="absolute inset-0 z-50 impact-flash pointer-events-none" 
           />
+        )}
+      </AnimatePresence>
+
+      {/* Pepper Zone Header Overlay */}
+      <AnimatePresence>
+        {gameState === 'PLAYING' && score >= 50 && (
+          <motion.div 
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            className="absolute top-[15%] md:top-[12%] left-1/2 -translate-x-1/2 z-[300] pointer-events-none"
+          >
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.1, 1],
+                filter: [
+                  'drop-shadow(0 0 10px #FF3E00)',
+                  'drop-shadow(0 0 30px #FF8C00)',
+                  'drop-shadow(0 0 10px #FF3E00)'
+                ]
+              }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="bg-black border-[4px] border-[#FF3E00] px-6 py-2 shadow-[8px_8px_0px_#000] flex flex-col items-center"
+            >
+              <div className="text-[#FF3E00] font-black italic text-2xl md:text-4xl tracking-tighter uppercase">
+                PEPPER ZONE
+              </div>
+              <motion.div 
+                animate={{ opacity: [0.4, 1, 0.4] }}
+                transition={{ duration: 0.5, repeat: Infinity }}
+                className="text-white font-black text-[10px] md:text-sm tracking-[0.2em] uppercase mt-[-4px]"
+              >
+                STAY HOT! 🌶️🔥
+              </motion.div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
       
@@ -4052,6 +4297,104 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Pipe Skins Popup */}
+      <AnimatePresence>
+        {isPipeSkinsOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[500] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 50 }}
+              className="brutalist-card bg-zinc-900 border-4 border-yellow-400 p-4 md:p-6 w-full max-w-[320px] md:max-w-md relative overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-start mb-6 border-b-4 border-yellow-400 pb-4">
+                <div>
+                  <h3 className="text-2xl md:text-4xl font-black text-white italic leading-none tracking-tighter">PIPE SHOP</h3>
+                  <p className="text-[10px] md:text-xs font-black text-yellow-400 uppercase tracking-[0.2em] mt-1">SWAP YOUR STEEL</p>
+                </div>
+                <button 
+                  onClick={() => setIsPipeSkinsOpen(false)}
+                  className="w-8 h-8 md:w-10 md:h-10 bg-yellow-400 text-black flex items-center justify-center font-black border-2 border-black hover:bg-white transition-colors"
+                >
+                  X
+                </button>
+              </div>
+
+              {/* Grid of Skins */}
+              <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {PIPE_SKINS.map((skin) => (
+                  <motion.button
+                    key={skin.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setCurrentPipeSkinId(skin.id);
+                    }}
+                    className={`relative p-3 border-4 flex flex-col items-center gap-2 transition-all ${
+                      currentPipeSkinId === skin.id 
+                        ? 'bg-yellow-400 border-white shadow-[0_0_20px_rgba(250,204,21,0.4)]' 
+                        : 'bg-zinc-800 border-zinc-700 hover:border-zinc-500'
+                    }`}
+                  >
+                    {/* Rarity Tag */}
+                    <div className={`absolute top-1 left-1 px-1.5 py-0.5 text-[6px] md:text-[8px] font-black uppercase text-white ${
+                      skin.rarity === 'Mythic' ? 'bg-indigo-600' :
+                      skin.rarity === 'Legendary' ? 'bg-yellow-600' :
+                      skin.rarity === 'Epic' ? 'bg-red-600' :
+                      skin.rarity === 'Rare' ? 'bg-purple-600' : 'bg-zinc-600'
+                    }`}>
+                      {skin.rarity}
+                    </div>
+
+                    <div className="w-12 h-24 md:w-16 md:h-32 mt-4 relative">
+                       <img 
+                        src={skin.url} 
+                        alt={skin.name}
+                        className="w-full h-full object-contain drop-shadow-[2px_2px_0px_#000]"
+                        referrerPolicy="no-referrer"
+                       />
+                       {currentPipeSkinId === skin.id && (
+                         <motion.div 
+                           layoutId="skin-active"
+                           className="absolute -inset-2 border-2 border-white animate-pulse"
+                         />
+                       )}
+                    </div>
+
+                    <div className="text-center">
+                      <div className={`text-[10px] md:text-sm font-black uppercase truncate w-full ${currentPipeSkinId === skin.id ? 'text-black' : 'text-white'}`}>
+                        {skin.name}
+                      </div>
+                      <div className={`text-[8px] md:text-xs font-bold ${currentPipeSkinId === skin.id ? 'text-black/60' : 'text-yellow-400'}`}>
+                        {skin.price}
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+
+              {/* Inspect Bar */}
+              <div className="mt-6 bg-black border-2 border-zinc-700 p-3 italic">
+                {PIPE_SKINS.find(s => s.id === currentPipeSkinId)?.description}
+              </div>
+
+              <button
+                onClick={() => setIsPipeSkinsOpen(false)}
+                className="w-full mt-4 py-3 bg-white text-black font-black uppercase text-sm md:text-lg border-b-4 border-zinc-400 active:border-b-0 active:translate-y-1 transition-all"
+              >
+                APPLY SKIN
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       </div>
     </div>
   );
