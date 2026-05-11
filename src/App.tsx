@@ -520,32 +520,44 @@ interface PipeFragment {
 
 // Advertisement Components
 const BannerAd = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    
-    // Clear previous if any
-    containerRef.current.innerHTML = '';
-    
-    (window as any).atOptions = {
-      'key' : '69bb61741ecf60ea22b97516edbffa48',
-      'format' : 'iframe',
-      'height' : 60,
-      'width' : 468,
-      'params' : {}
-    };
-    
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = '//www.highperformanceformat.com/69bb61741ecf60ea22b97516edbffa48/invoke.js';
-    
-    containerRef.current.appendChild(script);
+    if (!iframeRef.current) return;
+    const doc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(`
+      <body style="margin:0; padding:0; display:flex; justify-content:center; background: transparent;">
+        <script type="text/javascript">
+          atOptions = {
+            'key' : '69bb61741ecf60ea22b97516edbffa48',
+            'format' : 'iframe',
+            'height' : 60,
+            'width' : 468,
+            'params' : {}
+          };
+        </script>
+        <script type="text/javascript" src="https://www.highperformanceformat.com/69bb61741ecf60ea22b97516edbffa48/invoke.js"></script>
+      </body>
+    `);
+    doc.close();
   }, []);
 
   return (
-    <div className="flex justify-center w-full py-4 z-50">
-      <div ref={containerRef} className="max-w-full overflow-hidden" />
+    <div className="fixed bottom-0 left-0 w-full flex justify-center py-2 z-[1000] pointer-events-none">
+      <div className="pointer-events-auto bg-black/40 backdrop-blur-sm p-1 rounded-t-lg border-t-2 border-x-2 border-yellow-400/30">
+        <iframe
+          ref={iframeRef}
+          width="468"
+          height="60"
+          frameBorder="0"
+          scrolling="no"
+          title="Advertisement"
+          className="max-w-[calc(100vw-20px)]"
+        />
+      </div>
     </div>
   );
 };
@@ -554,16 +566,19 @@ const NativeAd = () => {
   const containerId = "container-155f76137bdb5daef68ec0347014c7cf";
   
   useEffect(() => {
-    const script = document.createElement('script');
-    script.async = true;
-    script.setAttribute('data-cfasync', 'false');
-    script.src = 'https://pl29421108.profitablecpmratenetwork.com/155f76137bdb5daef68ec0347014c7cf/invoke.js';
-    document.body.appendChild(script);
+    // We only need to load the script once globally
+    if (!document.querySelector(`script[src*="155f76137bdb5daef68ec0347014c7cf"]`)) {
+      const script = document.createElement('script');
+      script.async = true;
+      script.setAttribute('data-cfasync', 'false');
+      script.src = 'https://pl29421108.profitablecpmratenetwork.com/155f76137bdb5daef68ec0347014c7cf/invoke.js';
+      document.body.appendChild(script);
+    }
   }, []);
 
   return (
-    <div className="my-6 flex justify-center w-full scale-75 md:scale-100">
-      <div id={containerId} className="w-full max-w-[400px]"></div>
+    <div className="flex justify-center w-full mt-1">
+      <div id={containerId} className="w-[80px] md:w-[120px] min-h-[40px]"></div>
     </div>
   );
 };
@@ -3731,6 +3746,7 @@ export default function App() {
                 SKINS
               </div>
             </motion.button>
+            <NativeAd />
           </motion.div>
         )}
       </AnimatePresence>
@@ -4024,9 +4040,6 @@ export default function App() {
                   CRUSH 'EM!
                 </span>
               </motion.button>
-              
-              {/* Native Ad in Start Menu */}
-              <NativeAd />
             </div>
           </motion.div>
         )}
@@ -4100,9 +4113,6 @@ export default function App() {
                   <Share2 size={18} md:size={28} strokeWidth={3} />
                   <span className="uppercase italic font-display">SHARE SCORE</span>
                 </motion.button>
-
-                {/* Native Ad in Game Over Menu */}
-                <NativeAd />
 
                 <motion.button
                   whileHover={{ scale: 1.05 }}
