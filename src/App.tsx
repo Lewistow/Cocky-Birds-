@@ -5,7 +5,8 @@
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, RotateCcw, Shield, Zap, Skull, Target, Flame, Share2, Globe } from 'lucide-react';
+import { Play, RotateCcw, Shield, Zap, Skull, Target, Flame, Share2, Globe, Heart, Lock, Check } from 'lucide-react';
+import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { initGA, trackSlam, trackClout, trackPageView } from './lib/analytics';
 
 // Constants
@@ -21,6 +22,7 @@ interface PipeSkin {
   description: string;
   rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary' | 'Mythic';
   price: string;
+  priceAmount: number;
   url: string;
   color: string;
 }
@@ -32,6 +34,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'The OG pipe. Simple and effective.',
     rarity: 'Common',
     price: 'FREE',
+    priceAmount: 0,
     url: 'https://i.ibb.co/SDzcVyM3/pipe-asset.png',
     color: '#22c55e'
   },
@@ -41,6 +44,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'The "Starter Stealth" look.',
     rarity: 'Common',
     price: '$0.99',
+    priceAmount: 0.99,
     url: 'https://i.ibb.co/B5bpVcbv/chromeblackpipe-asset.png',
     color: '#1a1a1a'
   },
@@ -50,6 +54,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'High visibility, high disrespect.',
     rarity: 'Common',
     price: '$1.49',
+    priceAmount: 1.49,
     url: 'https://i.ibb.co/fdtFtJWs/hazardyellowpipe-asset.png',
     color: '#fbbf24'
   },
@@ -59,6 +64,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'The Space World glow.',
     rarity: 'Rare',
     price: '$2.99',
+    priceAmount: 2.99,
     url: 'https://i.ibb.co/2YgkYPzn/neonamethystpipe-asset.png',
     color: '#a855f7'
   },
@@ -68,6 +74,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'Permanent Red (The "Cheater" Pipe).',
     rarity: 'Epic',
     price: '$4.99',
+    priceAmount: 4.99,
     url: 'https://i.ibb.co/20dJBs99/rubyfurypipe-asset.png',
     color: '#ef4444'
   },
@@ -77,6 +84,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'Pure flex. The "Rich Pipe" vibe.',
     rarity: 'Legendary',
     price: '$9.99',
+    priceAmount: 9.99,
     url: 'https://i.ibb.co/mM158N8/solidgoldpipe-asset.png',
     color: '#fbbf24'
   },
@@ -86,6 +94,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'Animated stars. The ultimate God-tier.',
     rarity: 'Mythic',
     price: '$14.99',
+    priceAmount: 14.99,
     url: 'https://i.ibb.co/0pfVXTtm/galaxyglasspipe-asset.png',
     color: '#6366f1'
   }
@@ -849,6 +858,11 @@ export default function App() {
 
   const [integrity, setIntegrity] = useState(MAX_INTEGRITY);
   const [isPipeSkinsOpen, setIsPipeSkinsOpen] = useState(false);
+  const [unlockedPipeSkinIds, setUnlockedPipeSkinIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('cocky-birds-unlocked-pipe-skins');
+    return saved ? JSON.parse(saved) : ['classic'];
+  });
+
   const [currentPipeSkinId, setCurrentPipeSkinId] = useState(() => {
     return localStorage.getItem('cocky-birds-current-pipe-skin') || 'classic';
   });
@@ -858,6 +872,52 @@ export default function App() {
     currentPipeSkinRef.current = currentPipeSkinId;
     localStorage.setItem('cocky-birds-current-pipe-skin', currentPipeSkinId);
   }, [currentPipeSkinId]);
+
+  useEffect(() => {
+    localStorage.setItem('cocky-birds-unlocked-pipe-skins', JSON.stringify(unlockedPipeSkinIds));
+  }, [unlockedPipeSkinIds]);
+
+  const [purchaseInProgress, setPurchaseInProgress] = useState<string | null>(null);
+
+  const fwConfig = {
+    public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY || 'FLWPUBK_TEST-a3c3c7e7e7e7e7e7e7e7e7e7e7e7e7e7-X',
+    tx_ref: `cocky-bird-skin-${purchaseInProgress}-${Date.now()}`,
+    amount: PIPE_SKINS.find(s => s.id === purchaseInProgress)?.priceAmount || 0,
+    currency: 'USD',
+    payment_options: 'card,mobilemoney,ussd',
+    customer: {
+      email: 'kentuckybrown2@gmail.com',
+      phone_number: '08102909304',
+      name: 'Cocky Bird Player',
+    },
+    customizations: {
+      title: 'Cocky Bird Skin Shop',
+      description: `Payment for ${PIPE_SKINS.find(s => s.id === purchaseInProgress)?.name} pipe skin`,
+      logo: 'https://res.cloudinary.com/dz5azd4g1/image/upload/e_sharpen:100/n/tvaxh3dkuvbqu3h3itzc',
+    },
+  };
+
+  const handleFlutterPayment = useFlutterwave(fwConfig);
+
+  useEffect(() => {
+    if (purchaseInProgress) {
+      handleFlutterPayment({
+        callback: (response) => {
+          if (response.status === "successful") {
+            setUnlockedPipeSkinIds(prev => [...new Set([...prev, purchaseInProgress])]);
+            setCurrentPipeSkinId(purchaseInProgress);
+            createParticles(dimensions.current.width / 2, dimensions.current.height / 2, COLORS.YELLOW, 30, 'SPARK');
+            createParticles(dimensions.current.width / 2, dimensions.current.height / 2, COLORS.WHITE, 1, 'TEXT', 'PURCHASE SUCCESSFUL!');
+          }
+          closePaymentModal();
+          setPurchaseInProgress(null);
+        },
+        onClose: () => {
+          setPurchaseInProgress(null);
+        },
+      });
+    }
+  }, [purchaseInProgress, handleFlutterPayment]);
   const gameStateRef = useRef<GameState>(gameState);
   const [chaos, setChaos] = useState(0);
 
@@ -2009,8 +2069,18 @@ export default function App() {
     thud.stop(now + 0.4);
   }, []);
 
+  const getPipeColor = () => {
+    if (scoreRef.current >= 50) return '#FF3E00';
+    const skin = PIPE_SKINS.find(s => s.id === currentPipeSkinRef.current);
+    return skin ? skin.color : '#22c55e';
+  };
+
   const triggerCrumble = useCallback(() => {
     if (isCrumbling.current) return;
+    
+    const wasThunder = isThunderReadyRef.current;
+    const pipeColor = getPipeColor();
+    
     isCrumbling.current = true;
     playCrumbleSound();
     setIsShaking(true);
@@ -2044,7 +2114,7 @@ export default function App() {
             vy: (Math.random() - 2) * 300,
             rotation: Math.random() * Math.PI * 2,
             vRotation: (Math.random() - 0.5) * 12,
-            color: isThunderReadyRef.current ? COLORS.YELLOW : COLORS.GREEN
+            color: wasThunder ? COLORS.YELLOW : pipeColor
           });
         }
       }
@@ -2329,6 +2399,9 @@ export default function App() {
               
               if (next >= 50 && !hasPlayedPepperSoundRef.current) {
                 playPepperZoneSound();
+                // Milestone burst
+                createParticles(dimensions.current.width / 2, gapY.current, '#FF3E00', 30, 'SPARK');
+                createParticles(dimensions.current.width / 2, gapY.current, '#FF8C00', 1, 'TEXT', 'PEPPER ZONE!!!');
               }
               
               // Update high score immediately
@@ -2367,6 +2440,7 @@ export default function App() {
               const birdColor = bird.type === 'SNIPER' ? '#3B82F6' : 
                                 bird.type === 'DIVER' ? COLORS.YELLOW : 
                                 bird.type === 'TANK' ? '#BC00FF' : '#FF3E00';
+              
               createParticles(bird.x, bird.y, COLORS.CYAN, 12, 'SPARK'); 
               createParticles(bird.x, bird.y, birdColor, 8, 'FEATHER');
             }
@@ -2394,6 +2468,8 @@ export default function App() {
 
                     if (next >= 50 && !hasPlayedPepperSoundRef.current) {
                       playPepperZoneSound();
+                      // Milestone burst
+                      createParticles(dimensions.current.width / 2, gapY.current, '#FF3E00', 30, 'SPARK');
                     }
 
                     // Update high score immediately
@@ -2437,6 +2513,8 @@ export default function App() {
                     const birdColor = bird.type === 'SNIPER' ? '#3B82F6' : 
                                     bird.type === 'DIVER' ? COLORS.YELLOW : 
                                     bird.type === 'TANK' ? '#BC00FF' : '#FF3E00';
+                    
+                    createParticles(bird.x, bird.y, COLORS.CYAN, 15, 'SPARK');
                     createParticles(bird.x, bird.y, birdColor, 20, 'FEATHER');
                     createParticles(bird.x, bird.y, COLORS.WHITE, 1, 'TEXT', 'SQUASH!');
                     setIsShaking(true);
@@ -4328,68 +4406,109 @@ export default function App() {
 
               {/* Grid of Skins */}
               <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                {PIPE_SKINS.map((skin) => (
-                  <motion.button
-                    key={skin.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      setCurrentPipeSkinId(skin.id);
-                    }}
-                    className={`relative p-3 border-4 flex flex-col items-center gap-2 transition-all ${
-                      currentPipeSkinId === skin.id 
-                        ? 'bg-yellow-400 border-white shadow-[0_0_20px_rgba(250,204,21,0.4)]' 
-                        : 'bg-zinc-800 border-zinc-700 hover:border-zinc-500'
-                    }`}
-                  >
-                    {/* Rarity Tag */}
-                    <div className={`absolute top-1 left-1 px-1.5 py-0.5 text-[6px] md:text-[8px] font-black uppercase text-white ${
-                      skin.rarity === 'Mythic' ? 'bg-indigo-600' :
-                      skin.rarity === 'Legendary' ? 'bg-yellow-600' :
-                      skin.rarity === 'Epic' ? 'bg-red-600' :
-                      skin.rarity === 'Rare' ? 'bg-purple-600' : 'bg-zinc-600'
-                    }`}>
-                      {skin.rarity}
-                    </div>
-
-                    <div className="w-12 h-24 md:w-16 md:h-32 mt-4 relative">
-                       <img 
-                        src={skin.url} 
-                        alt={skin.name}
-                        className="w-full h-full object-contain drop-shadow-[2px_2px_0px_#000]"
-                        referrerPolicy="no-referrer"
-                       />
-                       {currentPipeSkinId === skin.id && (
-                         <motion.div 
-                           layoutId="skin-active"
-                           className="absolute -inset-2 border-2 border-white animate-pulse"
-                         />
-                       )}
-                    </div>
-
-                    <div className="text-center">
-                      <div className={`text-[10px] md:text-sm font-black uppercase truncate w-full ${currentPipeSkinId === skin.id ? 'text-black' : 'text-white'}`}>
-                        {skin.name}
+                {PIPE_SKINS.map((skin) => {
+                  const isUnlocked = unlockedPipeSkinIds.includes(skin.id);
+                  const isSelected = currentPipeSkinId === skin.id;
+                  
+                  return (
+                    <motion.button
+                      key={skin.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        if (isUnlocked) {
+                          setCurrentPipeSkinId(skin.id);
+                        } else {
+                          setPurchaseInProgress(skin.id);
+                        }
+                      }}
+                      className={`relative p-3 border-4 flex flex-col items-center gap-2 transition-all ${
+                        isSelected 
+                          ? 'bg-yellow-400 border-white shadow-[0_0_20px_rgba(250,204,21,0.4)]' 
+                          : isUnlocked 
+                            ? 'bg-zinc-800 border-zinc-700 hover:border-zinc-500'
+                            : 'bg-zinc-900 border-zinc-800 opacity-80'
+                      }`}
+                    >
+                      {/* Rarity Tag */}
+                      <div className={`absolute top-1 left-1 px-1.5 py-0.5 text-[6px] md:text-[8px] font-black uppercase text-white ${
+                        skin.rarity === 'Mythic' ? 'bg-indigo-600' :
+                        skin.rarity === 'Legendary' ? 'bg-yellow-600' :
+                        skin.rarity === 'Epic' ? 'bg-red-600' :
+                        skin.rarity === 'Rare' ? 'bg-purple-600' : 'bg-zinc-600'
+                      }`}>
+                        {skin.rarity}
                       </div>
-                      <div className={`text-[8px] md:text-xs font-bold ${currentPipeSkinId === skin.id ? 'text-black/60' : 'text-yellow-400'}`}>
-                        {skin.price}
+
+                      {/* Lock/Unlock Icon */}
+                      <div className="absolute top-1 right-1">
+                        {isUnlocked ? (
+                          <Check className={`w-3 h-3 ${isSelected ? 'text-black' : 'text-green-500'}`} />
+                        ) : (
+                          <Lock className="w-3 h-3 text-zinc-500" />
+                        )}
                       </div>
-                    </div>
-                  </motion.button>
-                ))}
+
+                      <div className="w-12 h-24 md:w-16 md:h-32 mt-4 relative">
+                        <img 
+                          src={skin.url} 
+                          alt={skin.name}
+                          className={`w-full h-full object-contain drop-shadow-[2px_2px_0px_#000] ${!isUnlocked ? 'brightness-50 grayscale' : ''}`}
+                          referrerPolicy="no-referrer"
+                        />
+                        {isSelected && (
+                          <motion.div 
+                            layoutId="skin-active"
+                            className="absolute -inset-2 border-2 border-white animate-pulse"
+                          />
+                        )}
+                      </div>
+
+                      <div className="text-center w-full">
+                        <div className={`text-[10px] md:text-sm font-black uppercase truncate w-full ${isSelected ? 'text-black' : 'text-white'}`}>
+                          {skin.name}
+                        </div>
+                        <div className={`text-[8px] md:text-xs font-bold ${isSelected ? 'text-black/60' : isUnlocked ? 'text-zinc-500' : 'text-yellow-400'}`}>
+                          {isUnlocked ? 'UNLOCKED' : skin.price}
+                        </div>
+                      </div>
+                    </motion.button>
+                  );
+                })}
               </div>
 
               {/* Inspect Bar */}
-              <div className="mt-6 bg-black border-2 border-zinc-700 p-3 italic">
+              <div className="mt-6 bg-black border-2 border-zinc-700 p-3 italic text-xs text-white">
                 {PIPE_SKINS.find(s => s.id === currentPipeSkinId)?.description}
               </div>
 
-              <button
-                onClick={() => setIsPipeSkinsOpen(false)}
-                className="w-full mt-4 py-3 bg-white text-black font-black uppercase text-sm md:text-lg border-b-4 border-zinc-400 active:border-b-0 active:translate-y-1 transition-all"
-              >
-                APPLY SKIN
-              </button>
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => setIsPipeSkinsOpen(false)}
+                  className="flex-1 py-3 bg-zinc-800 text-white font-black uppercase text-sm border-b-4 border-zinc-950 active:border-b-0 active:translate-y-1 transition-all"
+                >
+                  CLOSE
+                </button>
+                
+                {!unlockedPipeSkinIds.includes(currentPipeSkinId) && (
+                   <button
+                    onClick={() => setPurchaseInProgress(currentPipeSkinId)}
+                    className="flex-[2] py-3 bg-yellow-400 text-black font-black uppercase text-sm md:text-lg border-b-4 border-yellow-600 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Zap className="w-5 h-5 fill-black" />
+                    BUY {PIPE_SKINS.find(s => s.id === currentPipeSkinId)?.price}
+                  </button>
+                )}
+                
+                {unlockedPipeSkinIds.includes(currentPipeSkinId) && (
+                   <button
+                    onClick={() => setIsPipeSkinsOpen(false)}
+                    className="flex-[2] py-3 bg-green-500 text-white font-black uppercase text-sm md:text-lg border-b-4 border-green-700 active:border-b-0 active:translate-y-1 transition-all"
+                  >
+                    EQUIP SKIN
+                  </button>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}
