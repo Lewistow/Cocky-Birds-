@@ -578,7 +578,7 @@ const NativeAd = () => {
 
   return (
     <div className="flex justify-center w-full mt-1">
-      <div id={containerId} className="w-[80px] md:w-[120px] min-h-[40px]"></div>
+      <div id={containerId} className="w-[60px] md:w-[90px] min-h-[40px]"></div>
     </div>
   );
 };
@@ -3671,7 +3671,7 @@ export default function App() {
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 100, opacity: 0 }}
-            className="absolute top-4 right-4 z-[400] flex flex-col items-center gap-1 pointer-events-auto"
+            className="absolute top-4 right-1 md:right-4 z-[400] flex flex-col items-center gap-1 pointer-events-auto"
           >
             <motion.button
               whileHover={{ scale: 1.1, rotate: 5 }}
@@ -3746,7 +3746,7 @@ export default function App() {
                 SKINS
               </div>
             </motion.button>
-            {gameState === 'GAME_OVER' && <NativeAd />}
+            <NativeAd />
           </motion.div>
         )}
       </AnimatePresence>
@@ -3992,7 +3992,7 @@ export default function App() {
             exit={{ opacity: 0 }}
             className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           >
-            <div className="p-4 md:p-12 flex flex-col items-center max-w-[240px] md:max-w-sm w-full relative">
+            <div className="p-4 md:p-12 flex flex-col items-center max-w-[200px] md:max-w-[300px] w-full relative">
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
@@ -4082,7 +4082,7 @@ export default function App() {
               </motion.div>
             )}
 
-            <div className="bent-button bg-[#FF3E00] p-4 md:p-8 w-full max-w-[220px] md:max-w-[320px] text-center relative overflow-hidden flex flex-col items-center">
+            <div className="bent-button bg-[#FF3E00] p-4 md:p-8 w-full max-w-[200px] md:max-w-[280px] text-center relative overflow-hidden flex flex-col items-center">
               <div className="absolute top-0 left-0 w-full h-1 md:h-2 bg-black opacity-30" />
               
               <h2 className="text-3xl md:text-5xl font-black text-white mb-2 md:mb-6 italic font-display leading-none drop-shadow-[4px_4px_0px_#000]">
