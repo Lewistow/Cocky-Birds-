@@ -5,8 +5,7 @@
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, RotateCcw, Shield, Zap, Skull, Target, Flame, Share2, Globe, Heart, Lock, Check } from 'lucide-react';
-import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
+import { Play, RotateCcw, Shield, Zap, Skull, Target, Flame, Share2, Globe, Heart, Lock, Check, Award } from 'lucide-react';
 import { initGA, trackSlam, trackClout, trackPageView } from './lib/analytics';
 
 // Constants
@@ -21,8 +20,7 @@ interface PipeSkin {
   name: string;
   description: string;
   rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary' | 'Mythic';
-  price: string;
-  priceAmount: number;
+  unlockScore: number;
   url: string;
   color: string;
 }
@@ -33,8 +31,7 @@ const PIPE_SKINS: PipeSkin[] = [
     name: 'Classic Green',
     description: 'The OG pipe. Simple and effective.',
     rarity: 'Common',
-    price: 'FREE',
-    priceAmount: 0,
+    unlockScore: 0,
     url: 'https://i.ibb.co/SDzcVyM3/pipe-asset.png',
     color: '#22c55e'
   },
@@ -43,8 +40,7 @@ const PIPE_SKINS: PipeSkin[] = [
     name: 'Chrome Black',
     description: 'The "Starter Stealth" look.',
     rarity: 'Common',
-    price: '$0.99',
-    priceAmount: 0.99,
+    unlockScore: 25,
     url: 'https://i.ibb.co/B5bpVcbv/chromeblackpipe-asset.png',
     color: '#1a1a1a'
   },
@@ -53,8 +49,7 @@ const PIPE_SKINS: PipeSkin[] = [
     name: 'Hazard Yellow',
     description: 'High visibility, high disrespect.',
     rarity: 'Common',
-    price: '$1.49',
-    priceAmount: 1.49,
+    unlockScore: 40,
     url: 'https://i.ibb.co/fdtFtJWs/hazardyellowpipe-asset.png',
     color: '#fbbf24'
   },
@@ -63,8 +58,7 @@ const PIPE_SKINS: PipeSkin[] = [
     name: 'NEON AMETHYST',
     description: 'The Space World glow.',
     rarity: 'Rare',
-    price: '$2.99',
-    priceAmount: 2.99,
+    unlockScore: 50,
     url: 'https://i.ibb.co/2YgkYPzn/neonamethystpipe-asset.png',
     color: '#a855f7'
   },
@@ -73,8 +67,7 @@ const PIPE_SKINS: PipeSkin[] = [
     name: 'Ruby Fury',
     description: 'Permanent Red (The "Cheater" Pipe).',
     rarity: 'Epic',
-    price: '$4.99',
-    priceAmount: 4.99,
+    unlockScore: 75,
     url: 'https://i.ibb.co/20dJBs99/rubyfurypipe-asset.png',
     color: '#ef4444'
   },
@@ -83,8 +76,7 @@ const PIPE_SKINS: PipeSkin[] = [
     name: 'Solid Gold',
     description: 'Pure flex. The "Rich Pipe" vibe.',
     rarity: 'Legendary',
-    price: '$9.99',
-    priceAmount: 9.99,
+    unlockScore: 100,
     url: 'https://i.ibb.co/mM158N8/solidgoldpipe-asset.png',
     color: '#fbbf24'
   },
@@ -93,8 +85,7 @@ const PIPE_SKINS: PipeSkin[] = [
     name: 'Galaxy Glass',
     description: 'Animated stars. The ultimate God-tier.',
     rarity: 'Mythic',
-    price: '$14.99',
-    priceAmount: 14.99,
+    unlockScore: 150,
     url: 'https://i.ibb.co/0pfVXTtm/galaxyglasspipe-asset.png',
     color: '#6366f1'
   }
@@ -859,10 +850,6 @@ export default function App() {
   const [integrity, setIntegrity] = useState(MAX_INTEGRITY);
   const [isPipeSkinsOpen, setIsPipeSkinsOpen] = useState(false);
   const [shopSelectedId, setShopSelectedId] = useState('classic');
-  const [unlockedPipeSkinIds, setUnlockedPipeSkinIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('cocky-birds-unlocked-pipe-skins');
-    return saved ? JSON.parse(saved) : ['classic'];
-  });
 
   const [currentPipeSkinId, setCurrentPipeSkinId] = useState(() => {
     return localStorage.getItem('cocky-birds-current-pipe-skin') || 'classic';
@@ -874,51 +861,9 @@ export default function App() {
     localStorage.setItem('cocky-birds-current-pipe-skin', currentPipeSkinId);
   }, [currentPipeSkinId]);
 
-  useEffect(() => {
-    localStorage.setItem('cocky-birds-unlocked-pipe-skins', JSON.stringify(unlockedPipeSkinIds));
-  }, [unlockedPipeSkinIds]);
-
-  const [purchaseInProgress, setPurchaseInProgress] = useState<string | null>(null);
-
-  const fwConfig = {
-    public_key: (import.meta as any).env.VITE_FLUTTERWAVE_PUBLIC_KEY || 'FLWPUBK_TEST-a3c3c7e7e7e7e7e7e7e7e7e7e7e7e7e7-X',
-    tx_ref: `cocky-bird-skin-${purchaseInProgress}-${Date.now()}`,
-    amount: PIPE_SKINS.find(s => s.id === purchaseInProgress)?.priceAmount || 0,
-    currency: 'USD',
-    payment_options: 'card,mobilemoney,ussd',
-    customer: {
-      email: 'kentuckybrown2@gmail.com',
-      phone_number: '08102909304',
-      name: 'Cocky Bird Player',
-    },
-    customizations: {
-      title: 'Cocky Bird Skin Shop',
-      description: `Payment for ${PIPE_SKINS.find(s => s.id === purchaseInProgress)?.name} pipe skin`,
-      logo: 'https://res.cloudinary.com/dz5azd4g1/image/upload/e_sharpen:100/n/tvaxh3dkuvbqu3h3itzc',
-    },
-  };
-
-  const handleFlutterPayment = useFlutterwave(fwConfig);
-
-  useEffect(() => {
-    if (purchaseInProgress) {
-      handleFlutterPayment({
-        callback: (response) => {
-          if (response.status === "successful") {
-            setUnlockedPipeSkinIds(prev => [...new Set([...prev, purchaseInProgress])]);
-            setCurrentPipeSkinId(purchaseInProgress);
-            createParticles(dimensions.current.width / 2, dimensions.current.height / 2, COLORS.YELLOW, 30, 'SPARK');
-            createParticles(dimensions.current.width / 2, dimensions.current.height / 2, COLORS.WHITE, 1, 'TEXT', 'PURCHASE SUCCESSFUL!');
-          }
-          closePaymentModal();
-          setPurchaseInProgress(null);
-        },
-        onClose: () => {
-          setPurchaseInProgress(null);
-        },
-      });
-    }
-  }, [purchaseInProgress, handleFlutterPayment]);
+  const unlockedPipeSkinIds = useMemo(() => {
+    return PIPE_SKINS.filter(s => highScore >= s.unlockScore).map(s => s.id);
+  }, [highScore]);
   const gameStateRef = useRef<GameState>(gameState);
   const [chaos, setChaos] = useState(0);
 
@@ -4395,8 +4340,13 @@ export default function App() {
               {/* Header */}
               <div className="flex justify-between items-start mb-6 border-b-4 border-yellow-400 pb-4">
                 <div>
-                  <h3 className="text-2xl md:text-4xl font-black text-white italic leading-none tracking-tighter">PIPE SHOP</h3>
-                  <p className="text-[10px] md:text-xs font-black text-yellow-400 uppercase tracking-[0.2em] mt-1">SWAP YOUR STEEL</p>
+                  <h3 className="text-2xl md:text-3xl font-black text-white italic leading-none tracking-tighter">PIPE MASTERY</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Award className="w-3 h-3 text-yellow-400" />
+                    <p className="text-[10px] md:text-xs font-black text-yellow-400 uppercase tracking-widest">
+                      HIGH SCORE: {highScore}
+                    </p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => setIsPipeSkinsOpen(false)}
@@ -4469,7 +4419,7 @@ export default function App() {
                           {skin.name}
                         </div>
                         <div className={`text-[8px] md:text-xs font-bold ${isSelected ? 'text-black/60' : isUnlocked ? 'text-zinc-500' : 'text-yellow-400'}`}>
-                          {isUnlocked ? 'UNLOCKED' : skin.price}
+                          {isUnlocked ? 'UNLOCKED' : `LOCKED: ${skin.unlockScore} PTS`}
                         </div>
                       </div>
                     </motion.button>
@@ -4492,11 +4442,11 @@ export default function App() {
                 
                 {!unlockedPipeSkinIds.includes(shopSelectedId) && (
                    <button
-                    onClick={() => setPurchaseInProgress(shopSelectedId)}
-                    className="flex-[2] py-3 bg-yellow-400 text-black font-black uppercase text-sm md:text-lg border-b-4 border-yellow-600 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2"
+                    disabled
+                    className="flex-[2] py-3 bg-zinc-800 text-zinc-500 font-black uppercase text-sm md:text-lg border-b-4 border-zinc-950 cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    <Zap className="w-5 h-5 fill-black" />
-                    BUY {PIPE_SKINS.find(s => s.id === shopSelectedId)?.price}
+                    <Lock className="w-5 h-5" />
+                    REACH {PIPE_SKINS.find(s => s.id === shopSelectedId)?.unlockScore} PTS
                   </button>
                 )}
                 
