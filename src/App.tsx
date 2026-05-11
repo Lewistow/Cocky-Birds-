@@ -546,8 +546,8 @@ const BannerAd = () => {
   }, []);
 
   return (
-    <div className="fixed bottom-0 left-0 w-full flex justify-center py-2 z-[1000] pointer-events-none">
-      <div className="pointer-events-auto bg-black/40 backdrop-blur-sm p-1 rounded-t-lg border-t-2 border-x-2 border-yellow-400/30">
+    <div className="fixed bottom-0 left-0 w-full flex justify-center pb-0 z-[1000] pointer-events-none">
+      <div className="pointer-events-auto bg-black/40 backdrop-blur-sm p-0 rounded-t-lg border-t-2 border-x-2 border-yellow-400/20">
         <iframe
           ref={iframeRef}
           width="468"
@@ -555,7 +555,7 @@ const BannerAd = () => {
           frameBorder="0"
           scrolling="no"
           title="Advertisement"
-          className="max-w-[calc(100vw-20px)]"
+          className="max-w-[calc(100vw-10px)] h-[60px]"
         />
       </div>
     </div>
@@ -3746,7 +3746,7 @@ export default function App() {
                 SKINS
               </div>
             </motion.button>
-            <NativeAd />
+            {gameState === 'GAME_OVER' && <NativeAd />}
           </motion.div>
         )}
       </AnimatePresence>
@@ -4574,7 +4574,7 @@ export default function App() {
       </AnimatePresence>
 
         {/* Footer Banner Ad */}
-        <BannerAd />
+        {gameState !== 'START' && <BannerAd />}
       </div>
     </div>
   );
