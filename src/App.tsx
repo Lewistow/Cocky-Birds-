@@ -32,7 +32,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'The OG pipe. Simple and effective.',
     rarity: 'Common',
     unlockScore: 0,
-    url: 'https://i.ibb.co/SDzcVyM3/pipe-asset.png',
+    url: 'https://i.ibb.co/B53wMKJ9/pipe-asset.webp',
     color: '#22c55e'
   },
   {
@@ -41,7 +41,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'The "Starter Stealth" look.',
     rarity: 'Common',
     unlockScore: 25,
-    url: 'https://i.ibb.co/B5bpVcbv/chromeblackpipe-asset.png',
+    url: 'https://i.ibb.co/kgKWF5Zr/chromeblackpipe-asset.webp',
     color: '#1a1a1a'
   },
   {
@@ -50,16 +50,16 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'High visibility, high disrespect.',
     rarity: 'Common',
     unlockScore: 40,
-    url: 'https://i.ibb.co/fdtFtJWs/hazardyellowpipe-asset.png',
+    url: 'https://i.ibb.co/sv8zypZT/hazardyellowpipe-asset.webp',
     color: '#fbbf24'
   },
   {
     id: 'neon-amethyst',
-    name: 'NEON AMETHYST',
+    name: 'Neon Amethyst',
     description: 'The Space World glow.',
     rarity: 'Rare',
     unlockScore: 50,
-    url: 'https://i.ibb.co/2YgkYPzn/neonamethystpipe-asset.png',
+    url: 'https://i.ibb.co/7NXn9fsc/neonamethystpipe-asset.webp',
     color: '#a855f7'
   },
   {
@@ -68,7 +68,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'Permanent Red (The "Cheater" Pipe).',
     rarity: 'Epic',
     unlockScore: 75,
-    url: 'https://i.ibb.co/20dJBs99/rubyfurypipe-asset.png',
+    url: 'https://i.ibb.co/vvPNXBB5/rubyfurypipe-asset.webp',
     color: '#ef4444'
   },
   {
@@ -77,7 +77,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'Pure flex. The "Rich Pipe" vibe.',
     rarity: 'Legendary',
     unlockScore: 100,
-    url: 'https://i.ibb.co/mM158N8/solidgoldpipe-asset.png',
+    url: 'https://i.ibb.co/yn5gCBVW/solidgoldpipe-asset.webp',
     color: '#fbbf24'
   },
   {
@@ -86,7 +86,7 @@ const PIPE_SKINS: PipeSkin[] = [
     description: 'Animated stars. The ultimate God-tier.',
     rarity: 'Mythic',
     unlockScore: 150,
-    url: 'https://i.ibb.co/0pfVXTtm/galaxyglasspipe-asset.png',
+    url: 'https://i.ibb.co/DfRmMmJM/galaxyglasspipe-asset.webp',
     color: '#6366f1'
   }
 ];
@@ -185,168 +185,7 @@ const TAUNTS = [
   "WHIFF!",
   "TERRIBLE!",
   "LOSER!",
-  "GIFTED!",
-  "AFK?",
-  "SLEEPING?",
-  "MY GRANDMA?",
-  "ZERO AURA!",
-  "FLOP!",
-  "BRONZE!",
-  "IRON!",
-  "SKILL GAP!",
-  "COULDN'T BE ME!",
-  "CLIPPED!",
-  "SIT DOWN!",
-  "RENT FREE!",
-  "STAY MAD!",
-  "GO TOUCH GRASS!",
-  "LACKING!",
-  "FREE ELO!",
-  "GG NO RE!",
-  "HOLD THIS L!",
-  "IMAGINE MISSING!",
-  "YOU'RE DONE!",
-  "GO BACK TO LOBBY!",
-  "WHO ARE YOU?",
-  "EMOTE ON EM!",
-  "CHECK YOUR MONITOR!",
-  "LAGGING?",
-  "CONTROLLER DISCONNECTED?",
-  "GHOSTED!",
-  "NEGATIVE AURA!",
-  "RIZZLESS!",
-  "SKIBIDI NOPE!",
-  "MOGGED BY A BIRD!",
-  "MAIN CHARACTER DIES FIRST!",
-  "CAUGHT IN 8K!",
-  "SIGMA DOWNFALL!",
-  "FANUM TAXED YOUR HP!",
-  "OHIO TIER AIM!",
-  "GYATT TO BE KIDDING!",
-  "GLAZING THE PIPES!",
-  "LET HIM COOK? NAH.",
-  "DELUSIONAL!",
-  "CHRONICALLY ONLINE!",
-  "BRAIN ROT DETECTED!",
-  "STAY IN THE NEST!",
-  "CHICKEN BEHAVIOR!",
-  "NUGGET PROCESSED!",
-  "FRYING PAN READY!",
-  "CLAWED YOUR PR!",
-  "BEAK TO THE FACE!",
-  "FEATHERED RATIO!",
-  "BIRD FEEDER!",
-  "NESTING AT 0!",
-  "FLAPPY FAIL!",
-  "WINGS OF SHAME!",
-  "EGG ON YOUR FACE!",
-  "COLONIZER OF Ls!",
-  "NOT THE VIBE!",
-  "LOW TAPER FADE!",
-  "GOATED AT WHIFFING!",
-  "SIGMA SQUAWK ENERGY!",
-  "ABSOLUTE CANON EVENT!",
-  "BORN TO FLOP!",
-  "MODS, BAN THIS NOOB!",
-  "CHATT, IS HE FR?",
-  "EDGING THE GAME OVER!",
-  "MEWING TILL THE PIPE!",
-  "LOOKSMAX LEVEL: 0!",
-  "ALPHA BIRD ENERGY!",
-  "SKIBIDI DISASTER!",
-  "NEGATIVE RIZZ DETECTED!",
-  "OHIO FINAL BOSS DESTROYED!",
-  "BABY GRONK TIER!",
-  "FANUM TAX ON YOUR SCORE!",
-  "LIVVY DUNNE NOT IMPRESSED!",
-  "GYATT FOR THE GAPS!",
-  "STAYING IN THE TRENCHES!",
-  "ZERO AURA MOMENT!",
-  "MOGGED BY A METAL PIPE!",
-  "MAIN CHARACTER SYNDROME!",
-  "POV: YOU'RE TRASH!",
-  "I'M HIM. YOU'RE NOT.",
-  "UNLIMITED COPE!",
-  "MALIGNANT MIDNESS!",
-  "FRAUDWATCH ACTIVATED!",
-  "NPC ENERGY PEAKING!",
-  "EMOTE ON YOUR RUINS!",
-  "CROWNLESS KING!",
-  "THRONED IN SHAME!",
-  "MY EYES ARE BLEEDING!",
-  "STOP THE COUNT!",
-  "ELECTION INTERFERENCE!",
-  "PIPES ARE YOUR FATHER!",
-  "ADOPTED BY GAP!",
-  "PARENTAL DISAPPOINTMENT!",
-  "LOST THE PLOT!",
-  "NO SCRIPT!",
-  "IMPROVISED FAILURE!",
-  "RANDOM BULLSHIT GO!",
-  "TACTICAL RETREAT?",
-  "WHITE FLAG MOMENT!",
-  "SURRENDER YOUR SOUL!",
-  "DIVER FED ON U!",
-  "SNIPER NO-SCOPED U!",
-  "TANK BURIED U!",
-  "BIO-HAZARD VICTIM!",
-  "SQUELCHED INTO DEFEAT!",
-  "SLUSHY BRAIN!",
-  "MUD IN YOUR EYES!",
-  "DIRTY L!",
-  "ABSOLUTE DESPAIR!",
-  "VOID ACCEPTS YOU!",
-  "GAME OVER FOREVER!",
-  "L STREAMER!",
-  "DONO WALLING!",
-  "L + RATIO + FEATHERLESS!",
-  "MEWING STREAK: BROKEN!",
-  "NEGATIVE AURA x1000!",
-  "SKIBIDI SURCHARGE!",
-  "FANUM STOLE YOUR IQ!",
-  "OHIO FINAL BOSS POV!",
-  "SUB ONLY FAILURE!",
-  "CLIP THAT L!",
-  "NOT EVEN TOP 1%!",
-  "AURA DEBT!",
-  "GOONING FOR THE PIPES!",
-  "LOOKSMAXING FAIL!",
-  "EDGE FOR THE W!",
-  "CHAT SAYS SKIP!",
-  "L-RIZZ ENERGY!",
-  "SIGMA DOWNFALL 2.0!",
-  "KICKED FOR INACTIVITY!",
-  "MANUAL BREATHING: ON!",
-  "YOU'RE A FILLER EPISODE!",
-  "SIDE CHARACTER ENERGY!",
-  "BACKGROUND NPC!",
-  "FINAL BOSS OF WHIFFING!",
-  "SPEEDRUN TO 0!",
-  "PERMABANNED FROM Ws!",
-  "MUTED IRL!",
-  "L + RATIO + NO WINGS!",
-  "GLAZED BY THE TANK!",
-  "ICED BY THE SNIPER!",
-  "COOKED BY THE DIVER!",
-  "SQUELCHED BY REALITY!",
-  "ABSOLUTE CINEMA (NOT)!",
-  "UNPOGGERS MOMENT!",
-  "SADGE IN THE CHAT!",
-  "PEPEHANDS SCORE!",
-  "KEKW LEVEL BAD!",
-  "POGGERS BUT REVERSE!",
-  "WOMP WOMP!",
-  "DELETE SYSTEM32!",
-  "ALT+F4 MOTIVATION!",
-  "BLUE SCREEN MINDSET!",
-  "TOUCH GRASS SIMULATOR!",
-  "SHOWER ENTHUSIASTS ONLY!",
-  "SOAP IS FREE!",
-  "DEODORANT GAP!",
-  "STINKY STREAK!",
-  "BIOHAZARD BRAIN!",
-  "SLUDGE LOGIC!",
-  "PEAK BRAINROT!"
+  "GIFTED!"
 ];
 
 // Audio URLs
@@ -370,8 +209,8 @@ const PLANETS = [
   { 
     id: 'earth', 
     name: 'EARTH', 
-    url: 'https://i.ibb.co/C5GMT8WF/earth-backgroud.jpg', 
-    foregroundUrl: 'https://i.ibb.co/N6NmjbNV/earthforeground-asset.jpg',
+    url: 'https://i.ibb.co/JWxxgw2X/earth-backgroud-1.jpg', 
+    foregroundUrl: 'https://i.ibb.co/sJ9Dq5qr/earthforeground-asset.jpg',
     primaryColor: '#4FA2FF',
     mountainColor: '#1E8928',
     description: 'HOME SWEET HOME',
@@ -380,8 +219,8 @@ const PLANETS = [
   { 
     id: 'ares_anvil', 
     name: "ARES' ANVIL", 
-    url: 'https://i.ibb.co/4nnGR0vR/ares-anvil-background.png', 
-    foregroundUrl: 'https://i.ibb.co/qqtJ9wR/ares-anvilforeground-asset.jpg',
+    url: 'https://i.ibb.co/zhzcxJ5X/ares-anvil-background.jpg', 
+    foregroundUrl: 'https://i.ibb.co/k260fwXh/ares-anvilforeground-asset.jpg',
     primaryColor: '#FF4500',
     mountainColor: '#3d1000',
     description: 'FORGED IN COSMIC FIRE',
@@ -390,8 +229,8 @@ const PLANETS = [
   { 
     id: 'neon_nebula', 
     name: 'THE NEON NEBULA', 
-    url: 'https://i.ibb.co/v4xVyv8Y/theneonnebula-background.png', 
-    foregroundUrl: 'https://i.ibb.co/3mTdkg2n/theneonnebulaforeground-asset.jpg',
+    url: 'https://i.ibb.co/tpSnMnCW/theneonnebula-background.jpg', 
+    foregroundUrl: 'https://i.ibb.co/dwcR55cm/theneonnebulaforeground-asset.jpg',
     primaryColor: '#FF00FF',
     mountainColor: '#2d004a',
     description: 'A LUCID SPACE DREAM',
@@ -400,8 +239,8 @@ const PLANETS = [
   { 
     id: 'stardust_crater', 
     name: 'STARDUST CRATER', 
-    url: 'https://i.ibb.co/ch5NqsvH/stardustcrater-background.png', 
-    foregroundUrl: 'https://i.ibb.co/rG67rNJ5/stardustcraterforeground-asset.jpg',
+    url: 'https://i.ibb.co/N2TL24JX/stardustcrater-background.jpg', 
+    foregroundUrl: 'https://i.ibb.co/dJfxc4kr/stardustcraterforeground-asset.jpg',
     primaryColor: '#87CEFA',
     mountainColor: '#1a2a4a',
     description: 'REMAINS OF A DEAD STAR',
@@ -410,8 +249,8 @@ const PLANETS = [
   { 
     id: 'eclipse_ridge', 
     name: 'ECLIPSE RIDGE', 
-    url: 'https://i.ibb.co/bM433Qk8/eclipseridge.png', 
-    foregroundUrl: 'https://i.ibb.co/2121dZdy/eclipseridgeforeground-asset.jpg',
+    url: 'https://i.ibb.co/cdsPxx9/eclipseridge.jpg', 
+    foregroundUrl: 'https://i.ibb.co/KjFr8xYq/eclipseridgeforeground-asset.jpg',
     primaryColor: '#4B0082',
     mountainColor: '#0c001a',
     description: 'BEYOND THE SHADOWS',
@@ -420,8 +259,8 @@ const PLANETS = [
   { 
     id: 'solstice_prime', 
     name: 'SOLSTICE PRIME', 
-    url: 'https://i.ibb.co/G47859j6/solsticeprime-bacground.png', 
-    foregroundUrl: 'https://i.ibb.co/YT0qPnnH/solsticeprimeforeground-asset.jpg',
+    url: 'https://i.ibb.co/Z5vLjS7/solsticeprime-bacground.jpg', 
+    foregroundUrl: 'https://i.ibb.co/M4p0fCs/solsticeprimeforeground-asset.jpg',
     primaryColor: '#FFD700',
     mountainColor: '#4a3f00',
     description: 'ETERNAL STELLAR LIGHT',
@@ -430,8 +269,8 @@ const PLANETS = [
   { 
     id: 'saturn_shallows', 
     name: 'THE SATURN SHALLOWS', 
-    url: 'https://i.ibb.co/vxCXcj4Q/thesaturnshallows-background.png', 
-    foregroundUrl: 'https://i.ibb.co/dw9hW3xG/thesaturnshallowsforeground-asset.jpg',
+    url: 'https://i.ibb.co/j9wJbFtS/thesaturnshallows-background.jpg', 
+    foregroundUrl: 'https://i.ibb.co/G4RFxzRC/thesaturnshallowsforeground-asset.jpg',
     primaryColor: '#F4A460',
     mountainColor: '#3d250a',
     description: 'DRIFTING THROUGH THE RINGS',
@@ -440,8 +279,8 @@ const PLANETS = [
   { 
     id: 'violet_void', 
     name: 'VIOLET VOID', 
-    url: 'https://i.ibb.co/RGTBdkLB/violetvoid-background.png', 
-    foregroundUrl: 'https://i.ibb.co/fGx1SSwG/violetvoidforeground-asset.jpg',
+    url: 'https://i.ibb.co/WJDmf1y/violetvoid-background.jpg', 
+    foregroundUrl: 'https://i.ibb.co/6SyzKyH/violetvoidforeground-asset.jpg',
     primaryColor: '#8A2BE2',
     mountainColor: '#1e0a3d',
     description: 'WHERE REALITY FADES',
@@ -450,8 +289,8 @@ const PLANETS = [
   { 
     id: 'asteroid_graveyard', 
     name: 'THE ASTEROID GRAVEYARD', 
-    url: 'https://i.ibb.co/0RvHsPD1/theasteroidgraveyard-background.png', 
-    foregroundUrl: 'https://i.ibb.co/3YPBZfd3/theasteroidgraveyardforeground-asset.jpg',
+    url: 'https://i.ibb.co/rR5fszBc/theasteroidgraveyard-background.jpg', 
+    foregroundUrl: 'https://i.ibb.co/4RQbNV71/theasteroidgraveyardforeground-asset.jpg',
     primaryColor: '#708090',
     mountainColor: '#22282e',
     description: 'ECHOES OF ANCIENT COLLISIONS',
@@ -460,8 +299,8 @@ const PLANETS = [
   { 
     id: 'azure_outpost', 
     name: 'AZURE OUTPOST', 
-    url: 'https://i.ibb.co/j9vRH5WY/azureoutpost-background.png', 
-    foregroundUrl: 'https://i.ibb.co/PvrCT016/azureoutpostforeground-asset.jpg',
+    url: 'https://i.ibb.co/zhZfc7sM/azureoutpost-background.jpg', 
+    foregroundUrl: 'https://i.ibb.co/Jwn8zBJG/azureoutpostforeground-asset.jpg',
     primaryColor: '#007FFF',
     mountainColor: '#001a33',
     description: 'FRONTIER OF THE DEEP BLUE',
@@ -470,8 +309,8 @@ const PLANETS = [
   { 
     id: 'nova_citadel', 
     name: 'NOVA CITADEL', 
-    url: 'https://i.ibb.co/Q7SkX0Ln/novacitadel-background.png', 
-    foregroundUrl: 'https://i.ibb.co/KJLsZNR/novacitadelforeground-asset.jpg',
+    url: 'https://i.ibb.co/mF0Mgz50/novacitadel-background.jpg', 
+    foregroundUrl: 'https://i.ibb.co/sdWQxmCH/novacitadelforeground-asset.jpg',
     primaryColor: '#E0FFFF',
     mountainColor: '#003366',
     description: 'GLORY OF THE DYING SUN',
@@ -483,25 +322,25 @@ const CHARACTER_INFO = [
   { 
     id: 'TANK', 
     img: 'https://i.ibb.co/wNVzWX6R/purple-tank.png', 
-    text: 'https://i.ibb.co/Wvnc3S3g/purple-tanktext.png',
+    text: 'https://i.ibb.co/QvxG6Y9R/purple-tanktext.webp',
     description: "🟣 THE TANK: Big, slow, and takes 3 hits to crush. He’s the muscle. 🧱💪"
   },
   { 
     id: 'SNIPER', 
     img: 'https://i.ibb.co/Ld2Q2zsr/blue-sniper.png', 
-    text: 'https://i.ibb.co/ksfCNnqG/blue-snipertext.png',
+    text: 'https://i.ibb.co/GvpW5Y8b/blue-snipertext.webp',
     description: "🔵 THE SNIPER: Small, blue, and shoots with 99% accuracy. He doesn't miss. 🎯⚡️"
   },
   { 
     id: 'NORMAL', 
     img: 'https://i.ibb.co/8gtLm9qB/yellow-diver.png', 
-    text: 'https://i.ibb.co/3Jjds2K/yellow-divertext.png',
+    text: 'https://i.ibb.co/Q79dh1H8/yellow-divertext.webp',
     description: "🟡 THE DIVER: The original speed demon. Blink and he’s already past you. 🏎️💨"
   },
   { 
     id: 'DIVER', 
     img: 'https://i.ibb.co/pjNspj7Q/fire-diver.png', 
-    text: 'https://i.ibb.co/qLXCR6Nv/fire-divertext.png',
+    text: 'https://i.ibb.co/zhzz96sy/fire-divertext.webp',
     description: "🔴 THE FIRE DIVER (NEW!): A literal pyromaniac. He’s red, he’s fast, and he breathes fire."
   },
 ];
@@ -547,15 +386,15 @@ const BannerAd = () => {
 
   return (
     <div className="fixed bottom-0 left-0 w-full flex justify-center pb-0 z-[1000] pointer-events-none">
-      <div className="pointer-events-auto bg-black/60 backdrop-blur-md p-0 rounded-t-lg border-t border-x border-yellow-400/10">
+      <div className="pointer-events-auto bg-black/40 backdrop-blur-sm p-0 rounded-t-lg border-t-2 border-x-2 border-yellow-400/20">
         <iframe
           ref={iframeRef}
           width="468"
-          height="45"
+          height="60"
           frameBorder="0"
           scrolling="no"
           title="Advertisement"
-          className="max-w-[calc(100vw-40px)] h-[45px] grayscale hover:grayscale-0 transition-all duration-300"
+          className="max-w-[calc(100vw-10px)] h-[60px]"
         />
       </div>
     </div>
@@ -620,11 +459,11 @@ export default function App() {
       SNIPER: 'https://i.ibb.co/Ld2Q2zsr/blue-sniper.png',
       DIVER: 'https://i.ibb.co/pjNspj7Q/fire-diver.png',
       NORMAL: 'https://i.ibb.co/8gtLm9qB/yellow-diver.png',
-      PIPE: 'https://i.ibb.co/SDzcVyM3/pipe-asset.png',
-      RED_PIPE: 'https://i.ibb.co/hJRtxFpv/fiftypointsredpipe-asset.png',
-      LOGO: 'https://res.cloudinary.com/dz5azd4g1/image/upload/e_sharpen:100/n/tvaxh3dkuvbqu3h3itzc',
-      LOGOTEXT: 'https://res.cloudinary.com/dz5azd4g1/image/upload/e_sharpen:100/n/tortfxecstyrnzit7vbd',
-      SKIN_ICON: 'https://i.ibb.co/npGq2Rw/pipe-skinicon.png',
+      PIPE: 'https://i.ibb.co/B53wMKJ9/pipe-asset.webp',
+      RED_PIPE: 'https://i.ibb.co/93n1xKKQ/fiftypointsredpipe-asset.webp',
+      LOGO: 'https://i.ibb.co/3YvKLyzK/logo.webp',
+      LOGOTEXT: 'https://i.ibb.co/n2hYKDD/cocky-birdtext.webp',
+      SKIN_ICON: 'https://i.ibb.co/rGNjBjtM/pipe-skinicon.webp',
       // Add all skins to preloader
       ...Object.fromEntries(PIPE_SKINS.map(s => [s.id, s.url]))
     };
@@ -661,14 +500,14 @@ export default function App() {
 
     // Preload custom feathers
     const blueFeather = new Image();
-    blueFeather.src = 'https://i.ibb.co/R4v3ZxnC/blue-birdfeather.png';
+    blueFeather.src = 'https://i.ibb.co/jPfQxmVw/blue-birdfeather.webp';
     blueFeather.referrerPolicy = 'no-referrer';
     blueFeather.onload = onAssetLoad;
     blueFeather.onerror = onAssetLoad;
     featherImagesRef.current.blue = blueFeather;
 
     const yellowFeather = new Image();
-    yellowFeather.src = 'https://i.ibb.co/99DCvMLF/yellow-birdfeather.png';
+    yellowFeather.src = 'https://i.ibb.co/xSGHGChH/yellow-birdfeather.webp';
     yellowFeather.referrerPolicy = 'no-referrer';
     yellowFeather.onload = onAssetLoad;
     yellowFeather.onerror = onAssetLoad;
@@ -3685,7 +3524,7 @@ export default function App() {
             >
               <div className="w-14 h-14 md:w-20 md:h-20 drop-shadow-[4px_4px_0px_#000]">
                 <img 
-                  src="https://i.ibb.co/n8rnRQCd/map.png" 
+                  src="https://i.ibb.co/wFZgPyjM/map.webp" 
                   alt="Map" 
                   className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
@@ -3727,7 +3566,7 @@ export default function App() {
               <div className="w-10 h-10 md:w-14 md:h-14 drop-shadow-[2px_2px_0px_#000] relative">
                  <div className="absolute inset-0 bg-yellow-400/30 blur-xl rounded-full z-[-1] animate-pulse" />
                 <img 
-                  src="https://i.ibb.co/npGq2Rw/pipe-skinicon.png" 
+                  src="https://i.ibb.co/rGNjBjtM/pipe-skinicon.webp" 
                   alt="Pipe Skin" 
                   className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
@@ -3772,7 +3611,7 @@ export default function App() {
             >
               <div className="w-16 h-16 md:w-24 md:h-24 drop-shadow-[4px_4px_0px_#000]">
                 <img 
-                  src="https://i.ibb.co/5gLtCnP6/birds-charactersicon.png" 
+                  src="https://i.ibb.co/FLjWvXk6/birds-charactersicon.webp" 
                   alt="Birds" 
                   className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
